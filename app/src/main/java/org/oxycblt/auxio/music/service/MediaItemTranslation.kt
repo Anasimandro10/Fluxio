@@ -52,9 +52,9 @@ sealed interface MediaSessionUID {
     }
 
     companion object {
-        const val ID_CATEGORY = BuildConfig.APPLICATION_ID + ".category"
+        val ID_CATEGORY = BuildConfig.APPLICATION_ID + ".category"
         const val MICRO_ID_CATEGORY = "mc"
-        const val ID_ITEM = BuildConfig.APPLICATION_ID + ".item"
+        val ID_ITEM = BuildConfig.APPLICATION_ID + ".item"
         const val MICRO_ID_ITEM = "mi"
 
         fun fromString(str: String): MediaSessionUID? {
