@@ -16,10 +16,10 @@ android {
     // here so the libraries are still stripped.
     compileSdk target_sdk
     ndkVersion ndk_version
-    namespace "io.fluxio.app"
+    namespace "org.oxycblt.auxio"
 
     defaultConfig {
-        applicationId namespace
+        applicationId "io.fluxio.app"
         versionName "4.0.10"
         versionCode 69
 
