@@ -12,11 +12,11 @@ plugins {
 }
 
 android {
-    // Auxio implicitly depends on the native modules, explicitly specify it
+    // Fluxio implicitly depends on the native modules, explicitly specify it
     // here so the libraries are still stripped.
     compileSdk target_sdk
     ndkVersion ndk_version
-    namespace "org.oxycblt.auxio"
+    namespace "io.fluxio.app"
 
     defaultConfig {
         applicationId namespace
@@ -96,11 +96,9 @@ dependencies {
     // Components
     // Deliberately kept on 1.2.1 to prevent a bug where the queue sheet will not collapse on
     // certain upwards scrolling events
-    // TODO: Report this issue and hope for a timely fix
     // noinspection GradleDependency
     implementation "androidx.recyclerview:recyclerview:1.2.1"
     implementation "androidx.constraintlayout:constraintlayout:2.2.1"
-    // 1.1.0 upgrades recyclerview to 1.3.0, keep it on 1.0.0
     //noinspection GradleDependency
     implementation "androidx.viewpager2:viewpager2:1.0.0"
 
@@ -147,8 +145,6 @@ dependencies {
     implementation 'io.coil-kt.coil3:coil-core:3.3.0'
 
     // Material
-    // TODO: Exactly figure out the conditions that the 1.7.0 ripple bug occurred so you can just
-    //  PR a fix.
     implementation "com.google.android.material:material:1.14.0-alpha09"
 
     // Dependency Injection

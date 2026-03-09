@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
     <!-- Info namespace | App labels -->
     <eat-comment />
@@ -207,7 +207,7 @@
     <!-- As in music library -->
     <string name="lng_search_library">Search your library…</string>
     <string name="lng_tasker_start">
-        Starts Auxio using the previously saved state. If no saved state is available, all songs will be shuffled. Playback will start immediately.
+        Starts Fluxio using the previously saved state. If no saved state is available, all songs will be shuffled. Playback will start immediately.
         \n\nWARNING: Be careful controlling this service, if you close it and then try to use it again, you will probably crash the app.
     </string>
     <string name="lng_empty_songs">Your songs will show up here.</string>
@@ -369,7 +369,7 @@
     <string name="desc_add_folder">Add folder</string>
     <string name="desc_music_location_delete">Remove folder</string>
 
-    <string name="desc_auxio_icon">Auxio icon</string>
+    <string name="desc_auxio_icon">Fluxio icon</string>
     <string name="desc_no_cover">Album cover</string>
     <string name="desc_album_cover">Album cover for %s</string>
     <string name="desc_artist_image">Artist image for %s</string>
