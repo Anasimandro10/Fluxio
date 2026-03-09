@@ -1,189 +1,108 @@
-<p align="center"><img src="fastlane/metadata/android/en-US/images/icon.png" width="150"></p>
-<h1 align="center"><b>Auxio</b></h1>
-<h4 align="center">A simple, rational music player for Android.</h4>
+<h1 align="center"><b>Fluxio</b></h1>
+<h4 align="center">A powerful, private music player for Android.</h4>
 <p align="center">
-    <a href="https://github.com/oxygencobalt/Auxio/releases/tag/v4.0.10">
+    <a href="https://github.com/Anasimandro10/Fluxio/releases/">
         <img alt="Latest Version" src="https://img.shields.io/static/v1?label=tag&message=v4.0.10&color=64B5F6&style=flat">
-    </a>
-    <a href="https://github.com/oxygencobalt/Auxio/releases/">
-        <img alt="Releases" src="https://img.shields.io/github/downloads/OxygenCobalt/Auxio/total.svg?color=4B95DE&style=flat">
     </a>
     <a href="https://www.gnu.org/licenses/gpl-3.0">
         <img src="https://img.shields.io/badge/license-GPL%20v3-2B6DBE.svg?style=flat">
     </a>
     <img alt="Minimum SDK Version" src="https://img.shields.io/badge/API-24%2B-1450A8?style=flat">
 </p>
-<h4 align="center"><a href="/CHANGELOG.md">Changelog</a> | <a href="https://github.com/OxygenCobalt/Auxio/wiki">Wiki</a> | <a href="https://github.com/OxygenCobalt/Auxio#Donate">Donate</a></h4>
-<p align="center">
-    <a href="https://f-droid.org/app/org.oxycblt.auxio"><img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" width="250"></a>
-    <a href="https://accrescent.app/app/org.oxycblt.auxio">
-        <img alt="Get it on Accrescent" src="https://accrescent.app/badges/get-it-on.png" width="250">
-    </a>
-</p>
-<p align="center">
-    <a href="https://hosted.weblate.org/engage/auxio/"><img height=64 src="https://hosted.weblate.org/widgets/auxio/-/strings/287x66-grey.png" alt="Translation status" /></a>
-</p>
 
 ## About
 
-Auxio is a local music player with a fast, reliable UI/UX without the many useless features present in other music players. Built off of modern media playback libraries, Auxio has superior library support and listening quality compared to other apps that use outdated Android functionality. In short, **It plays music.**
+Fluxio is a fork of [Auxio](https://github.com/oxygencobalt/Auxio) — a fast, reliable local music player for Android — extended with features the original intentionally omits: a built-in equalizer, synchronized lyrics, listening statistics, and a redesigned UI.
 
-**The default branch is the development version of the repository. For a stable version, see the master branch.**
-
-## Screenshots
-
-<p align="center">
-    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/shot0.png" width=250>
-    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/shot1.png" width=250>
-    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/shot2.png" width=250>
-    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/shot3.png" width=250>
-    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/shot4.png" width=250>
-    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/shot5.png" width=250>
-</p>
-
+No account. No telemetry. No ads. It plays music.
 
 ## Features
 
+### Inherited from Auxio
 - Playback based on [Media3 ExoPlayer](https://developer.android.com/guide/topics/media/exoplayer)
 - Snappy UI derived from the latest Material Design guidelines
-- Opinionated UX that prioritizes ease of use over edge cases
-- Customizable behavior
-- Support for disc numbers, multiple artists, release types,
-precise/original dates, sort tags, and more
+- Support for disc numbers, multiple artists, release types, precise dates, sort tags, and more
 - Advanced artist system that unifies artists and album artists
 - SD Card-aware folder management
 - Reliable playlisting functionality
 - Playback state persistence
 - Android Auto support
 - Automatic gapless playback
-- Full ReplayGain support (On MP3, FLAC, OGG, OPUS, and MP4 files)
-- External equalizer support (ex. Wavelet)
-- Edge-to-edge
+- Full ReplayGain support (MP3, FLAC, OGG, OPUS, MP4)
+- Edge-to-edge UI
 - Embedded covers support
 - Search functionality
 - Headset autoplay
-- Stylish widgets that automatically adapt to their size
+- Stylish widgets
 - Completely private and offline
-- No rounded album covers (if you want them)
+
+### Added in Fluxio
+
+**🎧 Audio**
+- Built-in 10-band equalizer (biquad filters via AudioProcessor)
+- Stereo Widening effect (Mid-Side processing)
+- Volume normalization for files without ReplayGain tags
+- Audio offload mode (battery saving + hardware quality on compatible devices)
+- Smooth crossfade between tracks
+
+**🎵 Lyrics**
+- Embedded lyrics from tags (ID3 USLT, Vorbis LYRICS, MP4 ©lyr)
+- Local LRC file support (same filename as audio file)
+- [LRCLIB](https://lrclib.net) as optional fallback (opt-in, cached locally)
+- Line-by-line highlighting (standard LRC)
+- Word-by-word highlighting à la Apple Music (extended LRC with word timestamps)
+- Immersive fullscreen lyrics sheet
+
+**🎨 UI**
+- Full visual redesign with dynamic color extracted from album art (Palette API)
+- Subtle album-tinted background (dark + desaturated, ~4-6% opacity)
+- Soft radial glow at the top of the player screen
+- Album art as the centerpiece of the player
+- Typography: Inter
+- Smooth animations (400–600ms), color transitions (800ms)
+- Grid or list view toggle in library
+- Improved Android Auto layout with larger buttons
+
+**📊 Statistics**
+- Listening history stored locally (song, artist, album, timestamp, seconds listened)
+- Stats tab in the main navigation
+- Top songs, artists, and albums per period: week / month / year / all time
+- Total listening time as the hero metric
+
+## Privacy
+
+- No account required
+- No telemetry of any kind
+- No ads
+- LRCLIB is opt-in and only sends: artist, song title, album, duration
 
 ## Permissions
 
-- Storage (`READ_MEDIA_AUDIO`, `READ_EXTERNAL_STORAGE`) to read and play your music files
-- Services (`FOREGROUND_SERVICE`, `WAKE_LOCK`) to keep the music playing in the background
-- Notifications (`POST_NOTIFICATION`) to indicate ongoing playback and music loading
-
-## Donate
-
-You can support Auxio's development through [my Github Sponsors page](https://github.com/sponsors/OxygenCobalt). Get the ability to prioritize features and have your profile added to the README, Release Changelogs, and even the app itself!
-
-<h3 align="center">Legendary supporters:</h3>
-<p align="center">
-    <a href="https://github.com/bkkellyh"><img src="https://avatars.githubusercontent.com/u/248118457?v=4" width=250 /></a> 
-</p>
-<h3 align="center"><a href="https://github.com/bkkellyh">@bkkellyh</a> - <i>$500!</i></h3>
-
-<hr />
-
-<p align="center"><b>$8/month supporters:</b></p>
-
-<p align="center">
-    <a href="https://github.com/alanorth"><img src="https://avatars.githubusercontent.com/u/191754?v=4" width=50 /></a>
-    <a href="https://github.com/kuroi-9"><img src="https://avatars.githubusercontent.com/u/174134134?v=4" width=50 /></a>
-</p>
-<p align="center">
-    And **1** Private Sponsor!
-</p>
+- `READ_MEDIA_AUDIO` / `READ_EXTERNAL_STORAGE` — to read and play your music files
+- `FOREGROUND_SERVICE`, `WAKE_LOCK` — to keep music playing in the background
+- `POST_NOTIFICATION` — to show playback and loading notifications
+- `INTERNET` — only used if LRCLIB lookup is enabled in settings
 
 ## Building
 
-Auxio relies on a patched version of Media3 that enables some extra playback features, alongside taglib for metadata
-parsing. This adds some caveats to the build process:
-1. `cmake` and `ninja-build` must be installed before building the project.
-2. The project uses submodules, so when cloning initially, use `git clone --recurse-submodules` to properly
-download the external code.
-3. You are **unable** to build this project on windows, as the custom Media3 build runs shell scripts that
-will only work on unix-based systems.
+Fluxio uses GitHub Actions for automated builds. Every push to the `dev` branch compiles a debug APK automatically — no local build environment needed.
 
-### Set up Android Studio
+To download the latest build:
+1. Go to the [Actions tab](https://github.com/Anasimandro10/Fluxio/actions)
+2. Open the latest successful run
+3. Download the `Fluxio_Debug` artifact
 
-#### Install Android Studio.
-
-```bash
-pkg -S android-studio
-```
-
-#### Configuring Android Studio:
-
-- Be sure to have NDK tools, version 28.2.13676358. You can search it on Languages & Frameworks > Android SDK.
-- Install Java-21 with your system package manager
-
-    ```bash
-    sudo pkg -S jdk21-openjdk
-    ```
-    Additionally: Set java version to jdk21-openjdk
-
-- Run ./gradlew assembleDebug
-
-#### Connecting to your Android Device
-
-You can connect your Mobile Phone through USB to run the app. 
-
-1. **Enable Developer Options on your phone**
-   - Go to **Settings > About phone**  
-   - Tap **Build number** 7 times until you see *"You are now a developer!"*
-
-2. **Enable USB debugging**
-   - Go to **Settings > Developer options**  
-   - Turn on **USB debugging**
-
-3. **Connect your phone to the computer**
-   - Use a USB cable  
-   - On your phone, accept the *Allow USB debugging?* prompt
-
-4. **Verify that your device is detected**
-   ```bash
-   cd ~/Android/Sdk/platform-tools
-   ./adb devices
-   ```
-
-Android Studio also offers virtual devices that come with this pre-configured.
-
-#### Install the app on the Android Phone
-To install the app on your physical device or emulator, run this command:
-
-```bash
-./gradlew installDebug
-```
-
-Auxio should now appear in the list of Apps
-
-#### Load music to Auxio (Optional)
-
-You can move files from your pc to your device / emulator to test the music using this command:
-
-```bash
-cd ~/Android/Sdk/platform-tools
-./adb push ~Music/ /sdcard/Music
-```
-
-## Contributing
-
-Auxio accepts most contributions as long as they follow the [Contribution Guidelines](/.github/CONTRIBUTING.md).
-
-However, feature additions and major UI changes are less likely to be accepted. See
-[Why Are These Features Missing?](https://github.com/OxygenCobalt/Auxio/wiki/Why-Are-These-Features-Missing%3F)
-for more information.
-
-
+### Build requirements (local)
+- `cmake` and `ninja-build` must be installed
+- Clone with submodules: `git clone --recurse-submodules`
+- JDK 21
+- NDK version `28.2.13676358`
+- Building on Windows is **not supported** — use GitHub Actions instead
 
 ## License
 
 [![GNU GPLv3 Image](https://www.gnu.org/graphics/gplv3-127x51.png)](http://www.gnu.org/licenses/gpl-3.0.en.html)
 
-Auxio is Free Software: You can use, study share and improve it at your
-will. Specifically you can redistribute and/or modify it under the terms of the
-[GNU General Public License](https://www.gnu.org/licenses/gpl.html) as
-published by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+Fluxio is a fork of Auxio and inherits its license. This software is Free Software: you can use, study, share, and improve it under the terms of the [GNU General Public License v3](https://www.gnu.org/licenses/gpl-3.0.en.html) or later.
 
-More information can be found [here](https://github.com/OxygenCobalt/Auxio/wiki/Licenses).
+Original Auxio project: [github.com/oxygencobalt/Auxio](https://github.com/oxygencobalt/Auxio)
