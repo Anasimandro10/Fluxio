@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2025 Auxio Project
- * JObjectRef.h is part of Auxio.
+ * Copyright (c) 2025 Fluxio Project
+ * JObjectRef.h is part of Fluxio.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
 #ifndef AUXIO_JOBJECTREF_H
 #define AUXIO_JOBJECTREF_H
 

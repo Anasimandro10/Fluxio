@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2026 Auxio Project
- * WavySlider.kt is part of Auxio.
+ * Copyright (c) 2026 Fluxio Project
+ * WavySlider.kt is part of Fluxio.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
 package com.google.android.material.slider
 
 import android.content.Context

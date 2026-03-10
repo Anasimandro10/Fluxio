@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
 package org.oxycblt.auxio.stats
 
 import androidx.room.Dao
@@ -33,11 +32,7 @@ import kotlinx.coroutines.flow.Flow
  *
  * Each row represents one song listened to for 30 seconds or more.
  */
-@Database(
-    entities = [PlaybackRecord::class],
-    version = 1,
-    exportSchema = false,
-)
+@Database(entities = [PlaybackRecord::class], version = 1, exportSchema = false)
 abstract class StatsDatabase : RoomDatabase() {
     abstract fun playbackRecordDao(): PlaybackRecordDao
 }
@@ -66,8 +61,7 @@ data class PlaybackRecord(
 @Dao
 interface PlaybackRecordDao {
     /** Insert a new playback record. */
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(record: PlaybackRecord)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insert(record: PlaybackRecord)
 
     /** Get all records, newest first. */
     @Query("SELECT * FROM playback_records ORDER BY startedAt DESC")
@@ -78,7 +72,9 @@ interface PlaybackRecordDao {
      *
      * @param fromTimestamp Unix timestamp in milliseconds
      */
-    @Query("SELECT * FROM playback_records WHERE startedAt >= :fromTimestamp ORDER BY startedAt DESC")
+    @Query(
+        "SELECT * FROM playback_records WHERE startedAt >= :fromTimestamp ORDER BY startedAt DESC"
+    )
     fun getRecordsSince(fromTimestamp: Long): Flow<List<PlaybackRecord>>
 
     /** Returns the total number of stored records. */
