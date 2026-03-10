@@ -1,11 +1,21 @@
 /*
- * Copyright (c) 2024 Fluxio Project
+ * Copyright (c) 2026 Fluxio Project
  * StatsDatabase.kt is part of Fluxio.
  *
- * This program is free software: you can redistribute it and/or
- * modify it under the terms of the GNU General Public License.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
+ 
 package org.oxycblt.auxio.stats
 
 import androidx.room.Dao
@@ -19,8 +29,9 @@ import androidx.room.RoomDatabase
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Base de datos Room que almacena el historial de reproducciones.
- * Cada fila = una canción escuchada al menos 30 segundos.
+ * Provides raw access to the database storing Fluxio's playback history.
+ *
+ * Each row represents one song listened to for 30 seconds or more.
  */
 @Database(
     entities = [PlaybackRecord::class],
@@ -32,14 +43,14 @@ abstract class StatsDatabase : RoomDatabase() {
 }
 
 /**
- * Representa una reproducción registrada.
+ * A single recorded playback event.
  *
- * @param id            Identificador único (autogenerado)
- * @param songTitle     Nombre de la canción
- * @param artistName    Nombre del artista
- * @param albumName     Nombre del álbum
- * @param startedAt     Timestamp Unix en milisegundos (cuándo empezó)
- * @param secondsPlayed Segundos reales escuchados (mínimo 30)
+ * @param id auto-generated unique identifier
+ * @param songTitle name of the song
+ * @param artistName name of the artist
+ * @param albumName name of the album
+ * @param startedAt Unix timestamp in milliseconds when playback began
+ * @param secondsPlayed real seconds listened (minimum 30 to be saved)
  */
 @Entity(tableName = "playback_records")
 data class PlaybackRecord(
@@ -51,29 +62,28 @@ data class PlaybackRecord(
     val secondsPlayed: Int,
 )
 
-/**
- * Interfaz de acceso a la tabla playback_records.
- */
+/** Provides access to the playback_records table. */
 @Dao
 interface PlaybackRecordDao {
-
-    /** Guarda un nuevo registro de reproducción. */
+    /** Insert a new playback record. */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(record: PlaybackRecord)
 
-    /** Todos los registros, del más reciente al más antiguo. */
+    /** Get all records, newest first. */
     @Query("SELECT * FROM playback_records ORDER BY startedAt DESC")
     fun getAllRecords(): Flow<List<PlaybackRecord>>
 
-    /** Registros a partir de un momento dado (para filtrar semana/mes/año). */
+    /**
+     * Get records since a given timestamp (used to filter by week / month / year).
+     *
+     * @param fromTimestamp Unix timestamp in milliseconds
+     */
     @Query("SELECT * FROM playback_records WHERE startedAt >= :fromTimestamp ORDER BY startedAt DESC")
     fun getRecordsSince(fromTimestamp: Long): Flow<List<PlaybackRecord>>
 
-    /** Número total de registros guardados. */
-    @Query("SELECT COUNT(*) FROM playback_records")
-    suspend fun count(): Int
+    /** Returns the total number of stored records. */
+    @Query("SELECT COUNT(*) FROM playback_records") suspend fun count(): Int
 
-    /** Borra todo el historial. */
-    @Query("DELETE FROM playback_records")
-    suspend fun nukeAll()
+    /** Deletes all records. */
+    @Query("DELETE FROM playback_records") suspend fun nukeAll()
 }
