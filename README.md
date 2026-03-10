@@ -1,4 +1,7 @@
 <h1 align="center"><b>Fluxio</b></h1>
+<p align="center">
+  <img src="assets/icon.png" width="120" alt="Fluxio icon">
+</p>
 <h4 align="center">A powerful, private music player for Android.</h4>
 <p align="center">
     <a href="https://github.com/Anasimandro10/Fluxio/releases/">
