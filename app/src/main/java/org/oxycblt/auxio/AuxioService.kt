@@ -34,6 +34,8 @@ import androidx.media.utils.MediaConstants
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import org.oxycblt.auxio.music.service.MusicServiceFragment
+import org.oxycblt.auxio.playback.state.PlaybackStateManager
+import org.oxycblt.auxio.stats.StatsTracker
 import org.oxycblt.auxio.playback.service.PlaybackServiceFragment
 import timber.log.Timber
 
@@ -45,6 +47,8 @@ class AuxioService :
 
     @Inject lateinit var musicFragmentFactory: MusicServiceFragment.Factory
     private lateinit var musicFragment: MusicServiceFragment
+    @Inject lateinit var playbackStateManager: PlaybackStateManager
+    @Inject lateinit var statsTracker: StatsTracker
 
     @SuppressLint("WrongConstant")
     override fun onCreate() {
@@ -53,6 +57,7 @@ class AuxioService :
         musicFragment = musicFragmentFactory.create(this, this, this)
         sessionToken = playbackFragment.attach()
         musicFragment.attach()
+        playbackStateManager.addListener(statsTracker)
         Timber.d("Service Created")
     }
 
