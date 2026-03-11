@@ -34,9 +34,9 @@ import androidx.media.utils.MediaConstants
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import org.oxycblt.auxio.music.service.MusicServiceFragment
+import org.oxycblt.auxio.playback.service.PlaybackServiceFragment
 import org.oxycblt.auxio.playback.state.PlaybackStateManager
 import org.oxycblt.auxio.stats.StatsTracker
-import org.oxycblt.auxio.playback.service.PlaybackServiceFragment
 import timber.log.Timber
 
 @AndroidEntryPoint
