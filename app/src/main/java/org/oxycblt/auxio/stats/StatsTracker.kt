@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.stats
 
 import android.content.Context
@@ -40,10 +39,8 @@ import org.oxycblt.musikr.Song
 @Singleton
 class StatsTracker
 @Inject
-constructor(
-    @ApplicationContext private val context: Context,
-    private val dao: PlaybackRecordDao,
-) : PlaybackStateManager.Listener {
+constructor(@ApplicationContext private val context: Context, private val dao: PlaybackRecordDao) :
+    PlaybackStateManager.Listener {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
