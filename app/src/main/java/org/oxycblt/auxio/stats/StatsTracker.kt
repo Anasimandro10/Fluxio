@@ -31,6 +31,8 @@ import org.oxycblt.auxio.playback.state.PlaybackStateManager
 import org.oxycblt.auxio.playback.state.Progression
 import org.oxycblt.musikr.MusicParent
 import org.oxycblt.musikr.Song
+import org.oxycblt.auxio.music.resolve
+import org.oxycblt.auxio.music.resolveNames
 
 /**
  * Listens to playback and saves a [PlaybackRecord] when a song has been played for 30 seconds or
