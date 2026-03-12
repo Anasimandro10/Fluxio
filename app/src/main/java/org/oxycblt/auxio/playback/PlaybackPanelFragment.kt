@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.oxycblt.auxio.playback
 
 import android.annotation.SuppressLint
@@ -24,18 +25,28 @@ import android.media.audiofx.AudioEffect
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.Toolbar
+import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.dynamicanimation.animation.SpringForce
 import androidx.fragment.app.activityViewModels
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
+import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.databinding.FragmentPlaybackPanelBinding
+import org.oxycblt.auxio.databinding.ItemLyricLineBinding
 import org.oxycblt.auxio.detail.DetailViewModel
 import org.oxycblt.auxio.list.ListViewModel
+import org.oxycblt.auxio.lyrics.LrcLine
+import org.oxycblt.auxio.lyrics.LyricsViewModel
 import org.oxycblt.auxio.music.resolve
 import org.oxycblt.auxio.music.resolveNames
 import org.oxycblt.auxio.playback.state.RepeatMode
@@ -51,12 +62,10 @@ import org.oxycblt.musikr.Song
 import timber.log.Timber as L
 
 /**
- * A [ViewBindingFragment] more information about the currently playing song, alongside all
- * available controls.
+ * A [ViewBindingFragment] showing more information about the currently playing song,
+ * alongside all available controls and synced lyrics when an LRC file is present.
  *
  * @author Alexander Capehart (OxygenCobalt)
- *
- * TODO: Improve flickering situation on play button
  */
 @AndroidEntryPoint
 class PlaybackPanelFragment :
@@ -65,11 +74,15 @@ class PlaybackPanelFragment :
     StyledSeekBar.Listener,
     ViewTreeObserver.OnGlobalLayoutListener,
     PlayerFastSeekOverlay.PerformListener {
+
     private val playbackModel: PlaybackViewModel by activityViewModels()
     private val detailModel: DetailViewModel by activityViewModels()
     private val listModel: ListViewModel by activityViewModels()
+    private val lyricsModel: LyricsViewModel by activityViewModels()
+
     private var equalizerLauncher: ActivityResultLauncher<Intent>? = null
     private var lastCoverWidth = 0
+    private var lyricsAdapter: LyricsAdapter? = null
 
     override fun onCreateBinding(inflater: LayoutInflater) =
         FragmentPlaybackPanelBinding.inflate(inflater)
@@ -80,12 +93,8 @@ class PlaybackPanelFragment :
     ) {
         super.onBindingCreated(binding, savedInstanceState)
 
-        // AudioEffect expects you to use startActivityForResult with the panel intent. There is no
-        // contract analogue for this intent, so the generic contract is used instead.
         equalizerLauncher =
-            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-                // Nothing to do
-            }
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {}
 
         // --- UI SETUP ---
         binding.root.setOnApplyWindowInsetsListener { view, insets ->
@@ -99,14 +108,13 @@ class PlaybackPanelFragment :
             setOnMenuItemClickListener(this@PlaybackPanelFragment)
         }
 
-        // Disable swipe gestures on cover for now
         binding.playbackCover.onSwipeListener = null
 
-        // Set up fast seek overlay
         binding.playbackFastSeekOverlay?.apply {
             performListener(this@PlaybackPanelFragment)
-            seekSecondsSupplier { 10 } // 10 seconds per double-tap
+            seekSecondsSupplier { 10 }
         }
+
         binding.playbackSong.apply {
             isSelected = true
             setOnClickListener { navigateToCurrentSong() }
@@ -122,8 +130,6 @@ class PlaybackPanelFragment :
 
         binding.playbackSeekBar?.listener = this
 
-        // Set up actions
-        // TODO: Add better playback button accessibility
         binding.playbackRepeat.setOnClickListener { playbackModel.toggleRepeatMode() }
         binding.playbackSkipPrev.setOnClickListener { playbackModel.prev() }
         binding.playbackPlayPause.apply {
@@ -144,13 +150,22 @@ class PlaybackPanelFragment :
             }
         }
 
-        // --- VIEWMODEL SETUP --
+        // Set up lyrics RecyclerView
+        lyricsAdapter = LyricsAdapter()
+        binding.playbackLyrics.apply {
+            adapter = lyricsAdapter
+            layoutManager = LinearLayoutManager(requireContext())
+        }
+
+        // --- VIEWMODEL SETUP ---
         collectImmediately(playbackModel.song, ::updateSong)
         collectImmediately(playbackModel.parent, ::updateParent)
         collectImmediately(playbackModel.positionDs, ::updatePosition)
         collectImmediately(playbackModel.repeatMode, ::updateRepeat)
         collectImmediately(playbackModel.isPlaying, ::updatePlaying)
         collectImmediately(playbackModel.isShuffled, ::updateShuffled)
+        collectImmediately(lyricsModel.lines, ::updateLyrics)
+        collectImmediately(lyricsModel.currentLineIndex, ::updateCurrentLine)
     }
 
     override fun onStart() {
@@ -165,18 +180,7 @@ class PlaybackPanelFragment :
     }
 
     override fun onGlobalLayout() {
-        if (binding == null || lastCoverWidth < 0) {
-            return
-        }
-        // Hacky workaround for cover radius not being preserved in between sizing changes
-        // (i.e split screen or landscape mode)
-        // For some reason ConstraintLayout does several passes on 1:1 elements that causes their
-        // size to radically change, so we wait until it stabilizes and then force an image
-        // reload if needed. Optimistically this is a no-op from coil caching, but when the cover
-        // did accidentally load the wrong image (with weird corner radius intended for bigger
-        // covers) we can force it to reload.
-        // If this breaks, it's fine since we also started a load as we normally did w/state
-        // updates, so the cover will not break.
+        if (binding == null || lastCoverWidth < 0) return
         val binding = requireBinding()
         val coverWidth = binding.playbackCover.width
         if (lastCoverWidth != coverWidth) {
@@ -189,6 +193,8 @@ class PlaybackPanelFragment :
 
     override fun onDestroyBinding(binding: FragmentPlaybackPanelBinding) {
         equalizerLauncher = null
+        lyricsAdapter = null
+        binding.playbackLyrics.adapter = null
         binding.playbackRepeat.clearPendingIcon()
         binding.playbackSong.isSelected = false
         binding.playbackArtist.isSelected = false
@@ -198,15 +204,10 @@ class PlaybackPanelFragment :
 
     override fun onMenuItemClick(item: MenuItem): Boolean {
         if (item.itemId == R.id.action_open_equalizer) {
-            // Launch the system equalizer app, if possible.
             L.d("Launching equalizer")
             val equalizerIntent =
                 Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL)
-                    // Provide audio session ID so the equalizer can show options for this app
-                    // in particular.
                     .putExtra(AudioEffect.EXTRA_AUDIO_SESSION, playbackModel.currentAudioSessionId)
-                    // Signal music type so that the equalizer settings are appropriate for
-                    // music playback.
                     .putExtra(AudioEffect.EXTRA_CONTENT_TYPE, AudioEffect.CONTENT_TYPE_MUSIC)
             try {
                 requireNotNull(equalizerLauncher) { "Equalizer panel launcher was not available" }
@@ -216,7 +217,6 @@ class PlaybackPanelFragment :
             }
             return true
         }
-
         return false
     }
 
@@ -225,11 +225,7 @@ class PlaybackPanelFragment :
     }
 
     private fun updateSong(song: Song?) {
-        if (song == null) {
-            // Nothing to do.
-            return
-        }
-
+        if (song == null) return
         val binding = requireBinding()
         val context = requireContext()
         L.d("Updating song display: $song")
@@ -266,6 +262,23 @@ class PlaybackPanelFragment :
         requireBinding().playbackShuffle.isChecked = isShuffled
     }
 
+    /** Shows or hides the lyrics list depending on whether lines are available. */
+    private fun updateLyrics(lines: List<LrcLine>) {
+        val binding = requireBinding()
+        val hasLyrics = lines.isNotEmpty()
+        binding.playbackLyrics.isVisible = hasLyrics
+        lyricsAdapter?.submitList(lines)
+    }
+
+    /** Scrolls the list to keep the active lyric line visible and highlights it. */
+    private fun updateCurrentLine(index: Int) {
+        val adapter = lyricsAdapter ?: return
+        adapter.setActiveIndex(index)
+        if (index >= 0) {
+            requireBinding().playbackLyrics.smoothScrollToPosition(index)
+        }
+    }
+
     private fun navigateToCurrentSong() {
         playbackModel.song.value?.let(detailModel::showAlbum)
     }
@@ -278,17 +291,12 @@ class PlaybackPanelFragment :
         playbackModel.song.value?.let { detailModel.showAlbum(it.album) }
     }
 
-    // PlayerFastSeekOverlay.PerformListener implementation
-    override fun onDoubleTap() {
-        // Already handled by onStepForward/onStepBack
-    }
+    override fun onDoubleTap() {}
 
-    override fun onDoubleTapEnd() {
-        // Animation cleanup is handled by the overlay
-    }
+    override fun onDoubleTapEnd() {}
 
     override fun getFastSeekDirection(
-        portion: DisplayPortion
+        portion: DisplayPortion,
     ): PlayerFastSeekOverlay.PerformListener.FastSeekDirection {
         return when (portion) {
             DisplayPortion.LEFT,
@@ -302,10 +310,53 @@ class PlaybackPanelFragment :
     }
 
     override fun seek(forward: Boolean) {
-        if (forward) {
-            playbackModel.stepForward()
-        } else {
-            playbackModel.stepBack()
+        if (forward) playbackModel.stepForward() else playbackModel.stepBack()
+    }
+
+    // -------------------------------------------------------------------------
+    // Inner adapter for the lyrics RecyclerView
+    // -------------------------------------------------------------------------
+
+    /**
+     * Adapter that renders a list of [LrcLine] items and highlights the active one.
+     */
+    private class LyricsAdapter :
+        ListAdapter<LrcLine, LyricsAdapter.ViewHolder>(LrcLineDiff) {
+
+        private var activeIndex = -1
+
+        fun setActiveIndex(index: Int) {
+            val old = activeIndex
+            activeIndex = index
+            if (old >= 0) notifyItemChanged(old)
+            if (index >= 0) notifyItemChanged(index)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val binding =
+                ItemLyricLineBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            return ViewHolder(binding)
+        }
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            holder.bind(getItem(position), position == activeIndex)
+        }
+
+        inner class ViewHolder(private val binding: ItemLyricLineBinding) :
+            RecyclerView.ViewHolder(binding.root) {
+
+            fun bind(line: LrcLine, isActive: Boolean) {
+                binding.lyricLine.text = line.text
+                binding.lyricLine.alpha = if (isActive) 1f else 0.35f
+                binding.lyricLine.isSelected = isActive
+            }
+        }
+
+        private object LrcLineDiff : DiffUtil.ItemCallback<LrcLine>() {
+            override fun areItemsTheSame(old: LrcLine, new: LrcLine) =
+                old.startMs == new.startMs
+
+            override fun areContentsTheSame(old: LrcLine, new: LrcLine) = old == new
         }
     }
 }
