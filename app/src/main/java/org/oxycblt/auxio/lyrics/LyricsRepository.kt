@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.lyrics
 
 import android.content.ContentResolver
@@ -33,14 +32,12 @@ import timber.log.Timber as L
 /**
  * Loads LRC lyric files from local storage.
  *
- * Strategy: given the song's MediaStore URI (content://media/external/audio/media/ID),
- * query MediaStore for the file's DATA path, replace the audio extension with .lrc,
- * then try to open that path directly. Falls back to a display-name search if needed.
+ * Strategy: given the song's MediaStore URI (content://media/external/audio/media/ID), query
+ * MediaStore for the file's DATA path, replace the audio extension with .lrc, then try to open that
+ * path directly. Falls back to a display-name search if needed.
  */
 @Singleton
-class LyricsRepository
-@Inject
-constructor(@ApplicationContext private val context: Context) {
+class LyricsRepository @Inject constructor(@ApplicationContext private val context: Context) {
 
     /**
      * Attempts to load and parse an LRC file for the given song.
@@ -81,26 +78,22 @@ constructor(@ApplicationContext private val context: Context) {
     }
 
     /**
-     * Reads the DATA (file system path) for a MediaStore audio URI.
-     * Returns null if the column is unavailable (e.g. SAF URI).
+     * Reads the DATA (file system path) for a MediaStore audio URI. Returns null if the column is
+     * unavailable (e.g. SAF URI).
      */
     @Suppress("DEPRECATION")
     private fun getDataPath(uri: Uri): String? {
         return try {
-            context.contentResolver.query(
-                uri,
-                arrayOf(MediaStore.Audio.Media.DATA),
-                null,
-                null,
-                null,
-            )?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    val idx = cursor.getColumnIndex(MediaStore.Audio.Media.DATA)
-                    if (idx >= 0) cursor.getString(idx) else null
-                } else {
-                    null
+            context.contentResolver
+                .query(uri, arrayOf(MediaStore.Audio.Media.DATA), null, null, null)
+                ?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val idx = cursor.getColumnIndex(MediaStore.Audio.Media.DATA)
+                        if (idx >= 0) cursor.getString(idx) else null
+                    } else {
+                        null
+                    }
                 }
-            }
         } catch (e: Exception) {
             L.d("DATA column unavailable for $uri: $e")
             null
@@ -123,15 +116,14 @@ constructor(@ApplicationContext private val context: Context) {
     }
 
     /**
-     * Searches MediaStore Files table for a file with the given display name.
-     * Tries multiple MIME types since .lrc files are often unrecognized.
+     * Searches MediaStore Files table for a file with the given display name. Tries multiple MIME
+     * types since .lrc files are often unrecognized.
      */
     private fun searchMediaStore(lrcFileName: String): String? {
         val collection = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL)
         val projection = arrayOf(MediaStore.Files.FileColumns._ID)
         // Cast a wide net — .lrc files may be indexed with any of these types
-        val selection =
-            "${MediaStore.Files.FileColumns.DISPLAY_NAME} = ?"
+        val selection = "${MediaStore.Files.FileColumns.DISPLAY_NAME} = ?"
         val selectionArgs = arrayOf(lrcFileName)
 
         return try {
