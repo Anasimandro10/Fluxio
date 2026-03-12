@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.lyrics
 
 import dagger.Module
@@ -25,10 +24,8 @@ import dagger.hilt.components.SingletonComponent
 /**
  * Hilt module for the lyrics feature.
  *
- * [LyricsRepository] and [LyricsViewModel] are injected automatically
- * via @Singleton and @HiltViewModel — no manual @Provides needed here.
- * This module exists as the anchor for the lyrics package in the DI graph.
+ * [LyricsRepository] and [LyricsViewModel] are injected automatically via @Singleton
+ * and @HiltViewModel — no manual @Provides needed here. This module exists as the anchor for the
+ * lyrics package in the DI graph.
  */
-@Module
-@InstallIn(SingletonComponent::class)
-object LyricsModule
+@Module @InstallIn(SingletonComponent::class) object LyricsModule

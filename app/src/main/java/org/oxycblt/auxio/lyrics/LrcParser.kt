@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.lyrics
 
 import java.util.regex.Pattern
@@ -23,14 +22,13 @@ import java.util.regex.Pattern
 /**
  * Parses LRC lyric files into a list of [LrcLine] objects sorted by timestamp.
  *
- * Supports both standard LRC ([mm:ss.xx]) and extended word-by-word LRC.
- * Unknown lines (metadata tags, blank lines) are silently ignored.
+ * Supports both standard LRC ([mm:ss.xx]) and extended word-by-word LRC. Unknown lines (metadata
+ * tags, blank lines) are silently ignored.
  */
 object LrcParser {
 
     // Matches timestamps like [01:23.45] or [01:23.456]
-    private val TIMESTAMP_PATTERN: Pattern =
-        Pattern.compile("\\[(\\d{2}):(\\d{2})\\.(\\d{2,3})]")
+    private val TIMESTAMP_PATTERN: Pattern = Pattern.compile("\\[(\\d{2}):(\\d{2})\\.(\\d{2,3})]")
 
     /**
      * Parses raw LRC text into a sorted list of [LrcLine].

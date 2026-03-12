@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.lyrics
 
 import android.content.ContentResolver
@@ -33,13 +32,11 @@ import timber.log.Timber as L
 /**
  * Loads LRC lyric files from local storage.
  *
- * Strategy: given a song with path "Music/Artist/song.mp3", look for "Music/Artist/song.lrc"
- * in MediaStore. This works with both internal storage and SD cards without direct file access.
+ * Strategy: given a song with path "Music/Artist/song.mp3", look for "Music/Artist/song.lrc" in
+ * MediaStore. This works with both internal storage and SD cards without direct file access.
  */
 @Singleton
-class LyricsRepository
-@Inject
-constructor(@ApplicationContext private val context: Context) {
+class LyricsRepository @Inject constructor(@ApplicationContext private val context: Context) {
 
     /**
      * Attempts to load and parse an LRC file for the given song.
@@ -61,8 +58,7 @@ constructor(@ApplicationContext private val context: Context) {
         val songFileName = song.path.name ?: return null
 
         // Replace the audio extension with .lrc  (e.g. "track.mp3" -> "track.lrc")
-        val lrcFileName =
-            songFileName.replaceAfterLast('.', "lrc", "$songFileName.lrc")
+        val lrcFileName = songFileName.replaceAfterLast('.', "lrc", "$songFileName.lrc")
 
         val collection = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL)
         val projection = arrayOf(MediaStore.Files.FileColumns._ID)
@@ -73,7 +69,8 @@ constructor(@ApplicationContext private val context: Context) {
             arrayOf(lrcFileName, "text/plain", "application/octet-stream", "text/lrc")
 
         return try {
-            context.contentResolver.query(collection, projection, selection, selectionArgs, null)
+            context.contentResolver
+                .query(collection, projection, selection, selectionArgs, null)
                 ?.use { cursor ->
                     if (cursor.moveToFirst()) {
                         val id =

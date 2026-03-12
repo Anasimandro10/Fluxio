@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.lyrics
 
 import androidx.lifecycle.ViewModel
@@ -35,9 +34,8 @@ import timber.log.Timber as L
 /**
  * Exposes LRC lyrics to the UI, synchronized with the current playback position.
  *
- * Observes [PlaybackStateManager] for song and position changes,
- * loads the matching .lrc file via [LyricsRepository], and emits
- * the index of the currently active line via [currentLineIndex].
+ * Observes [PlaybackStateManager] for song and position changes, loads the matching .lrc file via
+ * [LyricsRepository], and emits the index of the currently active line via [currentLineIndex].
  */
 @HiltViewModel
 class LyricsViewModel
@@ -108,9 +106,7 @@ constructor(
                     L.d("LRC loaded: ${loaded.size} lines")
                     _lines.value = loaded
                     // Sync immediately with current position
-                    updateCurrentLine(
-                        playbackManager.progression.calculateElapsedPositionMs()
-                    )
+                    updateCurrentLine(playbackManager.progression.calculateElapsedPositionMs())
                 } else {
                     L.d("No LRC found for ${song.path.name}")
                 }
@@ -118,8 +114,8 @@ constructor(
     }
 
     /**
-     * Finds the index of the line whose timestamp is <= posMs and the next line's
-     * timestamp is > posMs. This is the line that should be highlighted.
+     * Finds the index of the line whose timestamp is <= posMs and the next line's timestamp is >
+     * posMs. This is the line that should be highlighted.
      */
     private fun updateCurrentLine(posMs: Long) {
         val linesSnapshot = _lines.value

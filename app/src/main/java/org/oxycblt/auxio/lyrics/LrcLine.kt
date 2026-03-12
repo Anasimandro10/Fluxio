@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.lyrics
 
 /**
@@ -24,7 +23,4 @@ package org.oxycblt.auxio.lyrics
  * @param startMs The timestamp in milliseconds when this line should be highlighted.
  * @param text The lyric text to display.
  */
-data class LrcLine(
-    val startMs: Long,
-    val text: String,
-)
+data class LrcLine(val startMs: Long, val text: String)
