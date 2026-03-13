@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Fluxio Project
+ * Copyright (c) 2021 Fluxio Project
  * PlaybackPanelFragment.kt is part of Fluxio.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.oxycblt.auxio.playback
 
 import android.annotation.SuppressLint
@@ -24,6 +25,7 @@ import android.media.audiofx.AudioEffect
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
+import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import androidx.activity.result.ActivityResultLauncher
@@ -60,8 +62,8 @@ import org.oxycblt.musikr.Song
 import timber.log.Timber as L
 
 /**
- * A [ViewBindingFragment] showing more information about the currently playing song, alongside all
- * available controls and synced lyrics when an LRC file is present.
+ * A [ViewBindingFragment] showing more information about the currently playing song,
+ * alongside all available controls and synced lyrics when an LRC file is present.
  *
  * @author Alexander Capehart (OxygenCobalt)
  */
@@ -94,7 +96,6 @@ class PlaybackPanelFragment :
         equalizerLauncher =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {}
 
-        // --- UI SETUP ---
         binding.root.setOnApplyWindowInsetsListener { view, insets ->
             val bars = insets.systemBarInsetsCompat
             view.updatePadding(bottom = bars.bottom)
@@ -148,12 +149,10 @@ class PlaybackPanelFragment :
             }
         }
 
-        // Set up lyrics RecyclerView — use ?. because the view can be null in some layouts
         lyricsAdapter = LyricsAdapter()
         binding.playbackLyrics?.adapter = lyricsAdapter
         binding.playbackLyrics?.layoutManager = LinearLayoutManager(requireContext())
 
-        // --- VIEWMODEL SETUP ---
         collectImmediately(playbackModel.song, ::updateSong)
         collectImmediately(playbackModel.parent, ::updateParent)
         collectImmediately(playbackModel.positionDs, ::updatePosition)
@@ -258,12 +257,18 @@ class PlaybackPanelFragment :
         requireBinding().playbackShuffle.isChecked = isShuffled
     }
 
-    /** Shows or hides the lyrics list depending on whether lines are available. */
+    /** Shows lyrics list. TEST: always shows dummy lines to verify the UI works. */
     private fun updateLyrics(lines: List<LrcLine>) {
-        val binding = requireBinding()
-        val hasLyrics = lines.isNotEmpty()
-        binding.playbackLyrics?.isVisible = hasLyrics
-        lyricsAdapter?.submitList(lines)
+        // TEST — replace real lines with dummy data to verify the UI is working
+        val testLines = listOf(
+            LrcLine(0, "*** UI TEST — si ves esto la vista funciona ***"),
+            LrcLine(1000, "Linea de prueba 1"),
+            LrcLine(2000, "Linea de prueba 2"),
+            LrcLine(3000, "Linea de prueba 3"),
+        )
+        val displayLines = if (lines.isEmpty()) testLines else lines
+        requireBinding().playbackLyrics?.isVisible = true
+        lyricsAdapter?.submitList(displayLines)
     }
 
     /** Scrolls the list to keep the active lyric line visible and highlights it. */
@@ -292,7 +297,7 @@ class PlaybackPanelFragment :
     override fun onDoubleTapEnd() {}
 
     override fun getFastSeekDirection(
-        portion: DisplayPortion
+        portion: DisplayPortion,
     ): PlayerFastSeekOverlay.PerformListener.FastSeekDirection {
         return when (portion) {
             DisplayPortion.LEFT,
@@ -314,7 +319,8 @@ class PlaybackPanelFragment :
     // -------------------------------------------------------------------------
 
     /** Adapter that renders a list of [LrcLine] items and highlights the active one. */
-    private class LyricsAdapter : ListAdapter<LrcLine, LyricsAdapter.ViewHolder>(LrcLineDiff) {
+    private class LyricsAdapter :
+        ListAdapter<LrcLine, LyricsAdapter.ViewHolder>(LrcLineDiff) {
 
         private var activeIndex = -1
 
@@ -346,7 +352,8 @@ class PlaybackPanelFragment :
         }
 
         private object LrcLineDiff : DiffUtil.ItemCallback<LrcLine>() {
-            override fun areItemsTheSame(old: LrcLine, new: LrcLine) = old.startMs == new.startMs
+            override fun areItemsTheSame(old: LrcLine, new: LrcLine) =
+                old.startMs == new.startMs
 
             override fun areContentsTheSame(old: LrcLine, new: LrcLine) = old == new
         }
