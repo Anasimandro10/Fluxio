@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.lyrics
 
 import androidx.lifecycle.ViewModel
@@ -147,8 +146,8 @@ constructor(
     }
 
     /**
-     * Starts a coroutine that updates the active line every 500ms.
-     * Safe to call multiple times — only one ticker runs at a time.
+     * Starts a coroutine that updates the active line every 500ms. Safe to call multiple times —
+     * only one ticker runs at a time.
      */
     private fun startTicker() {
         if (tickerJob?.isActive == true) return
@@ -156,8 +155,7 @@ constructor(
             viewModelScope.launch {
                 while (true) {
                     delay(500)
-                    val posMs =
-                        currentProgression?.calculateElapsedPositionMs() ?: break
+                    val posMs = currentProgression?.calculateElapsedPositionMs() ?: break
                     updateCurrentLine(posMs)
                 }
             }
