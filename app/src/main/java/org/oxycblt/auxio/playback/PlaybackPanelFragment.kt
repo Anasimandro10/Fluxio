@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback
 
 import android.annotation.SuppressLint
@@ -25,7 +24,6 @@ import android.media.audiofx.AudioEffect
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
-import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import androidx.activity.result.ActivityResultLauncher
@@ -62,8 +60,8 @@ import org.oxycblt.musikr.Song
 import timber.log.Timber as L
 
 /**
- * A [ViewBindingFragment] showing more information about the currently playing song,
- * alongside all available controls and synced lyrics when an LRC file is present.
+ * A [ViewBindingFragment] showing more information about the currently playing song, alongside all
+ * available controls and synced lyrics when an LRC file is present.
  *
  * @author Alexander Capehart (OxygenCobalt)
  */
@@ -260,12 +258,13 @@ class PlaybackPanelFragment :
     /** Shows lyrics list. TEST: always shows dummy lines to verify the UI works. */
     private fun updateLyrics(lines: List<LrcLine>) {
         // TEST — replace real lines with dummy data to verify the UI is working
-        val testLines = listOf(
-            LrcLine(0, "*** UI TEST — si ves esto la vista funciona ***"),
-            LrcLine(1000, "Linea de prueba 1"),
-            LrcLine(2000, "Linea de prueba 2"),
-            LrcLine(3000, "Linea de prueba 3"),
-        )
+        val testLines =
+            listOf(
+                LrcLine(0, "*** UI TEST — si ves esto la vista funciona ***"),
+                LrcLine(1000, "Linea de prueba 1"),
+                LrcLine(2000, "Linea de prueba 2"),
+                LrcLine(3000, "Linea de prueba 3"),
+            )
         val displayLines = if (lines.isEmpty()) testLines else lines
         requireBinding().playbackLyrics?.isVisible = true
         lyricsAdapter?.submitList(displayLines)
@@ -297,7 +296,7 @@ class PlaybackPanelFragment :
     override fun onDoubleTapEnd() {}
 
     override fun getFastSeekDirection(
-        portion: DisplayPortion,
+        portion: DisplayPortion
     ): PlayerFastSeekOverlay.PerformListener.FastSeekDirection {
         return when (portion) {
             DisplayPortion.LEFT,
@@ -319,8 +318,7 @@ class PlaybackPanelFragment :
     // -------------------------------------------------------------------------
 
     /** Adapter that renders a list of [LrcLine] items and highlights the active one. */
-    private class LyricsAdapter :
-        ListAdapter<LrcLine, LyricsAdapter.ViewHolder>(LrcLineDiff) {
+    private class LyricsAdapter : ListAdapter<LrcLine, LyricsAdapter.ViewHolder>(LrcLineDiff) {
 
         private var activeIndex = -1
 
@@ -352,8 +350,7 @@ class PlaybackPanelFragment :
         }
 
         private object LrcLineDiff : DiffUtil.ItemCallback<LrcLine>() {
-            override fun areItemsTheSame(old: LrcLine, new: LrcLine) =
-                old.startMs == new.startMs
+            override fun areItemsTheSame(old: LrcLine, new: LrcLine) = old.startMs == new.startMs
 
             override fun areContentsTheSame(old: LrcLine, new: LrcLine) = old == new
         }
