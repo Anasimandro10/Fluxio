@@ -20,7 +20,6 @@
         app:title="@string/lbl_playback"
         tools:subtitle="@string/lbl_all_songs" />
 
-
     <org.oxycblt.auxio.playback.ui.ControlledCoverView
         android:id="@+id/playback_cover"
         style="@style/Widget.Auxio.Image.Full"
@@ -32,7 +31,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/playback_toolbar"
         app:layout_constraintVertical_chainStyle="packed" />
-
 
     <LinearLayout
         android:id="@+id/playback_info_container"
@@ -98,15 +96,14 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/spacing_mid_medium"
         android:layout_marginEnd="@dimen/spacing_mid_medium"
-        android:layout_marginBottom="@dimen/spacing_medium"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/playback_lyrics"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-    <com.google.android.material.button.MaterialButtonGroup
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:spacing="@dimen/spacing_small">
+        <com.google.android.material.button.MaterialButtonGroup
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:spacing="@dimen/spacing_small">
 
             <org.oxycblt.auxio.ui.WidthFixMaterialButton
                 android:id="@+id/playback_repeat"
@@ -185,5 +182,20 @@
 
     </org.oxycblt.auxio.playback.ui.ForcedLTRFrameLayout>
 
+    <!-- Lyrics list -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/playback_lyrics"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="@dimen/spacing_small"
+        android:clipToPadding="false"
+        android:paddingHorizontal="@dimen/spacing_medium"
+        android:paddingBottom="@dimen/spacing_large"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/playback_controls_container"
+        tools:visibility="visible" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
