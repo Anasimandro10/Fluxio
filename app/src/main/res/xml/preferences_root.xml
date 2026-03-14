@@ -27,7 +27,7 @@
         app:title="@string/set_audio" />
            
         <Preference
-        app:icon="@drawable/ic_lyrics_24"
+        app:icon="@drawable/ic_song_24"
         app:key="@string/set_key_lyrics"
         app:summary="@string/set_lyrics_desc"
         app:title="@string/set_lyrics" />
