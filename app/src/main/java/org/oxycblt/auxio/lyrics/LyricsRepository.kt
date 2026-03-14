@@ -243,7 +243,7 @@ constructor(
         val retriever = MediaMetadataRetriever()
         return try {
             retriever.setDataSource(context, uri)
-            val raw = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_LYRICS)
+            val raw = retriever.extractMetadata(28)
             if (raw.isNullOrBlank()) null else raw.trim()
         } catch (e: Exception) {
             L.d("Embedded lyrics unavailable via URI for ${song.path.name}: $e")
@@ -263,7 +263,7 @@ constructor(
         val retriever = MediaMetadataRetriever()
         return try {
             retriever.setDataSource(path)
-            val raw = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_LYRICS)
+            val raw = retriever.extractMetadata(28)
             if (raw.isNullOrBlank()) null else raw.trim()
         } catch (e: Exception) {
             L.d("Embedded lyrics unavailable via path $path: $e")
