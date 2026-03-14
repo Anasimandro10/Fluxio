@@ -33,9 +33,7 @@ import javax.inject.Singleton
 abstract class LyricsModule {
 
     /** Tells Hilt that [LyricsSettingsImpl] is the concrete implementation of [LyricsSettings]. */
-    @Binds
-    @Singleton
-    abstract fun bindLyricsSettings(impl: LyricsSettingsImpl): LyricsSettings
+    @Binds @Singleton abstract fun bindLyricsSettings(impl: LyricsSettingsImpl): LyricsSettings
 
     companion object {
 
