@@ -19,7 +19,9 @@ package org.oxycblt.auxio.lyrics
 
 import android.content.ContentResolver
 import android.content.Context
+import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.os.Build
 import android.provider.MediaStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -42,6 +44,8 @@ data class LyricsResult(val lines: List<LrcLine>, val isSynced: Boolean, val sou
 /** Indicates where a set of lyrics was obtained from. */
 enum class LyricsSource {
     LOCAL_LRC,
+    EMBEDDED_SYNCED,
+    EMBEDDED_PLAIN,
     LRCLIB_SYNCED,
     LRCLIB_PLAIN,
 }
@@ -50,7 +54,8 @@ enum class LyricsSource {
  * Loads lyrics for a song using this priority order:
  * 1. In-memory LRU cache (instant — no I/O at all)
  * 2. Local .lrc file next to the audio file
- * 3. LRCLIB (Room disk cache → network) — only if enabled in settings
+ * 3. Embedded lyrics in the audio file tags (ID3v2 USLT, Vorbis LYRICS, MP4 ©lyr)
+ * 4. LRCLIB (Room disk cache → network) — only if enabled in settings
  *
  * The in-memory cache holds 30 entries so recently played songs show lyrics instantly. The
  * [prefetch] method warms the cache for the next song in the queue while the current one is
@@ -74,7 +79,7 @@ constructor(
 
     /**
      * Returns lyrics for [song], using memory cache if available. For songs not yet seen this
-     * session, performs the full lookup chain (local → LRCLIB).
+     * session, performs the full lookup chain (local → embedded → LRCLIB).
      */
     suspend fun loadLyrics(song: Song): LyricsResult? {
         val key = song.uri.toString()
@@ -125,7 +130,7 @@ constructor(
     // -------------------------------------------------------------------------
 
     private suspend fun lookup(song: Song): LyricsResult? {
-        // Local .lrc
+        // 1. Local .lrc file
         val localContent = withContext(Dispatchers.IO) { readLrcForSong(song) }
         if (localContent != null) {
             val lines = LrcParser.parse(localContent)
@@ -135,7 +140,41 @@ constructor(
             }
         }
 
-        // LRCLIB
+        // 2. Embedded tags (ID3v2 USLT / Vorbis LYRICS / MP4 ©lyr)
+        // MediaMetadataRetriever.METADATA_KEY_LYRICS requires Android 9 (API 28).
+        // On older devices we skip this step — it is not an error.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val embedded = withContext(Dispatchers.IO) { readEmbeddedLyrics(song.uri) }
+            if (embedded != null) {
+                // The tag may contain LRC-formatted content — try to parse it first.
+                val lrcLines = LrcParser.parse(embedded)
+                if (lrcLines.isNotEmpty()) {
+                    L.d("Lyrics: embedded tag, LRC format (${lrcLines.size} lines)")
+                    return LyricsResult(
+                        lrcLines,
+                        isSynced = true,
+                        source = LyricsSource.EMBEDDED_SYNCED,
+                    )
+                }
+                // Otherwise treat it as plain text.
+                val plainLines =
+                    embedded
+                        .lines()
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
+                        .map { LrcLine(startMs = 0L, text = it) }
+                if (plainLines.isNotEmpty()) {
+                    L.d("Lyrics: embedded tag, plain text (${plainLines.size} lines)")
+                    return LyricsResult(
+                        plainLines,
+                        isSynced = false,
+                        source = LyricsSource.EMBEDDED_PLAIN,
+                    )
+                }
+            }
+        }
+
+        // 3. LRCLIB
         if (!lyricsSettings.lrclibEnabled) return null
 
         val artist = song.artists.firstOrNull()?.name?.resolve(context) ?: ""
@@ -169,6 +208,40 @@ constructor(
         }
 
         return null
+    }
+
+    // -------------------------------------------------------------------------
+    // Embedded tags — Android 9+ only
+    // -------------------------------------------------------------------------
+
+    /**
+     * Reads the lyrics embedded in the audio file's tags using [MediaMetadataRetriever].
+     *
+     * Covers:
+     * - MP3: ID3v2 USLT frame (unsynchronized lyrics)
+     * - FLAC / OGG / Opus: Vorbis LYRICS field
+     * - M4A / AAC / ALAC: MP4 ©lyr atom
+     *
+     * Returns null if the file has no embedded lyrics or if the retriever cannot open the URI.
+     * Must be called from a background thread.
+     */
+    private fun readEmbeddedLyrics(uri: Uri): String? {
+        val retriever = MediaMetadataRetriever()
+        return try {
+            retriever.setDataSource(context, uri)
+            val raw = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_LYRICS)
+            if (raw.isNullOrBlank()) null else raw.trim()
+        } catch (e: Exception) {
+            // The file may be temporarily unavailable or in an unsupported format — not an error.
+            L.d("Embedded lyrics unavailable for $uri: $e")
+            null
+        } finally {
+            try {
+                retriever.release()
+            } catch (_: Exception) {
+                // Ignore — best-effort cleanup.
+            }
+        }
     }
 
     // -------------------------------------------------------------------------
