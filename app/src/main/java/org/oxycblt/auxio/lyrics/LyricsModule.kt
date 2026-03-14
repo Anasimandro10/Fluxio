@@ -19,6 +19,7 @@ package org.oxycblt.auxio.lyrics
 
 import android.content.Context
 import androidx.room.Room
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -26,19 +27,28 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
-/** Hilt module for the lyrics feature. Provides Room database and DAO for LRCLIB cache. */
+/** Hilt module for the lyrics feature. Provides Room database, DAO and settings binding. */
 @Module
 @InstallIn(SingletonComponent::class)
-object LyricsModule {
+abstract class LyricsModule {
 
-    @Provides
+    /** Tells Hilt that [LyricsSettingsImpl] is the concrete implementation of [LyricsSettings]. */
+    @Binds
     @Singleton
-    fun provideLrclibDatabase(@ApplicationContext context: Context): LrclibDatabase =
-        Room.databaseBuilder(context, LrclibDatabase::class.java, "lrclib_cache.db")
-            .fallbackToDestructiveMigration()
-            .build()
+    abstract fun bindLyricsSettings(impl: LyricsSettingsImpl): LyricsSettings
 
-    @Provides
-    @Singleton
-    fun provideLrclibCacheDao(database: LrclibDatabase): LrclibCacheDao = database.lrclibCacheDao()
+    companion object {
+
+        @Provides
+        @Singleton
+        fun provideLrclibDatabase(@ApplicationContext context: Context): LrclibDatabase =
+            Room.databaseBuilder(context, LrclibDatabase::class.java, "lrclib_cache.db")
+                .fallbackToDestructiveMigration()
+                .build()
+
+        @Provides
+        @Singleton
+        fun provideLrclibCacheDao(database: LrclibDatabase): LrclibCacheDao =
+            database.lrclibCacheDao()
+    }
 }
