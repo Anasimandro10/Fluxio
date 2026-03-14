@@ -158,6 +158,7 @@ class PlaybackPanelFragment :
         collectImmediately(playbackModel.isPlaying, ::updatePlaying)
         collectImmediately(playbackModel.isShuffled, ::updateShuffled)
         collectImmediately(lyricsModel.lines, ::updateLyrics)
+        collectImmediately(lyricsModel.isSynced, ::updateIsSynced)
         collectImmediately(lyricsModel.currentLineIndex, ::updateCurrentLine)
     }
 
@@ -255,10 +256,18 @@ class PlaybackPanelFragment :
         requireBinding().playbackShuffle.isChecked = isShuffled
     }
 
-    /** Shows the lyrics list when an LRC file is available, hides it otherwise. */
+    /** Shows the lyrics list when lyrics are available, hides it otherwise. */
     private fun updateLyrics(lines: List<LrcLine>) {
         requireBinding().playbackLyrics?.isVisible = lines.isNotEmpty()
         lyricsAdapter?.submitList(lines)
+    }
+
+    /**
+     * Updates the adapter when the sync state changes. Plain-text lyrics show all lines at full
+     * opacity; synced lyrics dim inactive lines.
+     */
+    private fun updateIsSynced(isSynced: Boolean) {
+        lyricsAdapter?.setIsSynced(isSynced)
     }
 
     /** Scrolls to keep the active lyric line visible and highlights it. */
@@ -312,12 +321,19 @@ class PlaybackPanelFragment :
     private class LyricsAdapter : ListAdapter<LrcLine, LyricsAdapter.ViewHolder>(LrcLineDiff) {
 
         private var activeIndex = -1
+        private var isSynced = true
 
         fun setActiveIndex(index: Int) {
             val old = activeIndex
             activeIndex = index
             if (old >= 0) notifyItemChanged(old)
             if (index >= 0) notifyItemChanged(index)
+        }
+
+        /** Called when lyrics change between synced and plain text. */
+        fun setIsSynced(synced: Boolean) {
+            isSynced = synced
+            notifyDataSetChanged()
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -327,21 +343,29 @@ class PlaybackPanelFragment :
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            holder.bind(getItem(position), position == activeIndex)
+            holder.bind(getItem(position), isSynced && position == activeIndex, isSynced)
         }
 
         inner class ViewHolder(private val binding: ItemLyricLineBinding) :
             RecyclerView.ViewHolder(binding.root) {
 
-            fun bind(line: LrcLine, isActive: Boolean) {
+            fun bind(line: LrcLine, isActive: Boolean, isSynced: Boolean) {
                 binding.lyricLine.text = line.text
-                binding.lyricLine.alpha = if (isActive) 1f else 0.35f
+                // Plain text: all lines full opacity. Synced: dim inactive lines.
+                binding.lyricLine.alpha =
+                    when {
+                        !isSynced -> 1f
+                        isActive -> 1f
+                        else -> 0.35f
+                    }
                 binding.lyricLine.isSelected = isActive
             }
         }
 
         private object LrcLineDiff : DiffUtil.ItemCallback<LrcLine>() {
-            override fun areItemsTheSame(old: LrcLine, new: LrcLine) = old.startMs == new.startMs
+            // Use text as identity key so plain-text lines with startMs=0 are handled correctly
+            override fun areItemsTheSame(old: LrcLine, new: LrcLine) =
+                old.startMs == new.startMs && old.text == new.text
 
             override fun areContentsTheSame(old: LrcLine, new: LrcLine) = old == new
         }

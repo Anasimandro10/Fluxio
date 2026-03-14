@@ -33,13 +33,13 @@ import org.oxycblt.musikr.Song
 import timber.log.Timber as L
 
 /**
- * Exposes LRC lyrics to the UI, synchronized with the current playback position.
+ * Exposes lyrics to the UI, synchronized with the current playback position when synced.
  *
- * Observes [PlaybackStateManager] for song and position changes, loads the matching .lrc file via
+ * Observes [PlaybackStateManager] for song and position changes, loads lyrics via
  * [LyricsRepository], and emits the index of the currently active line via [currentLineIndex].
  *
- * While the song is playing, a ticker coroutine polls the position every 500ms so that the active
- * line updates continuously without waiting for a state-change event.
+ * For plain-text lyrics (isSynced = false), [currentLineIndex] is always -1 so the UI shows all
+ * lines at full opacity without any highlight.
  */
 @HiltViewModel
 class LyricsViewModel
@@ -51,9 +51,18 @@ constructor(
 
     private val _lines = MutableStateFlow<List<LrcLine>>(emptyList())
 
-    /** The full list of lyric lines for the current song. Empty if no LRC was found. */
+    /** The full list of lyric lines for the current song. Empty if no lyrics were found. */
     val lines: StateFlow<List<LrcLine>>
         get() = _lines
+
+    private val _isSynced = MutableStateFlow(true)
+
+    /**
+     * True if the current lyrics have timestamps (LRC format). False for plain text from LRCLIB.
+     * The UI uses this to decide whether to highlight lines or show all at full opacity.
+     */
+    val isSynced: StateFlow<Boolean>
+        get() = _isSynced
 
     private val _currentLineIndex = MutableStateFlow(-1)
 
@@ -94,9 +103,7 @@ constructor(
 
     override fun onProgressionChanged(progression: Progression) {
         currentProgression = progression
-        // Update immediately on any state change (play, pause, seek)
         updateCurrentLine(progression.calculateElapsedPositionMs())
-        // Start or stop the ticker depending on whether the song is playing
         if (progression.isPlaying) {
             startTicker()
         } else {
@@ -108,6 +115,7 @@ constructor(
         stopTicker()
         currentProgression = null
         _lines.value = emptyList()
+        _isSynced.value = true
         _currentLineIndex.value = -1
     }
 
@@ -120,34 +128,38 @@ constructor(
         loadJob?.cancel()
         stopTicker()
         _lines.value = emptyList()
+        _isSynced.value = true
         _currentLineIndex.value = -1
 
         if (song == null) return
 
         loadJob =
             viewModelScope.launch {
-                L.d("Loading LRC for ${song.path.name}")
-                val loaded = lyricsRepository.loadLrc(song)
-                if (loaded != null) {
-                    L.d("LRC loaded: ${loaded.size} lines")
-                    _lines.value = loaded
-                    // Sync immediately with current position
-                    val posMs =
-                        currentProgression?.calculateElapsedPositionMs()
-                            ?: playbackManager.progression.calculateElapsedPositionMs()
-                    updateCurrentLine(posMs)
-                    // Start ticker if already playing
-                    val prog = currentProgression ?: playbackManager.progression
-                    if (prog.isPlaying) startTicker()
+                L.d("Loading lyrics for ${song.path.name}")
+                val result = lyricsRepository.loadLyrics(song)
+                if (result != null) {
+                    L.d("Lyrics loaded: ${result.lines.size} lines, synced=${result.isSynced}")
+                    _lines.value = result.lines
+                    _isSynced.value = result.isSynced
+                    if (result.isSynced) {
+                        // Sync immediately with current position
+                        val posMs =
+                            currentProgression?.calculateElapsedPositionMs()
+                                ?: playbackManager.progression.calculateElapsedPositionMs()
+                        updateCurrentLine(posMs)
+                        val prog = currentProgression ?: playbackManager.progression
+                        if (prog.isPlaying) startTicker()
+                    }
+                    // Plain text: no ticker, no highlight — show all lines at full opacity
                 } else {
-                    L.d("No LRC found for ${song.path.name}")
+                    L.d("No lyrics found for ${song.path.name}")
                 }
             }
     }
 
     /**
-     * Starts a coroutine that updates the active line every 500ms. Safe to call multiple times —
-     * only one ticker runs at a time.
+     * Starts a coroutine that updates the active line every 500ms. Only runs when lyrics are
+     * synced. Safe to call multiple times — only one ticker runs at a time.
      */
     private fun startTicker() {
         if (tickerJob?.isActive == true) return
@@ -169,9 +181,10 @@ constructor(
 
     /**
      * Finds the index of the line whose timestamp is <= posMs and the next line's timestamp is >
-     * posMs. This is the line that should be highlighted.
+     * posMs. Only used for synced lyrics — plain text lyrics never call this.
      */
     private fun updateCurrentLine(posMs: Long) {
+        if (!_isSynced.value) return
         val linesSnapshot = _lines.value
         if (linesSnapshot.isEmpty()) return
 
