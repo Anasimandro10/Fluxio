@@ -48,10 +48,13 @@ enum class LyricsSource {
 
 /**
  * Loads lyrics for a song using this priority order:
- * 1. Local .lrc file next to the audio file — synced — stops here
- * 2. LRCLIB with synced LRC — stops here (only if enabled in settings)
- * 3. LRCLIB with plain text — shows with "no sync" notice
- * 4. Nothing — returns null
+ * 1. In-memory LRU cache (instant — no I/O at all)
+ * 2. Local .lrc file next to the audio file
+ * 3. LRCLIB (Room disk cache → network) — only if enabled in settings
+ *
+ * The in-memory cache holds 30 entries so recently played songs show lyrics instantly.
+ * The [prefetch] method warms the cache for the next song in the queue while the current one
+ * is playing, making the transition feel immediate.
  */
 @Singleton
 class LyricsRepository
@@ -63,49 +66,96 @@ constructor(
     private val lyricsSettings: LyricsSettings,
 ) {
 
+    // LRU in-memory cache. Null value = "we looked and found nothing" (avoids repeated lookups).
+    private val memoryCache =
+        object : LinkedHashMap<String, LyricsResult?>(16, 0.75f, true) {
+            override fun removeEldestEntry(eldest: Map.Entry<String, LyricsResult?>?) = size > 30
+        }
+
     /**
-     * Attempts to load lyrics for the given song using the priority order above.
-     *
-     * @param song The song to find lyrics for.
-     * @return [LyricsResult] if lyrics were found, null otherwise.
+     * Returns lyrics for [song], using memory cache if available. For songs not yet seen this
+     * session, performs the full lookup chain (local → LRCLIB).
      */
     suspend fun loadLyrics(song: Song): LyricsResult? {
-        // Step 1: local .lrc file
+        val key = song.uri.toString()
+        if (memoryCache.containsKey(key)) {
+            val hit = memoryCache[key]
+            L.d("Memory ${if (hit != null) "HIT" else "MISS(no lyrics)"} ${song.path.name}")
+            return hit
+        }
+        val result = lookup(song)
+        memoryCache[key] = result
+        return result
+    }
+
+    /**
+     * Pre-warms the memory cache for [song] without blocking the caller's result. Safe to call
+     * concurrently — does nothing if the song is already cached.
+     */
+    suspend fun prefetch(song: Song) {
+        val key = song.uri.toString()
+        if (!memoryCache.containsKey(key)) {
+            L.d("Prefetching ${song.path.name}")
+            memoryCache[key] = lookup(song)
+        }
+    }
+
+    /** Compatibility wrapper — returns only the lines list or null. */
+    suspend fun loadLrc(song: Song): List<LrcLine>? = loadLyrics(song)?.lines
+
+    /** Forces a fresh lookup next time — removes both the Room and memory entries. */
+    suspend fun invalidateLrclibCache(song: Song) {
+        val artist = song.artists.firstOrNull()?.name?.resolve(context) ?: ""
+        val title = song.name.resolve(context)
+        lrclibCache.invalidate(artist, title)
+        memoryCache.remove(song.uri.toString())
+    }
+
+    /** Clears all LRCLIB data (Room + memory). */
+    suspend fun clearLrclibCache() {
+        lrclibCache.clearAll()
+        memoryCache.clear()
+    }
+
+    /** Returns the number of entries in the Room LRCLIB cache. */
+    suspend fun lrclibCacheCount(): Int = lrclibCache.count()
+
+    // -------------------------------------------------------------------------
+    // Full lookup — no cache involved
+    // -------------------------------------------------------------------------
+
+    private suspend fun lookup(song: Song): LyricsResult? {
+        // Local .lrc
         val localContent = withContext(Dispatchers.IO) { readLrcForSong(song) }
         if (localContent != null) {
             val lines = LrcParser.parse(localContent)
             if (lines.isNotEmpty()) {
-                L.d("Lyrics found: local LRC (${lines.size} lines)")
+                L.d("Lyrics: local LRC (${lines.size} lines)")
                 return LyricsResult(lines, isSynced = true, source = LyricsSource.LOCAL_LRC)
             }
         }
 
-        // Step 2 + 3: LRCLIB fallback (only if enabled in settings)
-        if (!lyricsSettings.lrclibEnabled) {
-            L.d("LRCLIB disabled — no lyrics for ${song.path.name}")
-            return null
-        }
+        // LRCLIB
+        if (!lyricsSettings.lrclibEnabled) return null
 
-        val artistName = song.artists.firstOrNull()?.name?.resolve(context) ?: ""
-        val trackTitle = song.name.resolve(context)
-        val albumName = song.album?.name?.resolve(context) ?: ""
-        val durationSeconds = (song.durationMs / 1000).toInt()
+        val artist = song.artists.firstOrNull()?.name?.resolve(context) ?: ""
+        val title = song.name.resolve(context)
+        val album = song.album?.name?.resolve(context) ?: ""
+        val duration = (song.durationMs / 1000).toInt()
 
-        val lrclibResult =
-            fetchFromLrclib(artistName, trackTitle, albumName, durationSeconds) ?: return null
+        val remote = fetchFromLrclib(artist, title, album, duration) ?: return null
 
-        // Prefer synced over plain
-        val synced = lrclibResult.syncedLyrics
+        val synced = remote.syncedLyrics
         if (synced != null) {
             val lines = LrcParser.parse(synced)
             if (lines.isNotEmpty()) {
-                L.d("Lyrics found: LRCLIB synced (${lines.size} lines)")
+                L.d("Lyrics: LRCLIB synced (${lines.size} lines)")
                 return LyricsResult(lines, isSynced = true, source = LyricsSource.LRCLIB_SYNCED)
             }
         }
 
-        val plain = lrclibResult.plainLyrics
-        if (plain != null && plain.isNotBlank()) {
+        val plain = remote.plainLyrics
+        if (!plain.isNullOrBlank()) {
             val lines =
                 plain
                     .lines()
@@ -113,90 +163,50 @@ constructor(
                     .filter { it.isNotEmpty() }
                     .map { LrcLine(startMs = 0L, text = it) }
             if (lines.isNotEmpty()) {
-                L.d("Lyrics found: LRCLIB plain text (${lines.size} lines)")
+                L.d("Lyrics: LRCLIB plain text (${lines.size} lines)")
                 return LyricsResult(lines, isSynced = false, source = LyricsSource.LRCLIB_PLAIN)
             }
         }
 
-        L.d("No lyrics found for ${song.path.name}")
         return null
     }
 
-    /**
-     * Compatibility wrapper used by [LyricsViewModel]. Returns only the lines list, or null if no
-     * lyrics were found. Equivalent to the old loadLrc behaviour.
-     */
-    suspend fun loadLrc(song: Song): List<LrcLine>? = loadLyrics(song)?.lines
-
-    /**
-     * Deletes the LRCLIB cache entry for this song, forcing a fresh fetch next time. Used by the
-     * "refresh" button in the lyrics screen.
-     */
-    suspend fun invalidateLrclibCache(song: Song) {
-        val artistName = song.artists.firstOrNull()?.name?.resolve(context) ?: ""
-        val trackTitle = song.name.resolve(context)
-        lrclibCache.invalidate(artistName, trackTitle)
-    }
-
-    /** Deletes all cached LRCLIB entries. Called from Settings. */
-    suspend fun clearLrclibCache() = lrclibCache.clearAll()
-
-    /** Returns the number of entries in the LRCLIB cache. */
-    suspend fun lrclibCacheCount(): Int = lrclibCache.count()
-
     // -------------------------------------------------------------------------
-    // LRCLIB helpers
+    // LRCLIB — Room cache then network
     // -------------------------------------------------------------------------
 
-    /**
-     * Fetches lyrics from the LRCLIB cache or network. Returns null if the song was already looked
-     * up and nothing was found.
-     */
     private suspend fun fetchFromLrclib(
-        artistName: String,
-        trackTitle: String,
-        albumName: String,
-        durationSeconds: Int,
+        artist: String,
+        title: String,
+        album: String,
+        duration: Int,
     ): LrclibResult? {
-        val cached = lrclibCache.get(artistName, trackTitle)
+        val cached = lrclibCache.get(artist, title)
         if (cached != null) {
-            return if (cached.noResult) {
-                L.d("LRCLIB cache: no result for '$trackTitle'")
-                null
-            } else {
-                L.d("LRCLIB cache hit for '$trackTitle'")
-                LrclibResult(syncedLyrics = cached.syncedLyrics, plainLyrics = cached.plainLyrics)
-            }
+            return if (cached.noResult) null
+            else LrclibResult(syncedLyrics = cached.syncedLyrics, plainLyrics = cached.plainLyrics)
         }
-
-        // Cache miss — call the API
-        val result = lrclibApi.search(trackTitle, artistName, albumName, durationSeconds)
-        if (result != null) {
-            lrclibCache.saveResult(artistName, trackTitle, result)
-        } else {
-            lrclibCache.saveNoResult(artistName, trackTitle)
-        }
+        val result = lrclibApi.search(title, artist, album, duration)
+        if (result != null) lrclibCache.saveResult(artist, title, result)
+        else lrclibCache.saveNoResult(artist, title)
         return result
     }
 
     // -------------------------------------------------------------------------
-    // Local LRC file helpers (unchanged from original)
+    // Local .lrc helpers
     // -------------------------------------------------------------------------
 
     private fun readLrcForSong(song: Song): String? {
         val songFileName = song.path.name ?: return null
         val lrcFileName = songFileName.replaceAfterLast('.', "lrc", "$songFileName.lrc")
-        L.d("Looking for LRC: $lrcFileName alongside ${song.uri}")
 
         val dataPath = getDataPath(song.uri)
         if (dataPath != null) {
             val lrcPath = dataPath.replaceAfterLast('.', "lrc", "$dataPath.lrc")
-            L.d("Trying direct path: $lrcPath")
             val result = readFile(lrcPath)
             if (result != null) return result
         }
 
-        L.d("Trying MediaStore Files search for: $lrcFileName")
         return searchMediaStore(lrcFileName)
     }
 
@@ -209,12 +219,10 @@ constructor(
                     if (cursor.moveToFirst()) {
                         val idx = cursor.getColumnIndex(MediaStore.Audio.Media.DATA)
                         if (idx >= 0) cursor.getString(idx) else null
-                    } else {
-                        null
-                    }
+                    } else null
                 }
         } catch (e: Exception) {
-            L.d("DATA column unavailable for $uri: $e")
+            L.d("DATA column unavailable: $e")
             null
         }
     }
@@ -224,7 +232,7 @@ constructor(
             val file = java.io.File(path)
             if (file.exists() && file.canRead()) file.readText(Charsets.UTF_8) else null
         } catch (e: Exception) {
-            L.d("Could not read file $path: $e")
+            L.d("Could not read $path: $e")
             null
         }
     }
@@ -233,21 +241,20 @@ constructor(
         val collection = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL)
         val projection = arrayOf(MediaStore.Files.FileColumns._ID)
         val selection = "${MediaStore.Files.FileColumns.DISPLAY_NAME} = ?"
-        val selectionArgs = arrayOf(lrcFileName)
         return try {
             context.contentResolver
-                .query(collection, projection, selection, selectionArgs, null)
+                .query(collection, projection, selection, arrayOf(lrcFileName), null)
                 ?.use { cursor ->
                     if (cursor.moveToFirst()) {
                         val id =
                             cursor.getLong(
                                 cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID)
                             )
-                        val uri = Uri.withAppendedPath(collection, id.toString())
-                        readUri(context.contentResolver, uri)
-                    } else {
-                        null
-                    }
+                        readUri(
+                            context.contentResolver,
+                            Uri.withAppendedPath(collection, id.toString()),
+                        )
+                    } else null
                 }
         } catch (e: Exception) {
             L.e("MediaStore search failed for $lrcFileName: $e")
@@ -257,9 +264,7 @@ constructor(
 
     private fun readUri(contentResolver: ContentResolver, uri: Uri): String? {
         return try {
-            contentResolver.openInputStream(uri)?.use { stream ->
-                stream.bufferedReader(Charsets.UTF_8).readText()
-            }
+            contentResolver.openInputStream(uri)?.use { it.bufferedReader(Charsets.UTF_8).readText() }
         } catch (e: Exception) {
             L.e("Failed to read URI $uri: $e")
             null

@@ -38,8 +38,11 @@ import timber.log.Timber as L
  * Observes [PlaybackStateManager] for song and position changes, loads lyrics via
  * [LyricsRepository], and emits the index of the currently active line via [currentLineIndex].
  *
- * For plain-text lyrics (isSynced = false), [currentLineIndex] is always -1 so the UI shows all
- * lines at full opacity without any highlight.
+ * For plain-text lyrics (isSynced = false), [currentLineIndex] is always -1 — the UI shows all
+ * lines at full opacity.
+ *
+ * On every queue change, the next song in the queue is prefetched in the background so its lyrics
+ * are ready the moment it starts playing.
  */
 @HiltViewModel
 class LyricsViewModel
@@ -58,8 +61,8 @@ constructor(
     private val _isSynced = MutableStateFlow(true)
 
     /**
-     * True if the current lyrics have timestamps (LRC format). False for plain text from LRCLIB.
-     * The UI uses this to decide whether to highlight lines or show all at full opacity.
+     * True when the current lyrics have timestamps. False for plain text (LRCLIB fallback). The UI
+     * uses this to show all lines at full opacity instead of dimming inactive ones.
      */
     val isSynced: StateFlow<Boolean>
         get() = _isSynced
@@ -71,11 +74,8 @@ constructor(
         get() = _currentLineIndex
 
     private var loadJob: Job? = null
-
-    /** Ticker that polls the playback position every 500ms while the song is playing. */
+    private var prefetchJob: Job? = null
     private var tickerJob: Job? = null
-
-    /** The last known progression, used by the ticker to calculate the current position. */
     private var currentProgression: Progression? = null
 
     init {
@@ -93,26 +93,25 @@ constructor(
         index: Int,
         isShuffled: Boolean,
     ) {
-        val song = queue.getOrNull(index)
-        loadLyricsFor(song)
+        loadLyricsFor(queue.getOrNull(index))
+        prefetchNext(queue, index)
     }
 
     override fun onIndexMoved(index: Int) {
-        loadLyricsFor(playbackManager.currentSong)
+        val queue = playbackManager.queue
+        loadLyricsFor(queue.getOrNull(index))
+        prefetchNext(queue, index)
     }
 
     override fun onProgressionChanged(progression: Progression) {
         currentProgression = progression
         updateCurrentLine(progression.calculateElapsedPositionMs())
-        if (progression.isPlaying) {
-            startTicker()
-        } else {
-            stopTicker()
-        }
+        if (progression.isPlaying) startTicker() else stopTicker()
     }
 
     override fun onSessionEnded() {
         stopTicker()
+        prefetchJob?.cancel()
         currentProgression = null
         _lines.value = emptyList()
         _isSynced.value = true
@@ -120,10 +119,9 @@ constructor(
     }
 
     // -------------------------------------------------------------------------
-    // Internal helpers
+    // Lyrics loading
     // -------------------------------------------------------------------------
 
-    /** Cancels any pending load and starts a new one for the given song. */
     private fun loadLyricsFor(song: Song?) {
         loadJob?.cancel()
         stopTicker()
@@ -138,11 +136,10 @@ constructor(
                 L.d("Loading lyrics for ${song.path.name}")
                 val result = lyricsRepository.loadLyrics(song)
                 if (result != null) {
-                    L.d("Lyrics loaded: ${result.lines.size} lines, synced=${result.isSynced}")
+                    L.d("Lyrics loaded: ${result.lines.size} lines synced=${result.isSynced}")
                     _lines.value = result.lines
                     _isSynced.value = result.isSynced
                     if (result.isSynced) {
-                        // Sync immediately with current position
                         val posMs =
                             currentProgression?.calculateElapsedPositionMs()
                                 ?: playbackManager.progression.calculateElapsedPositionMs()
@@ -150,17 +147,28 @@ constructor(
                         val prog = currentProgression ?: playbackManager.progression
                         if (prog.isPlaying) startTicker()
                     }
-                    // Plain text: no ticker, no highlight — show all lines at full opacity
-                } else {
-                    L.d("No lyrics found for ${song.path.name}")
                 }
             }
     }
 
     /**
-     * Starts a coroutine that updates the active line every 500ms. Only runs when lyrics are
-     * synced. Safe to call multiple times — only one ticker runs at a time.
+     * Kicks off a low-priority background prefetch for the next song in the queue. Runs after a
+     * short delay so it doesn't compete with the current song's load.
      */
+    private fun prefetchNext(queue: List<Song>, currentIndex: Int) {
+        prefetchJob?.cancel()
+        val nextSong = queue.getOrNull(currentIndex + 1) ?: return
+        prefetchJob =
+            viewModelScope.launch {
+                delay(500) // Let the current song's load finish first
+                lyricsRepository.prefetch(nextSong)
+            }
+    }
+
+    // -------------------------------------------------------------------------
+    // Sync ticker
+    // -------------------------------------------------------------------------
+
     private fun startTicker() {
         if (tickerJob?.isActive == true) return
         tickerJob =
@@ -173,32 +181,19 @@ constructor(
             }
     }
 
-    /** Stops the ticker coroutine. */
     private fun stopTicker() {
         tickerJob?.cancel()
         tickerJob = null
     }
 
-    /**
-     * Finds the index of the line whose timestamp is <= posMs and the next line's timestamp is >
-     * posMs. Only used for synced lyrics — plain text lyrics never call this.
-     */
     private fun updateCurrentLine(posMs: Long) {
         if (!_isSynced.value) return
-        val linesSnapshot = _lines.value
-        if (linesSnapshot.isEmpty()) return
-
+        val snapshot = _lines.value
+        if (snapshot.isEmpty()) return
         var active = -1
-        for (i in linesSnapshot.indices) {
-            if (linesSnapshot[i].startMs <= posMs) {
-                active = i
-            } else {
-                break
-            }
+        for (i in snapshot.indices) {
+            if (snapshot[i].startMs <= posMs) active = i else break
         }
-
-        if (_currentLineIndex.value != active) {
-            _currentLineIndex.value = active
-        }
+        if (_currentLineIndex.value != active) _currentLineIndex.value = active
     }
 }

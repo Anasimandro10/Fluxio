@@ -22,8 +22,10 @@ import java.net.URL
 import java.net.URLEncoder
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
-import org.json.JSONException
+import org.json.JSONObject
 import timber.log.Timber as L
 
 /**
@@ -35,24 +37,41 @@ import timber.log.Timber as L
 data class LrclibResult(val syncedLyrics: String?, val plainLyrics: String?)
 
 /**
- * Fetches lyrics from the LRCLIB public API.
+ * Fetches lyrics from the LRCLIB public API using a multi-strategy search with scoring.
  *
- * Sends artist + track + album + duration to the API. No account or API key required. Uses the
- * /api/search endpoint to find the best match by duration.
+ * Tries up to 5 strategies in order, stopping as soon as a good-enough match is found. Each
+ * candidate is scored; the highest-scoring result above the minimum threshold is returned.
+ *
+ * Strategies (in order):
+ * 1. Cleaned track name + cleaned artist name
+ * 2. Cleaned track name + first artist only (handles "Artist feat. X", "Artist & Artist2")
+ * 3. Simplified track (strips remaster/live/feat suffixes) + first artist
+ * 4. Generic query: "firstArtist cleanTrack"
+ * 5. Generic query: title only (last resort)
+ *
+ * Scoring per candidate (minimum 20 to be accepted):
+ * - +40 has synced lyrics
+ * - +20 has plain lyrics (if no synced)
+ * - +20 artist name contains match (bidirectional)
+ * - +20 track name contains match (bidirectional)
+ * - +15 duration within ±2 s
+ * - +10 duration within ±5 s
+ * - +5  duration within ±10 s
+ * Duration is a bonus, never a hard filter.
  */
 @Singleton
 class LrclibApi @Inject constructor() {
 
-    private val baseUrl = "https://lrclib.net/api/search"
+    private val searchUrl = "https://lrclib.net/api/search"
     private val timeoutMs = 10_000
 
     /**
-     * Searches LRCLIB for lyrics matching the given song metadata.
+     * Searches LRCLIB for the best matching lyrics.
      *
      * @param trackName Song title.
-     * @param artistName Song artist.
-     * @param albumName Song album name.
-     * @param durationSeconds Song duration in seconds.
+     * @param artistName Artist name (may contain feat., multiple artists, etc.).
+     * @param albumName Album name (used for logging only).
+     * @param durationSeconds Song duration in seconds (used for scoring, not filtering).
      * @return [LrclibResult] if a match was found, null otherwise.
      */
     suspend fun search(
@@ -61,84 +80,197 @@ class LrclibApi @Inject constructor() {
         albumName: String,
         durationSeconds: Int,
     ): LrclibResult? =
-        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            try {
-                val encoded = { s: String -> URLEncoder.encode(s, "UTF-8") }
-                val query =
-                    "track_name=${encoded(trackName)}" +
-                        "&artist_name=${encoded(artistName)}" +
-                        "&album_name=${encoded(albumName)}"
-                val url = URL("$baseUrl?$query")
-                L.d("LRCLIB request: $url")
+        withContext(Dispatchers.IO) {
+            val cleanTrack = cleanTitle(trackName)
+            val cleanArtist = cleanArtist(artistName)
+            val firstArtist = firstArtist(cleanArtist)
+            val simpleTrack = simplifyTitle(cleanTrack)
 
-                val connection = url.openConnection() as HttpURLConnection
-                connection.connectTimeout = timeoutMs
-                connection.readTimeout = timeoutMs
-                connection.setRequestProperty(
-                    "User-Agent",
-                    "Fluxio/1.0 (https://github.com/Anasimandro10/fluxio)",
+            // Strategies — skipped automatically if identical to previous
+            val strategies =
+                listOf(
+                    params(track = cleanTrack, artist = cleanArtist),
+                    params(track = cleanTrack, artist = firstArtist),
+                    params(track = simpleTrack, artist = firstArtist),
+                    params(query = "$firstArtist $simpleTrack"),
+                    params(query = simpleTrack),
                 )
 
-                val responseCode = connection.responseCode
-                if (responseCode != HttpURLConnection.HTTP_OK) {
-                    L.d("LRCLIB returned HTTP $responseCode")
-                    return@withContext null
+            var lastParams = ""
+            for ((i, p) in strategies.withIndex()) {
+                if (p == lastParams) continue
+                lastParams = p
+
+                L.d("LRCLIB strategy ${i + 1}: $p")
+                val candidates = fetchRaw(p) ?: continue
+                if (candidates.isEmpty()) continue
+
+                val best = pickBest(candidates, cleanArtist, firstArtist, cleanTrack, durationSeconds)
+                if (best != null) {
+                    L.d(
+                        "LRCLIB hit on strategy ${i + 1} " +
+                            "(synced=${best.syncedLyrics != null}, plain=${best.plainLyrics != null})"
+                    )
+                    return@withContext best
                 }
-
-                val body = connection.inputStream.bufferedReader().readText()
-                connection.disconnect()
-
-                parseBestMatch(body, durationSeconds)
-            } catch (e: Exception) {
-                L.e("LRCLIB request failed: $e")
-                null
             }
+
+            L.d("LRCLIB: no match for '$trackName' by '$artistName'")
+            null
         }
 
-    /**
-     * Parses the JSON array response from LRCLIB and picks the best match.
-     *
-     * Picks the result whose duration is closest to [targetDurationSeconds]. Tolerance: ±2 seconds.
-     */
-    private fun parseBestMatch(json: String, targetDurationSeconds: Int): LrclibResult? {
+    // -------------------------------------------------------------------------
+    // Network
+    // -------------------------------------------------------------------------
+
+    /** Fetches one page of LRCLIB results. Returns null on network error. */
+    private fun fetchRaw(queryParams: String): List<JSONObject>? {
         return try {
-            val array = JSONArray(json)
-            if (array.length() == 0) {
-                L.d("LRCLIB: no results")
+            val connection = URL("$searchUrl?$queryParams").openConnection() as HttpURLConnection
+            connection.connectTimeout = timeoutMs
+            connection.readTimeout = timeoutMs
+            connection.setRequestProperty(
+                "User-Agent",
+                "Fluxio/1.0 (https://github.com/Anasimandro10/fluxio)",
+            )
+            connection.setRequestProperty("Accept", "application/json")
+
+            if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+                L.d("LRCLIB HTTP ${connection.responseCode}")
+                connection.disconnect()
                 return null
             }
 
-            var bestResult: LrclibResult? = null
-            var bestDiff = Int.MAX_VALUE
+            val body = connection.inputStream.bufferedReader().readText()
+            connection.disconnect()
 
-            for (i in 0 until array.length()) {
-                val obj = array.getJSONObject(i)
-                val apiDuration = obj.optInt("duration", -1)
-                val diff =
-                    if (apiDuration >= 0) Math.abs(apiDuration - targetDurationSeconds)
-                    else Int.MAX_VALUE
+            val arr = JSONArray(body)
+            List(arr.length()) { arr.getJSONObject(it) }
+        } catch (e: Exception) {
+            L.e("LRCLIB network error: $e")
+            null
+        }
+    }
 
-                if (diff <= 2 && diff < bestDiff) {
-                    bestDiff = diff
-                    val synced = obj.optString("syncedLyrics").takeIf { it.isNotBlank() }
-                    val plain = obj.optString("plainLyrics").takeIf { it.isNotBlank() }
-                    if (synced != null || plain != null) {
-                        bestResult = LrclibResult(syncedLyrics = synced, plainLyrics = plain)
+    // -------------------------------------------------------------------------
+    // Scoring
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns the highest-scoring candidate, or null if none score above the minimum threshold
+     * (20). A minimum score of 20 ensures the result has lyrics and at least one name match.
+     */
+    private fun pickBest(
+        candidates: List<JSONObject>,
+        cleanArtist: String,
+        firstArtist: String,
+        cleanTrack: String,
+        durationSeconds: Int,
+    ): LrclibResult? {
+        var bestScore = 19
+        var bestResult: LrclibResult? = null
+
+        for (obj in candidates) {
+            val synced = obj.optString("syncedLyrics").takeIf { it.isNotBlank() }
+            val plain = obj.optString("plainLyrics").takeIf { it.isNotBlank() }
+            if (synced == null && plain == null) continue
+
+            var score = 0
+
+            // Lyrics type
+            if (synced != null) score += 40 else score += 20
+
+            // Name matching — bidirectional contains, case-insensitive
+            val apiArtist = obj.optString("artistName").lowercase().trim()
+            val apiTrack = obj.optString("trackName").lowercase().trim()
+            val ca = cleanArtist.lowercase()
+            val fa = firstArtist.lowercase()
+            val ct = cleanTrack.lowercase()
+
+            if (apiArtist.isNotEmpty() &&
+                (apiArtist.contains(ca) || ca.contains(apiArtist) ||
+                    apiArtist.contains(fa) || fa.contains(apiArtist)))
+                score += 20
+
+            if (apiTrack.isNotEmpty() && (apiTrack.contains(ct) || ct.contains(apiTrack)))
+                score += 20
+
+            // Duration bonus — never a hard filter
+            val apiDuration = obj.optInt("duration", -1)
+            if (apiDuration > 0 && durationSeconds > 0) {
+                val diff = Math.abs(apiDuration - durationSeconds)
+                score +=
+                    when {
+                        diff <= 2 -> 15
+                        diff <= 5 -> 10
+                        diff <= 10 -> 5
+                        else -> 0
+                    }
+            }
+
+            if (score > bestScore) {
+                bestScore = score
+                bestResult = LrclibResult(syncedLyrics = synced, plainLyrics = plain)
+            }
+        }
+
+        return bestResult
+    }
+
+    // -------------------------------------------------------------------------
+    // Name cleaning
+    // -------------------------------------------------------------------------
+
+    /** "Song (feat. X) [Deluxe]" → "Song" */
+    private fun cleanTitle(s: String) =
+        s.trim()
+            .replace(Regex("\\(.*?\\)"), "")
+            .replace(Regex("\\[.*?]"), "")
+            .trim()
+
+    /** Removes parenthetical content from artist name. */
+    private fun cleanArtist(s: String) = s.trim().replace(Regex("\\(.*?\\)"), "").trim()
+
+    /**
+     * Returns the first credited artist.
+     * "Artist A feat. Artist B, Artist C & Artist D" → "Artist A"
+     */
+    private fun firstArtist(artist: String): String =
+        artist
+            .split(Regex("\\s+feat\\.?\\s+|\\s+ft\\.?\\s+|\\s+featuring\\s+|\\s*[,&/]\\s*", RegexOption.IGNORE_CASE))
+            .first()
+            .trim()
+
+    /**
+     * Strips release-variant suffixes from a title so "Song - Remastered 2011" and "Song" both
+     * resolve to "Song".
+     */
+    private fun simplifyTitle(title: String): String =
+        title
+            .replace(
+                Regex(
+                    "\\s*[-–]\\s*(remaster(ed)?( \\d{4})?|live( at .+)?|acoustic|radio edit|" +
+                        "single version|original mix|extended( mix)?|instrumental|demo|edit( version)?)\\s*$",
+                    RegexOption.IGNORE_CASE,
+                ),
+                "",
+            )
+            .replace(Regex("\\s+(feat\\.?|ft\\.?|featuring)\\s+.+$", RegexOption.IGNORE_CASE), "")
+            .trim()
+
+    /** Encodes and assembles URL query parameters. */
+    private fun params(track: String = "", artist: String = "", query: String = ""): String {
+        val enc = { s: String -> URLEncoder.encode(s.trim(), "UTF-8") }
+        return when {
+            query.isNotBlank() -> "q=${enc(query)}"
+            else ->
+                buildString {
+                    if (track.isNotBlank()) append("track_name=${enc(track)}")
+                    if (artist.isNotBlank()) {
+                        if (isNotEmpty()) append("&")
+                        append("artist_name=${enc(artist)}")
                     }
                 }
-            }
-
-            if (bestResult == null) {
-                L.d("LRCLIB: no match within ±2s of duration $targetDurationSeconds")
-            } else {
-                L.d(
-                    "LRCLIB: found match (synced=${bestResult.syncedLyrics != null}, plain=${bestResult.plainLyrics != null})"
-                )
-            }
-            bestResult
-        } catch (e: JSONException) {
-            L.e("LRCLIB JSON parse error: $e")
-            null
         }
     }
 }
