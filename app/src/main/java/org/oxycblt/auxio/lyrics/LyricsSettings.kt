@@ -20,7 +20,6 @@ package org.oxycblt.auxio.lyrics
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
-import javax.inject.Singleton
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.settings.Settings
 
@@ -35,9 +34,7 @@ interface LyricsSettings : Settings<LyricsSettings.Listener> {
     }
 }
 
-class LyricsSettingsImpl
-@Inject
-constructor(@ApplicationContext context: Context) :
+class LyricsSettingsImpl @Inject constructor(@ApplicationContext context: Context) :
     Settings.Impl<LyricsSettings.Listener>(context), LyricsSettings {
 
     override val lrclibEnabled: Boolean

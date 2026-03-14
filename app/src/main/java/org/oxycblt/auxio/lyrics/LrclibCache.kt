@@ -31,14 +31,10 @@ import javax.inject.Singleton
 /**
  * Room database that stores lyrics fetched from LRCLIB.
  *
- * Each row stores the result (or the fact that no result was found) for a song identified
- * by artist + title. This prevents repeated network calls for the same song.
+ * Each row stores the result (or the fact that no result was found) for a song identified by
+ * artist + title. This prevents repeated network calls for the same song.
  */
-@Database(
-    entities = [LrclibCacheEntry::class],
-    version = 1,
-    exportSchema = false,
-)
+@Database(entities = [LrclibCacheEntry::class], version = 1, exportSchema = false)
 abstract class LrclibDatabase : RoomDatabase() {
     abstract fun lrclibCacheDao(): LrclibCacheDao
 }
@@ -75,8 +71,7 @@ interface LrclibCacheDao {
     @Query("DELETE FROM lrclib_cache") suspend fun nukeAll()
 
     /** Delete the cached entry for a specific song (for the "refresh" button per song). */
-    @Query("DELETE FROM lrclib_cache WHERE cacheKey = :key")
-    suspend fun delete(key: String)
+    @Query("DELETE FROM lrclib_cache WHERE cacheKey = :key") suspend fun delete(key: String)
 
     /** Count total cached entries. */
     @Query("SELECT COUNT(*) FROM lrclib_cache") suspend fun count(): Int

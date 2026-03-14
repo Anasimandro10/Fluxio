@@ -40,6 +40,5 @@ object LyricsModule {
 
     @Provides
     @Singleton
-    fun provideLrclibCacheDao(database: LrclibDatabase): LrclibCacheDao =
-        database.lrclibCacheDao()
+    fun provideLrclibCacheDao(database: LrclibDatabase): LrclibCacheDao = database.lrclibCacheDao()
 }

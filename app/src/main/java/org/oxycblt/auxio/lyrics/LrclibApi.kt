@@ -32,16 +32,13 @@ import timber.log.Timber as L
  * @param syncedLyrics LRC-formatted synced lyrics, or null if unavailable.
  * @param plainLyrics Plain text lyrics, or null if unavailable.
  */
-data class LrclibResult(
-    val syncedLyrics: String?,
-    val plainLyrics: String?,
-)
+data class LrclibResult(val syncedLyrics: String?, val plainLyrics: String?)
 
 /**
  * Fetches lyrics from the LRCLIB public API.
  *
- * Sends artist + track + album + duration to the API. No account or API key required.
- * Uses the /api/search endpoint to find the best match by duration.
+ * Sends artist + track + album + duration to the API. No account or API key required. Uses the
+ * /api/search endpoint to find the best match by duration.
  */
 @Singleton
 class LrclibApi @Inject constructor() {
@@ -77,7 +74,10 @@ class LrclibApi @Inject constructor() {
                 val connection = url.openConnection() as HttpURLConnection
                 connection.connectTimeout = timeoutMs
                 connection.readTimeout = timeoutMs
-                connection.setRequestProperty("User-Agent", "Fluxio/1.0 (https://github.com/Anasimandro10/fluxio)")
+                connection.setRequestProperty(
+                    "User-Agent",
+                    "Fluxio/1.0 (https://github.com/Anasimandro10/fluxio)",
+                )
 
                 val responseCode = connection.responseCode
                 if (responseCode != HttpURLConnection.HTTP_OK) {
@@ -98,8 +98,7 @@ class LrclibApi @Inject constructor() {
     /**
      * Parses the JSON array response from LRCLIB and picks the best match.
      *
-     * Picks the result whose duration is closest to [targetDurationSeconds].
-     * Tolerance: ±2 seconds.
+     * Picks the result whose duration is closest to [targetDurationSeconds]. Tolerance: ±2 seconds.
      */
     private fun parseBestMatch(json: String, targetDurationSeconds: Int): LrclibResult? {
         return try {
@@ -115,7 +114,9 @@ class LrclibApi @Inject constructor() {
             for (i in 0 until array.length()) {
                 val obj = array.getJSONObject(i)
                 val apiDuration = obj.optInt("duration", -1)
-                val diff = if (apiDuration >= 0) Math.abs(apiDuration - targetDurationSeconds) else Int.MAX_VALUE
+                val diff =
+                    if (apiDuration >= 0) Math.abs(apiDuration - targetDurationSeconds)
+                    else Int.MAX_VALUE
 
                 if (diff <= 2 && diff < bestDiff) {
                     bestDiff = diff
@@ -130,7 +131,9 @@ class LrclibApi @Inject constructor() {
             if (bestResult == null) {
                 L.d("LRCLIB: no match within ±2s of duration $targetDurationSeconds")
             } else {
-                L.d("LRCLIB: found match (synced=${bestResult.syncedLyrics != null}, plain=${bestResult.plainLyrics != null})")
+                L.d(
+                    "LRCLIB: found match (synced=${bestResult.syncedLyrics != null}, plain=${bestResult.plainLyrics != null})"
+                )
             }
             bestResult
         } catch (e: JSONException) {

@@ -37,11 +37,7 @@ import timber.log.Timber as L
  * @param isSynced True if the lyrics have timestamps (LRC format). False for plain text.
  * @param source Where the lyrics came from (for debugging).
  */
-data class LyricsResult(
-    val lines: List<LrcLine>,
-    val isSynced: Boolean,
-    val source: LyricsSource,
-)
+data class LyricsResult(val lines: List<LrcLine>, val isSynced: Boolean, val source: LyricsSource)
 
 /** Indicates where a set of lyrics was obtained from. */
 enum class LyricsSource {
@@ -82,7 +78,7 @@ constructor(
                 if (lines.isNotEmpty()) {
                     L.d("Lyrics found: local LRC (${lines.size} lines)")
                     return@withContext
-                        LyricsResult(lines, isSynced = true, source = LyricsSource.LOCAL_LRC)
+                    LyricsResult(lines, isSynced = true, source = LyricsSource.LOCAL_LRC)
                 }
             }
 
@@ -108,25 +104,22 @@ constructor(
                 if (lines.isNotEmpty()) {
                     L.d("Lyrics found: LRCLIB synced (${lines.size} lines)")
                     return@withContext
-                        LyricsResult(
-                            lines,
-                            isSynced = true,
-                            source = LyricsSource.LRCLIB_SYNCED,
-                        )
+                    LyricsResult(lines, isSynced = true, source = LyricsSource.LRCLIB_SYNCED)
                 }
             }
 
             val plain = lrclibResult.plainLyrics
             if (plain != null && plain.isNotBlank()) {
                 val lines =
-                    plain.lines()
+                    plain
+                        .lines()
                         .map { it.trim() }
                         .filter { it.isNotEmpty() }
                         .map { LrcLine(startMs = 0L, text = it) }
                 if (lines.isNotEmpty()) {
                     L.d("Lyrics found: LRCLIB plain text (${lines.size} lines)")
                     return@withContext
-                        LyricsResult(lines, isSynced = false, source = LyricsSource.LRCLIB_PLAIN)
+                    LyricsResult(lines, isSynced = false, source = LyricsSource.LRCLIB_PLAIN)
                 }
             }
 
@@ -172,10 +165,7 @@ constructor(
                 null
             } else {
                 L.d("LRCLIB cache hit for '$trackTitle'")
-                LrclibResult(
-                    syncedLyrics = cached.syncedLyrics,
-                    plainLyrics = cached.plainLyrics,
-                )
+                LrclibResult(syncedLyrics = cached.syncedLyrics, plainLyrics = cached.plainLyrics)
             }
         }
 
