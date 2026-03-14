@@ -28,6 +28,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.oxycblt.auxio.music.resolve
 import org.oxycblt.musikr.Song
 import timber.log.Timber as L
@@ -141,10 +142,14 @@ constructor(
         }
 
         // 2. Embedded tags (ID3v2 USLT / Vorbis LYRICS / MP4 ©lyr)
-        // MediaMetadataRetriever.METADATA_KEY_LYRICS requires Android 9 (API 28).
-        // On older devices we skip this step — it is not an error.
+        // Requires Android 9 (API 28). On older devices this step is silently skipped.
+        // A 3-second timeout guards against MediaMetadataRetriever hanging on slow storage —
+        // if it times out we simply fall through to LRCLIB without losing anything.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val embedded = withContext(Dispatchers.IO) { readEmbeddedLyrics(song.uri) }
+            val embedded =
+                withTimeoutOrNull(3_000L) {
+                    withContext(Dispatchers.IO) { readEmbeddedLyrics(song.uri, song) }
+                }
             if (embedded != null) {
                 // The tag may contain LRC-formatted content — try to parse it first.
                 val lrcLines = LrcParser.parse(embedded)
@@ -179,7 +184,7 @@ constructor(
 
         val artist = song.artists.firstOrNull()?.name?.resolve(context) ?: ""
         val title = song.name.resolve(context)
-        val album = song.album?.name?.resolve(context) ?: ""
+        val album = song.album.name.resolve(context)
         val duration = (song.durationMs / 1000).toInt()
 
         val remote = fetchFromLrclib(artist, title, album, duration) ?: return null
@@ -222,25 +227,51 @@ constructor(
      * - FLAC / OGG / Opus: Vorbis LYRICS field
      * - M4A / AAC / ALAC: MP4 ©lyr atom
      *
-     * Returns null if the file has no embedded lyrics or if the retriever cannot open the URI. Must
-     * be called from a background thread.
+     * Tries the direct file path first (more reliable on Android 10+ for tag reading), then falls
+     * back to the content URI. Returns null if no embedded lyrics are found. Must be called from a
+     * background thread.
      */
-    private fun readEmbeddedLyrics(uri: Uri): String? {
+    private fun readEmbeddedLyrics(uri: Uri, song: Song): String? {
+        // Try direct file path first — avoids content:// overhead, more reliable for tag reading
+        val dataPath = getDataPath(uri)
+        if (dataPath != null) {
+            val result = readEmbeddedFromPath(dataPath)
+            if (result != null) return result
+        }
+
+        // Fallback: use the content URI directly
         val retriever = MediaMetadataRetriever()
         return try {
             retriever.setDataSource(context, uri)
-            val raw = retriever.extractMetadata(28)
+            val raw = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_LYRICS)
             if (raw.isNullOrBlank()) null else raw.trim()
         } catch (e: Exception) {
-            // The file may be temporarily unavailable or in an unsupported format — not an error.
-            L.d("Embedded lyrics unavailable for $uri: $e")
+            L.d("Embedded lyrics unavailable via URI for ${song.path.name}: $e")
             null
         } finally {
             try {
                 retriever.release()
-            } catch (_: Exception) {
-                // Ignore — best-effort cleanup.
-            }
+            } catch (_: Exception) {}
+        }
+    }
+
+    /**
+     * Reads embedded lyrics using a direct file path. Faster and more reliable than content URIs
+     * on some Android versions.
+     */
+    private fun readEmbeddedFromPath(path: String): String? {
+        val retriever = MediaMetadataRetriever()
+        return try {
+            retriever.setDataSource(path)
+            val raw = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_LYRICS)
+            if (raw.isNullOrBlank()) null else raw.trim()
+        } catch (e: Exception) {
+            L.d("Embedded lyrics unavailable via path $path: $e")
+            null
+        } finally {
+            try {
+                retriever.release()
+            } catch (_: Exception) {}
         }
     }
 

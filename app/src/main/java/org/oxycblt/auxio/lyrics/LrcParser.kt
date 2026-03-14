@@ -22,18 +22,28 @@ import java.util.regex.Pattern
 /**
  * Parses LRC lyric files into a list of [LrcLine] objects sorted by timestamp.
  *
- * Supports both standard LRC ([mm:ss.xx]) and extended word-by-word LRC. Unknown lines (metadata
- * tags, blank lines) are silently ignored.
+ * Supports both standard LRC ([mm:ss.xx]) and extended word-by-word LRC. Decimal part is
+ * optional so [mm:ss] without centiseconds is also accepted — common in embedded tags. Minutes
+ * field accepts 1–3 digits to handle files longer than 99 minutes. Unknown lines (metadata tags,
+ * blank lines) are silently ignored.
  */
 object LrcParser {
 
-    // Matches timestamps like [01:23.45] or [01:23.456]
-    private val TIMESTAMP_PATTERN: Pattern = Pattern.compile("\\[(\\d{2}):(\\d{2})\\.(\\d{2,3})]")
+    // Matches [mm:ss] and [mm:ss.xx] / [mm:ss.xxx] — decimals are optional.
+    // Minutes: 1–3 digits. Seconds: exactly 2 digits. Decimals: 2–3 digits if present.
+    private val TIMESTAMP_PATTERN: Pattern =
+        Pattern.compile("\\[(\\d{1,3}):(\\d{2})(?:\\.(\\d{2,3}))?]")
+
+    // Strips timestamp tags from the lyric text line (same tolerant rules as above).
+    private val TIMESTAMP_STRIP_REGEX = Regex("\\[\\d{1,3}:\\d{2}(?:\\.\\d+)?]")
+
+    // Strips word-level timing tags like <00:01.23>.
+    private val WORD_TAG_STRIP_REGEX = Regex("<\\d{1,3}:\\d{2}(?:\\.\\d+)?>")
 
     /**
      * Parses raw LRC text into a sorted list of [LrcLine].
      *
-     * @param content The raw text content of an .lrc file.
+     * @param content The raw text content of an .lrc file or embedded tag.
      * @return A list of [LrcLine] sorted by [LrcLine.startMs], or empty if unparseable.
      */
     fun parse(content: String): List<LrcLine> {
@@ -50,24 +60,24 @@ object LrcParser {
             while (matcher.find()) {
                 val minutes = matcher.group(1)?.toLongOrNull() ?: continue
                 val seconds = matcher.group(2)?.toLongOrNull() ?: continue
-                val centisRaw = matcher.group(3) ?: continue
-                // Normalize to milliseconds: 2-digit = centiseconds, 3-digit = milliseconds
+                // Decimals are optional — treat absence as 0 ms
+                val decRaw = matcher.group(3)
                 val millis =
-                    if (centisRaw.length == 2) {
-                        centisRaw.toLongOrNull()?.times(10) ?: continue
-                    } else {
-                        centisRaw.toLongOrNull() ?: continue
+                    when {
+                        decRaw == null -> 0L
+                        decRaw.length == 2 -> (decRaw.toLongOrNull() ?: continue) * 10L
+                        else -> decRaw.toLongOrNull() ?: continue
                     }
-                timestamps.add(minutes * 60_000 + seconds * 1_000 + millis)
+                timestamps.add(minutes * 60_000L + seconds * 1_000L + millis)
             }
 
             if (timestamps.isEmpty()) continue
 
-            // Strip all timestamp tags and word-level tags (<mm:ss.xx>) to get clean text
+            // Strip all timestamp tags and word-level tags to get clean text
             val text =
                 line
-                    .replace(Regex("\\[\\d{2}:\\d{2}\\.\\d+]"), "")
-                    .replace(Regex("<\\d{2}:\\d{2}\\.\\d+>"), "")
+                    .replace(TIMESTAMP_STRIP_REGEX, "")
+                    .replace(WORD_TAG_STRIP_REGEX, "")
                     .trim()
 
             if (text.isEmpty()) continue
