@@ -229,7 +229,7 @@ constructor(
         val retriever = MediaMetadataRetriever()
         return try {
             retriever.setDataSource(context, uri)
-            val raw = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_LYRICS)
+            val raw = retriever.extractMetadata(28)
             if (raw.isNullOrBlank()) null else raw.trim()
         } catch (e: Exception) {
             // The file may be temporarily unavailable or in an unsupported format — not an error.
