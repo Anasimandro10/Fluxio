@@ -30,40 +30,161 @@ import org.oxycblt.musikr.Song
 import timber.log.Timber as L
 
 /**
- * Loads LRC lyric files from local storage.
+ * Result of a lyrics search, including the lines to display and whether they are synced.
  *
- * Strategy: given the song's MediaStore URI (content://media/external/audio/media/ID), query
- * MediaStore for the file's DATA path, replace the audio extension with .lrc, then try to open that
- * path directly. Falls back to a display-name search if needed.
+ * @param lines The parsed lyric lines.
+ * @param isSynced True if the lyrics have timestamps (LRC format). False for plain text.
+ * @param source Where the lyrics came from (for debugging).
+ */
+data class LyricsResult(
+    val lines: List<lrcline>,
+    val isSynced: Boolean,
+    val source: LyricsSource,
+)
+
+/** Indicates where a set of lyrics was obtained from. */
+enum class LyricsSource {
+    LOCAL_LRC,
+    LRCLIB_SYNCED,
+    LRCLIB_PLAIN,
+}
+
+/**
+ * Loads lyrics for a song using this priority order:
+ * 1. Local .lrc file next to the audio file → synced → stops here
+ * 2. LRCLIB with synced LRC → stops here (only if enabled in settings)
+ * 3. LRCLIB with plain text → shows with "no sync" notice
+ * 4. Nothing → returns null
  */
 @Singleton
-class LyricsRepository @Inject constructor(@ApplicationContext private val context: Context) {
+class LyricsRepository
+@Inject
+constructor(
+    @ApplicationContext private val context: Context,
+    private val lrclibApi: LrclibApi,
+    private val lrclibCache: LrclibCache,
+    private val lyricsSettings: LyricsSettings,
+) {
 
     /**
-     * Attempts to load and parse an LRC file for the given song.
+     * Attempts to load lyrics for the given song using the priority order above.
      *
      * @param song The song to find lyrics for.
-     * @return A sorted list of [LrcLine], or null if no LRC file was found.
+     * @return [LyricsResult] if lyrics were found, null otherwise.
      */
-    suspend fun loadLrc(song: Song): List<LrcLine>? =
+    suspend fun loadLyrics(song: Song): LyricsResult? =
         withContext(Dispatchers.IO) {
-            val content = readLrcForSong(song) ?: return@withContext null
-            val lines = LrcParser.parse(content)
-            if (lines.isEmpty()) null else lines
+            // Step 1: local .lrc file
+            val localContent = readLrcForSong(song)
+            if (localContent != null) {
+                val lines = LrcParser.parse(localContent)
+                if (lines.isNotEmpty()) {
+                    L.d("Lyrics found: local LRC (${lines.size} lines)")
+                    return@withContext LyricsResult(lines, isSynced = true, source = LyricsSource.LOCAL_LRC)
+                }
+            }
+
+            // Step 2 + 3: LRCLIB fallback (only if enabled in settings)
+            if (!lyricsSettings.lrclibEnabled) {
+                L.d("LRCLIB disabled — no lyrics for ${song.path.name}")
+                return@withContext null
+            }
+
+            val artistName = song.artists.firstOrNull()?.name?.resolve(context) ?: ""
+            val trackTitle = song.name.resolve(context)
+            val albumName = song.album?.name?.resolve(context) ?: ""
+            val durationSeconds = (song.durationMs / 1000).toInt()
+
+            val lrclibResult = fetchFromLrclib(artistName, trackTitle, albumName, durationSeconds)
+                ?: return@withContext null
+
+            // Prefer synced over plain
+            val synced = lrclibResult.syncedLyrics
+            if (synced != null) {
+                val lines = LrcParser.parse(synced)
+                if (lines.isNotEmpty()) {
+                    L.d("Lyrics found: LRCLIB synced (${lines.size} lines)")
+                    return@withContext LyricsResult(lines, isSynced = true, source = LyricsSource.LRCLIB_SYNCED)
+                }
+            }
+
+            val plain = lrclibResult.plainLyrics
+            if (plain != null && plain.isNotBlank()) {
+                val lines = plain.lines()
+                    .map { it.trim() }
+                    .filter { it.isNotEmpty() }
+                    .map { LrcLine(startMs = 0L, text = it) }
+                if (lines.isNotEmpty()) {
+                    L.d("Lyrics found: LRCLIB plain text (${lines.size} lines)")
+                    return@withContext LyricsResult(lines, isSynced = false, source = LyricsSource.LRCLIB_PLAIN)
+                }
+            }
+
+            L.d("No lyrics found for ${song.path.name}")
+            null
         }
 
     /**
-     * Tries two strategies to find and read the .lrc file:
-     * 1. Get the file path from MediaStore DATA column, swap extension to .lrc, open directly.
-     * 2. Search MediaStore Files table by display name as fallback.
+     * Deletes the LRCLIB cache entry for this song, forcing a fresh fetch next time.
+     * Used by the "refresh" button in the lyrics screen.
      */
+    suspend fun invalidateLrclibCache(song: Song) {
+        val artistName = song.artists.firstOrNull()?.name?.resolve(context) ?: ""
+        val trackTitle = song.name.resolve(context)
+        lrclibCache.invalidate(artistName, trackTitle)
+    }
+
+    /** Deletes all cached LRCLIB entries. Called from Settings. */
+    suspend fun clearLrclibCache() = lrclibCache.clearAll()
+
+    /** Returns the number of entries in the LRCLIB cache. */
+    suspend fun lrclibCacheCount(): Int = lrclibCache.count()
+
+    // -------------------------------------------------------------------------
+    // LRCLIB helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Fetches lyrics from the LRCLIB cache or network.
+     * Returns null if the song was already looked up and nothing was found.
+     */
+    private suspend fun fetchFromLrclib(
+        artistName: String,
+        trackTitle: String,
+        albumName: String,
+        durationSeconds: Int,
+    ): LrclibResult? {
+        // Check cache first
+        val cached = lrclibCache.get(artistName, trackTitle)
+        if (cached != null) {
+            return if (cached.noResult) {
+                L.d("LRCLIB cache: no result for '$trackTitle'")
+                null
+            } else {
+                L.d("LRCLIB cache hit for '$trackTitle'")
+                LrclibResult(syncedLyrics = cached.syncedLyrics, plainLyrics = cached.plainLyrics)
+            }
+        }
+
+        // Cache miss — call the API
+        val result = lrclibApi.search(trackTitle, artistName, albumName, durationSeconds)
+        if (result != null) {
+            lrclibCache.saveResult(artistName, trackTitle, result)
+        } else {
+            lrclibCache.saveNoResult(artistName, trackTitle)
+        }
+        return result
+    }
+
+    // -------------------------------------------------------------------------
+    // Local LRC file helpers (unchanged from original)
+    // -------------------------------------------------------------------------
+
     private fun readLrcForSong(song: Song): String? {
         val songFileName = song.path.name ?: return null
         val lrcFileName = songFileName.replaceAfterLast('.', "lrc", "$songFileName.lrc")
-
         L.d("Looking for LRC: $lrcFileName alongside ${song.uri}")
 
-        // Strategy 1: get the real file path via DATA column and open it directly
         val dataPath = getDataPath(song.uri)
         if (dataPath != null) {
             val lrcPath = dataPath.replaceAfterLast('.', "lrc", "$dataPath.lrc")
@@ -72,15 +193,10 @@ class LyricsRepository @Inject constructor(@ApplicationContext private val conte
             if (result != null) return result
         }
 
-        // Strategy 2: search MediaStore Files table by display name
         L.d("Trying MediaStore Files search for: $lrcFileName")
         return searchMediaStore(lrcFileName)
     }
 
-    /**
-     * Reads the DATA (file system path) for a MediaStore audio URI. Returns null if the column is
-     * unavailable (e.g. SAF URI).
-     */
     @Suppress("DEPRECATION")
     private fun getDataPath(uri: Uri): String? {
         return try {
@@ -100,32 +216,21 @@ class LyricsRepository @Inject constructor(@ApplicationContext private val conte
         }
     }
 
-    /** Opens a file by absolute path and reads its text content. */
     private fun readFile(path: String): String? {
         return try {
             val file = java.io.File(path)
-            if (file.exists() && file.canRead()) {
-                file.readText(Charsets.UTF_8)
-            } else {
-                null
-            }
+            if (file.exists() && file.canRead()) file.readText(Charsets.UTF_8) else null
         } catch (e: Exception) {
             L.d("Could not read file $path: $e")
             null
         }
     }
 
-    /**
-     * Searches MediaStore Files table for a file with the given display name. Tries multiple MIME
-     * types since .lrc files are often unrecognized.
-     */
     private fun searchMediaStore(lrcFileName: String): String? {
         val collection = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL)
         val projection = arrayOf(MediaStore.Files.FileColumns._ID)
-        // Cast a wide net — .lrc files may be indexed with any of these types
         val selection = "${MediaStore.Files.FileColumns.DISPLAY_NAME} = ?"
         val selectionArgs = arrayOf(lrcFileName)
-
         return try {
             context.contentResolver
                 .query(collection, projection, selection, selectionArgs, null)
@@ -147,7 +252,6 @@ class LyricsRepository @Inject constructor(@ApplicationContext private val conte
         }
     }
 
-    /** Reads the full text content of a content URI. Returns null on failure. */
     private fun readUri(contentResolver: ContentResolver, uri: Uri): String? {
         return try {
             contentResolver.openInputStream(uri)?.use { stream ->
@@ -158,4 +262,4 @@ class LyricsRepository @Inject constructor(@ApplicationContext private val conte
             null
         }
     }
-}
+}</lrcline>

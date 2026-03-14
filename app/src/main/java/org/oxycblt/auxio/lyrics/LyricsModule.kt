@@ -17,15 +17,29 @@
  */
 package org.oxycblt.auxio.lyrics
 
+import android.content.Context
+import androidx.room.Room
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
 
-/**
- * Hilt module for the lyrics feature.
- *
- * [LyricsRepository] and [LyricsViewModel] are injected automatically via @Singleton
- * and @HiltViewModel — no manual @Provides needed here. This module exists as the anchor for the
- * lyrics package in the DI graph.
- */
-@Module @InstallIn(SingletonComponent::class) object LyricsModule
+/** Hilt module for the lyrics feature. Provides Room database and DAO for LRCLIB cache. */
+@Module
+@InstallIn(SingletonComponent::class)
+object LyricsModule {
+
+    @Provides
+    @Singleton
+    fun provideLrclibDatabase(@ApplicationContext context: Context): LrclibDatabase =
+        Room.databaseBuilder(context, LrclibDatabase::class.java, "lrclib_cache.db")
+            .fallbackToDestructiveMigration()
+            .build()
+
+    @Provides
+    @Singleton
+    fun provideLrclibCacheDao(database: LrclibDatabase): LrclibCacheDao =
+        database.lrclibCacheDao()
+}

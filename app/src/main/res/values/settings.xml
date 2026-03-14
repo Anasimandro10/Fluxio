@@ -183,4 +183,8 @@
     <integer name="cover_mode_balanced">0xA11D</integer>
     <integer name="cover_mode_high_quality">0xA11E</integer>
     <integer name="cover_mode_as_is">0xA126</integer>
+    <!-- Lyrics settings -->
+    <string name="set_key_lyrics" translatable="false">fluxio_lyrics</string>
+    <string name="set_key_lrclib_enabled" translatable="false">fluxio_lrclib_enabled</string>
+    <string name="set_key_lrclib_clear_cache" translatable="false">fluxio_lrclib_clear_cache</string>
 </resources>

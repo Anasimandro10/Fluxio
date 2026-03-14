@@ -492,4 +492,12 @@
         <item quantity="one">%d second</item>
         <item quantity="other">%d seconds</item>
     </plurals>
+    <!-- Lyrics settings screen -->
+    <string name="set_lyrics">Lyrics</string>
+    <string name="set_lyrics_desc">Configure lyrics and online search</string>
+    <string name="set_lrclib_enabled">LRCLIB online search</string>
+    <string name="set_lrclib_enabled_desc">Search for synced lyrics online when no local .lrc file is found. Sends: song title, artist, album and duration. Disabled by default.</string>
+    <string name="set_lrclib_clear_cache">Clear lyrics cache</string>
+    <string name="set_lrclib_clear_cache_desc">Delete all lyrics downloaded from LRCLIB</string>
+    <string name="lyrics_no_sync_notice">Lyrics without synchronization</string>
 </resources>
