@@ -222,8 +222,8 @@ constructor(
      * - FLAC / OGG / Opus: Vorbis LYRICS field
      * - M4A / AAC / ALAC: MP4 ©lyr atom
      *
-     * Returns null if the file has no embedded lyrics or if the retriever cannot open the URI.
-     * Must be called from a background thread.
+     * Returns null if the file has no embedded lyrics or if the retriever cannot open the URI. Must
+     * be called from a background thread.
      */
     private fun readEmbeddedLyrics(uri: Uri): String? {
         val retriever = MediaMetadataRetriever()
