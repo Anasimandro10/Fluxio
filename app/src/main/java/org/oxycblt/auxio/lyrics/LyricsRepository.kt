@@ -26,6 +26,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.oxycblt.auxio.music.resolve
 import org.oxycblt.musikr.Song
 import timber.log.Timber as L
 
@@ -37,7 +38,7 @@ import timber.log.Timber as L
  * @param source Where the lyrics came from (for debugging).
  */
 data class LyricsResult(
-    val lines: List<lrcline>,
+    val lines: List<LrcLine>,
     val isSynced: Boolean,
     val source: LyricsSource,
 )
@@ -80,7 +81,8 @@ constructor(
                 val lines = LrcParser.parse(localContent)
                 if (lines.isNotEmpty()) {
                     L.d("Lyrics found: local LRC (${lines.size} lines)")
-                    return@withContext LyricsResult(lines, isSynced = true, source = LyricsSource.LOCAL_LRC)
+                    return@withContext
+                        LyricsResult(lines, isSynced = true, source = LyricsSource.LOCAL_LRC)
                 }
             }
 
@@ -95,8 +97,9 @@ constructor(
             val albumName = song.album?.name?.resolve(context) ?: ""
             val durationSeconds = (song.durationMs / 1000).toInt()
 
-            val lrclibResult = fetchFromLrclib(artistName, trackTitle, albumName, durationSeconds)
-                ?: return@withContext null
+            val lrclibResult =
+                fetchFromLrclib(artistName, trackTitle, albumName, durationSeconds)
+                    ?: return@withContext null
 
             // Prefer synced over plain
             val synced = lrclibResult.syncedLyrics
@@ -104,19 +107,26 @@ constructor(
                 val lines = LrcParser.parse(synced)
                 if (lines.isNotEmpty()) {
                     L.d("Lyrics found: LRCLIB synced (${lines.size} lines)")
-                    return@withContext LyricsResult(lines, isSynced = true, source = LyricsSource.LRCLIB_SYNCED)
+                    return@withContext
+                        LyricsResult(
+                            lines,
+                            isSynced = true,
+                            source = LyricsSource.LRCLIB_SYNCED,
+                        )
                 }
             }
 
             val plain = lrclibResult.plainLyrics
             if (plain != null && plain.isNotBlank()) {
-                val lines = plain.lines()
-                    .map { it.trim() }
-                    .filter { it.isNotEmpty() }
-                    .map { LrcLine(startMs = 0L, text = it) }
+                val lines =
+                    plain.lines()
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
+                        .map { LrcLine(startMs = 0L, text = it) }
                 if (lines.isNotEmpty()) {
                     L.d("Lyrics found: LRCLIB plain text (${lines.size} lines)")
-                    return@withContext LyricsResult(lines, isSynced = false, source = LyricsSource.LRCLIB_PLAIN)
+                    return@withContext
+                        LyricsResult(lines, isSynced = false, source = LyricsSource.LRCLIB_PLAIN)
                 }
             }
 
@@ -125,8 +135,8 @@ constructor(
         }
 
     /**
-     * Deletes the LRCLIB cache entry for this song, forcing a fresh fetch next time.
-     * Used by the "refresh" button in the lyrics screen.
+     * Deletes the LRCLIB cache entry for this song, forcing a fresh fetch next time. Used by the
+     * "refresh" button in the lyrics screen.
      */
     suspend fun invalidateLrclibCache(song: Song) {
         val artistName = song.artists.firstOrNull()?.name?.resolve(context) ?: ""
@@ -145,8 +155,8 @@ constructor(
     // -------------------------------------------------------------------------
 
     /**
-     * Fetches lyrics from the LRCLIB cache or network.
-     * Returns null if the song was already looked up and nothing was found.
+     * Fetches lyrics from the LRCLIB cache or network. Returns null if the song was already looked
+     * up and nothing was found.
      */
     private suspend fun fetchFromLrclib(
         artistName: String,
@@ -162,7 +172,10 @@ constructor(
                 null
             } else {
                 L.d("LRCLIB cache hit for '$trackTitle'")
-                LrclibResult(syncedLyrics = cached.syncedLyrics, plainLyrics = cached.plainLyrics)
+                LrclibResult(
+                    syncedLyrics = cached.syncedLyrics,
+                    plainLyrics = cached.plainLyrics,
+                )
             }
         }
 
@@ -262,4 +275,4 @@ constructor(
             null
         }
     }
-}</lrcline>
+}
