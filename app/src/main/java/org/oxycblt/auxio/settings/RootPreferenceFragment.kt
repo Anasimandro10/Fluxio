@@ -59,9 +59,6 @@ class RootPreferenceFragment : BasePreferenceFragment(R.xml.preferences_root) {
     }
 
     override fun onPreferenceTreeClick(preference: Preference): Boolean {
-        // Hook generic preferences to their specified preferences
-        // TODO: These seem like good things to put into a side navigation view, if I choose to
-        //  do one.
         when (preference.key) {
             getString(R.string.set_key_ui) -> {
                 L.d("Navigating to UI preferences")
@@ -80,6 +77,11 @@ class RootPreferenceFragment : BasePreferenceFragment(R.xml.preferences_root) {
             getString(R.string.set_key_audio) -> {
                 L.d("Navigating to audio preferences")
                 findNavController().navigateSafe(RootPreferenceFragmentDirections.audioPeferences())
+            }
+            getString(R.string.set_key_lyrics) -> {
+                L.d("Navigating to lyrics preferences")
+                findNavController()
+                    .navigateSafe(RootPreferenceFragmentDirections.lyricsPreferences())
             }
             getString(R.string.set_key_reindex) -> musicModel.refresh()
             getString(R.string.set_key_rescan) -> musicModel.rescan()

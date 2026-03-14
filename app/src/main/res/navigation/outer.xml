@@ -17,6 +17,7 @@
             android:id="@+id/about"
             app:destination="@id/about_fragment" />
     </fragment>
+
     <fragment
         android:id="@+id/root_preferences_fragment"
         android:name="org.oxycblt.auxio.settings.RootPreferenceFragment"
@@ -33,6 +34,9 @@
         <action
             android:id="@+id/audio_peferences"
             app:destination="@id/audio_preferences_fragment" />
+        <action
+            android:id="@+id/lyrics_preferences"
+            app:destination="@id/lyrics_preferences_fragment" />
         <action
             android:id="@+id/music_locations_settings"
             app:destination="@id/music_locations_dialog" />
@@ -73,6 +77,11 @@
             android:id="@+id/pre_amp_settings"
             app:destination="@id/pre_amp_dialog" />
     </fragment>
+
+    <fragment
+        android:id="@+id/lyrics_preferences_fragment"
+        android:name="org.oxycblt.auxio.settings.categories.LyricsPreferenceFragment"
+        android:label="lyrics_preferences_fragment" />
 
     <dialog
         android:id="@+id/accent_dialog"
