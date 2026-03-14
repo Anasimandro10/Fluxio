@@ -56,8 +56,7 @@ data class LrclibResult(val syncedLyrics: String?, val plainLyrics: String?)
  * - +20 track name contains match (bidirectional)
  * - +15 duration within ±2 s
  * - +10 duration within ±5 s
- * - +5  duration within ±10 s
- * Duration is a bonus, never a hard filter.
+ * - +5 duration within ±10 s Duration is a bonus, never a hard filter.
  */
 @Singleton
 class LrclibApi @Inject constructor() {
@@ -105,7 +104,8 @@ class LrclibApi @Inject constructor() {
                 val candidates = fetchRaw(p) ?: continue
                 if (candidates.isEmpty()) continue
 
-                val best = pickBest(candidates, cleanArtist, firstArtist, cleanTrack, durationSeconds)
+                val best =
+                    pickBest(candidates, cleanArtist, firstArtist, cleanTrack, durationSeconds)
                 if (best != null) {
                     L.d(
                         "LRCLIB hit on strategy ${i + 1} " +
@@ -187,9 +187,13 @@ class LrclibApi @Inject constructor() {
             val fa = firstArtist.lowercase()
             val ct = cleanTrack.lowercase()
 
-            if (apiArtist.isNotEmpty() &&
-                (apiArtist.contains(ca) || ca.contains(apiArtist) ||
-                    apiArtist.contains(fa) || fa.contains(apiArtist)))
+            if (
+                apiArtist.isNotEmpty() &&
+                    (apiArtist.contains(ca) ||
+                        ca.contains(apiArtist) ||
+                        apiArtist.contains(fa) ||
+                        fa.contains(apiArtist))
+            )
                 score += 20
 
             if (apiTrack.isNotEmpty() && (apiTrack.contains(ct) || ct.contains(apiTrack)))
@@ -223,21 +227,23 @@ class LrclibApi @Inject constructor() {
 
     /** "Song (feat. X) [Deluxe]" → "Song" */
     private fun cleanTitle(s: String) =
-        s.trim()
-            .replace(Regex("\\(.*?\\)"), "")
-            .replace(Regex("\\[.*?]"), "")
-            .trim()
+        s.trim().replace(Regex("\\(.*?\\)"), "").replace(Regex("\\[.*?]"), "").trim()
 
     /** Removes parenthetical content from artist name. */
     private fun cleanArtist(s: String) = s.trim().replace(Regex("\\(.*?\\)"), "").trim()
 
     /**
-     * Returns the first credited artist.
-     * "Artist A feat. Artist B, Artist C & Artist D" → "Artist A"
+     * Returns the first credited artist. "Artist A feat. Artist B, Artist C & Artist D" → "Artist
+     * A"
      */
     private fun firstArtist(artist: String): String =
         artist
-            .split(Regex("\\s+feat\\.?\\s+|\\s+ft\\.?\\s+|\\s+featuring\\s+|\\s*[,&/]\\s*", RegexOption.IGNORE_CASE))
+            .split(
+                Regex(
+                    "\\s+feat\\.?\\s+|\\s+ft\\.?\\s+|\\s+featuring\\s+|\\s*[,&/]\\s*",
+                    RegexOption.IGNORE_CASE,
+                )
+            )
             .first()
             .trim()
 

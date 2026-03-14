@@ -52,9 +52,9 @@ enum class LyricsSource {
  * 2. Local .lrc file next to the audio file
  * 3. LRCLIB (Room disk cache → network) — only if enabled in settings
  *
- * The in-memory cache holds 30 entries so recently played songs show lyrics instantly.
- * The [prefetch] method warms the cache for the next song in the queue while the current one
- * is playing, making the transition feel immediate.
+ * The in-memory cache holds 30 entries so recently played songs show lyrics instantly. The
+ * [prefetch] method warms the cache for the next song in the queue while the current one is
+ * playing, making the transition feel immediate.
  */
 @Singleton
 class LyricsRepository
@@ -264,7 +264,9 @@ constructor(
 
     private fun readUri(contentResolver: ContentResolver, uri: Uri): String? {
         return try {
-            contentResolver.openInputStream(uri)?.use { it.bufferedReader(Charsets.UTF_8).readText() }
+            contentResolver.openInputStream(uri)?.use {
+                it.bufferedReader(Charsets.UTF_8).readText()
+            }
         } catch (e: Exception) {
             L.e("Failed to read URI $uri: $e")
             null
