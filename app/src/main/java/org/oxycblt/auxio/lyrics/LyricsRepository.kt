@@ -256,8 +256,8 @@ constructor(
     }
 
     /**
-     * Reads embedded lyrics using a direct file path. Faster and more reliable than content URIs
-     * on some Android versions.
+     * Reads embedded lyrics using a direct file path. Faster and more reliable than content URIs on
+     * some Android versions.
      */
     private fun readEmbeddedFromPath(path: String): String? {
         val retriever = MediaMetadataRetriever()

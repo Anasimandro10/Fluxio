@@ -22,10 +22,10 @@ import java.util.regex.Pattern
 /**
  * Parses LRC lyric files into a list of [LrcLine] objects sorted by timestamp.
  *
- * Supports both standard LRC ([mm:ss.xx]) and extended word-by-word LRC. Decimal part is
- * optional so [mm:ss] without centiseconds is also accepted — common in embedded tags. Minutes
- * field accepts 1–3 digits to handle files longer than 99 minutes. Unknown lines (metadata tags,
- * blank lines) are silently ignored.
+ * Supports both standard LRC ([mm:ss.xx]) and extended word-by-word LRC. Decimal part is optional
+ * so [mm:ss] without centiseconds is also accepted — common in embedded tags. Minutes field accepts
+ * 1–3 digits to handle files longer than 99 minutes. Unknown lines (metadata tags, blank lines) are
+ * silently ignored.
  */
 object LrcParser {
 
@@ -75,10 +75,7 @@ object LrcParser {
 
             // Strip all timestamp tags and word-level tags to get clean text
             val text =
-                line
-                    .replace(TIMESTAMP_STRIP_REGEX, "")
-                    .replace(WORD_TAG_STRIP_REGEX, "")
-                    .trim()
+                line.replace(TIMESTAMP_STRIP_REGEX, "").replace(WORD_TAG_STRIP_REGEX, "").trim()
 
             if (text.isEmpty()) continue
 
