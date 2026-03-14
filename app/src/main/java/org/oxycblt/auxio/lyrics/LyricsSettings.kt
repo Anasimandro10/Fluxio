@@ -36,9 +36,7 @@ interface LyricsSettings : Settings<LyricsSettings.Listener> {
 }
 
 @Singleton
-class LyricsSettingsImpl
-@Inject
-constructor(@ApplicationContext context: Context) :
+class LyricsSettingsImpl @Inject constructor(@ApplicationContext context: Context) :
     Settings.Impl<LyricsSettings.Listener>(context), LyricsSettings {
 
     override val lrclibEnabled: Boolean

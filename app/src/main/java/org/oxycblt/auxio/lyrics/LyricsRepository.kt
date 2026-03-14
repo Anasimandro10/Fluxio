@@ -37,11 +37,7 @@ import timber.log.Timber as L
  * @param isSynced True if the lyrics have timestamps (LRC format). False for plain text.
  * @param source Where the lyrics came from (for debugging).
  */
-data class LyricsResult(
-    val lines: List<LrcLine>,
-    val isSynced: Boolean,
-    val source: LyricsSource,
-)
+data class LyricsResult(val lines: List<LrcLine>, val isSynced: Boolean, val source: LyricsSource)
 
 /** Indicates where a set of lyrics was obtained from. */
 enum class LyricsSource {
@@ -111,7 +107,8 @@ constructor(
         val plain = lrclibResult.plainLyrics
         if (plain != null && plain.isNotBlank()) {
             val lines =
-                plain.lines()
+                plain
+                    .lines()
                     .map { it.trim() }
                     .filter { it.isNotEmpty() }
                     .map { LrcLine(startMs = 0L, text = it) }
@@ -168,10 +165,7 @@ constructor(
                 null
             } else {
                 L.d("LRCLIB cache hit for '$trackTitle'")
-                LrclibResult(
-                    syncedLyrics = cached.syncedLyrics,
-                    plainLyrics = cached.plainLyrics,
-                )
+                LrclibResult(syncedLyrics = cached.syncedLyrics, plainLyrics = cached.plainLyrics)
             }
         }
 
