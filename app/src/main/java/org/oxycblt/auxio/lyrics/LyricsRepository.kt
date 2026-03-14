@@ -52,10 +52,10 @@ enum class LyricsSource {
 
 /**
  * Loads lyrics for a song using this priority order:
- * 1. Local .lrc file next to the audio file → synced → stops here
- * 2. LRCLIB with synced LRC → stops here (only if enabled in settings)
- * 3. LRCLIB with plain text → shows with "no sync" notice
- * 4. Nothing → returns null
+ * 1. Local .lrc file next to the audio file — synced — stops here
+ * 2. LRCLIB with synced LRC — stops here (only if enabled in settings)
+ * 3. LRCLIB with plain text — shows with "no sync" notice
+ * 4. Nothing — returns null
  */
 @Singleton
 class LyricsRepository
@@ -73,66 +73,63 @@ constructor(
      * @param song The song to find lyrics for.
      * @return [LyricsResult] if lyrics were found, null otherwise.
      */
-    suspend fun loadLyrics(song: Song): LyricsResult? =
-        withContext(Dispatchers.IO) {
-            // Step 1: local .lrc file
-            val localContent = readLrcForSong(song)
-            if (localContent != null) {
-                val lines = LrcParser.parse(localContent)
-                if (lines.isNotEmpty()) {
-                    L.d("Lyrics found: local LRC (${lines.size} lines)")
-                    return@withContext
-                        LyricsResult(lines, isSynced = true, source = LyricsSource.LOCAL_LRC)
-                }
+    suspend fun loadLyrics(song: Song): LyricsResult? {
+        // Step 1: local .lrc file
+        val localContent = withContext(Dispatchers.IO) { readLrcForSong(song) }
+        if (localContent != null) {
+            val lines = LrcParser.parse(localContent)
+            if (lines.isNotEmpty()) {
+                L.d("Lyrics found: local LRC (${lines.size} lines)")
+                return LyricsResult(lines, isSynced = true, source = LyricsSource.LOCAL_LRC)
             }
-
-            // Step 2 + 3: LRCLIB fallback (only if enabled in settings)
-            if (!lyricsSettings.lrclibEnabled) {
-                L.d("LRCLIB disabled — no lyrics for ${song.path.name}")
-                return@withContext null
-            }
-
-            val artistName = song.artists.firstOrNull()?.name?.resolve(context) ?: ""
-            val trackTitle = song.name.resolve(context)
-            val albumName = song.album?.name?.resolve(context) ?: ""
-            val durationSeconds = (song.durationMs / 1000).toInt()
-
-            val lrclibResult =
-                fetchFromLrclib(artistName, trackTitle, albumName, durationSeconds)
-                    ?: return@withContext null
-
-            // Prefer synced over plain
-            val synced = lrclibResult.syncedLyrics
-            if (synced != null) {
-                val lines = LrcParser.parse(synced)
-                if (lines.isNotEmpty()) {
-                    L.d("Lyrics found: LRCLIB synced (${lines.size} lines)")
-                    return@withContext
-                        LyricsResult(
-                            lines,
-                            isSynced = true,
-                            source = LyricsSource.LRCLIB_SYNCED,
-                        )
-                }
-            }
-
-            val plain = lrclibResult.plainLyrics
-            if (plain != null && plain.isNotBlank()) {
-                val lines =
-                    plain.lines()
-                        .map { it.trim() }
-                        .filter { it.isNotEmpty() }
-                        .map { LrcLine(startMs = 0L, text = it) }
-                if (lines.isNotEmpty()) {
-                    L.d("Lyrics found: LRCLIB plain text (${lines.size} lines)")
-                    return@withContext
-                        LyricsResult(lines, isSynced = false, source = LyricsSource.LRCLIB_PLAIN)
-                }
-            }
-
-            L.d("No lyrics found for ${song.path.name}")
-            null
         }
+
+        // Step 2 + 3: LRCLIB fallback (only if enabled in settings)
+        if (!lyricsSettings.lrclibEnabled) {
+            L.d("LRCLIB disabled — no lyrics for ${song.path.name}")
+            return null
+        }
+
+        val artistName = song.artists.firstOrNull()?.name?.resolve(context) ?: ""
+        val trackTitle = song.name.resolve(context)
+        val albumName = song.album?.name?.resolve(context) ?: ""
+        val durationSeconds = (song.durationMs / 1000).toInt()
+
+        val lrclibResult =
+            fetchFromLrclib(artistName, trackTitle, albumName, durationSeconds) ?: return null
+
+        // Prefer synced over plain
+        val synced = lrclibResult.syncedLyrics
+        if (synced != null) {
+            val lines = LrcParser.parse(synced)
+            if (lines.isNotEmpty()) {
+                L.d("Lyrics found: LRCLIB synced (${lines.size} lines)")
+                return LyricsResult(lines, isSynced = true, source = LyricsSource.LRCLIB_SYNCED)
+            }
+        }
+
+        val plain = lrclibResult.plainLyrics
+        if (plain != null && plain.isNotBlank()) {
+            val lines =
+                plain.lines()
+                    .map { it.trim() }
+                    .filter { it.isNotEmpty() }
+                    .map { LrcLine(startMs = 0L, text = it) }
+            if (lines.isNotEmpty()) {
+                L.d("Lyrics found: LRCLIB plain text (${lines.size} lines)")
+                return LyricsResult(lines, isSynced = false, source = LyricsSource.LRCLIB_PLAIN)
+            }
+        }
+
+        L.d("No lyrics found for ${song.path.name}")
+        return null
+    }
+
+    /**
+     * Compatibility wrapper used by [LyricsViewModel]. Returns only the lines list, or null if no
+     * lyrics were found. Equivalent to the old loadLrc behaviour.
+     */
+    suspend fun loadLrc(song: Song): List<LrcLine>? = loadLyrics(song)?.lines
 
     /**
      * Deletes the LRCLIB cache entry for this song, forcing a fresh fetch next time. Used by the
@@ -164,7 +161,6 @@ constructor(
         albumName: String,
         durationSeconds: Int,
     ): LrclibResult? {
-        // Check cache first
         val cached = lrclibCache.get(artistName, trackTitle)
         if (cached != null) {
             return if (cached.noResult) {

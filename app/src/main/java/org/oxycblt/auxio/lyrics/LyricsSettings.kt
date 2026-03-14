@@ -35,6 +35,7 @@ interface LyricsSettings : Settings<LyricsSettings.Listener> {
     }
 }
 
+@Singleton
 class LyricsSettingsImpl
 @Inject
 constructor(@ApplicationContext context: Context) :
@@ -43,11 +44,9 @@ constructor(@ApplicationContext context: Context) :
     override val lrclibEnabled: Boolean
         get() = sharedPreferences.getBoolean(getString(R.string.set_key_lrclib_enabled), false)
 
-    override fun onSharedPreferenceChanged(prefs: android.content.SharedPreferences, key: String?) {
-        super.onSharedPreferenceChanged(prefs, key)
+    override fun onSettingChanged(key: String, listener: LyricsSettings.Listener) {
         when (key) {
-            getString(R.string.set_key_lrclib_enabled) ->
-                listeners.forEach { it.onLrclibEnabledChanged() }
+            getString(R.string.set_key_lrclib_enabled) -> listener.onLrclibEnabledChanged()
         }
     }
 }
