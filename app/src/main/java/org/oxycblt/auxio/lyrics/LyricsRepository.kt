@@ -57,10 +57,10 @@ enum class LyricsSource {
  * 1. In-memory LRU cache (instant — no I/O at all)
  * 2. Local .lrc file next to the audio file
  * 3. Embedded lyrics in the audio file tags (ID3v2 USLT, Vorbis LYRICS, MP4 ©lyr)
- *    - If synced (LRC format): returned immediately.
- *    - If plain text and [LyricsSettings.lrclibPreferSynced] is enabled: held as fallback,
- *      LRCLIB is tried first (step 4). If LRCLIB has nothing, the plain text is used.
- *    - If plain text and [LyricsSettings.lrclibPreferSynced] is disabled: returned immediately.
+ *     - If synced (LRC format): returned immediately.
+ *     - If plain text and [LyricsSettings.lrclibPreferSynced] is enabled: held as fallback, LRCLIB
+ *       is tried first (step 4). If LRCLIB has nothing, the plain text is used.
+ *     - If plain text and [LyricsSettings.lrclibPreferSynced] is disabled: returned immediately.
  * 4. LRCLIB (Room disk cache → network) — only if enabled in settings
  *
  * For FLAC files, embedded lyrics are read by directly parsing the Vorbis Comment block, because
@@ -188,7 +188,11 @@ constructor(
                 if (lyricsSettings.lrclibEnabled && lyricsSettings.lrclibPreferSynced) {
                     L.d("Lyrics: embedded plain — deferring to LRCLIB (prefer synced enabled)")
                     val embeddedPlainFallback =
-                        LyricsResult(plainLines, isSynced = false, source = LyricsSource.EMBEDDED_PLAIN)
+                        LyricsResult(
+                            plainLines,
+                            isSynced = false,
+                            source = LyricsSource.EMBEDDED_PLAIN,
+                        )
                     val lrclibResult = tryLrclib(song)
                     return lrclibResult ?: embeddedPlainFallback
                 }
@@ -325,8 +329,8 @@ constructor(
     }
 
     /**
-     * Parses a Vorbis Comment block and returns the value of the LYRICS or UNSYNCEDLYRICS field,
-     * or null if neither is present. All field name comparisons are case-insensitive.
+     * Parses a Vorbis Comment block and returns the value of the LYRICS or UNSYNCEDLYRICS field, or
+     * null if neither is present. All field name comparisons are case-insensitive.
      */
     private fun parseVorbisCommentBlock(bytes: ByteArray, start: Int, length: Int): String? {
         var pos = start
@@ -383,7 +387,9 @@ constructor(
             L.d("Embedded lyrics unavailable via path $path: $e")
             null
         } finally {
-            try { retriever.release() } catch (_: Exception) {}
+            try {
+                retriever.release()
+            } catch (_: Exception) {}
         }
     }
 
@@ -398,7 +404,9 @@ constructor(
             L.d("Embedded lyrics unavailable via URI for ${song.path.name}: $e")
             null
         } finally {
-            try { retriever.release() } catch (_: Exception) {}
+            try {
+                retriever.release()
+            } catch (_: Exception) {}
         }
     }
 

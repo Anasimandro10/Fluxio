@@ -31,14 +31,15 @@ interface LyricsSettings : Settings<LyricsSettings.Listener> {
 
     /**
      * When enabled, if embedded lyrics have no timestamps (plain text), LRCLIB is searched first
-     * for a synced version. Falls back to the embedded plain text if LRCLIB has nothing.
-     * Disabled by default.
+     * for a synced version. Falls back to the embedded plain text if LRCLIB has nothing. Disabled
+     * by default.
      */
     val lrclibPreferSynced: Boolean
 
     interface Listener {
         /** Called when [lrclibEnabled] changes. */
         fun onLrclibEnabledChanged() {}
+
         /** Called when [lrclibPreferSynced] changes. */
         fun onLrclibPreferSyncedChanged() {}
     }
@@ -52,12 +53,14 @@ class LyricsSettingsImpl @Inject constructor(@ApplicationContext private val con
         get() = sharedPreferences.getBoolean(getString(R.string.set_key_lrclib_enabled), false)
 
     override val lrclibPreferSynced: Boolean
-        get() = sharedPreferences.getBoolean(getString(R.string.set_key_lrclib_prefer_synced), false)
+        get() =
+            sharedPreferences.getBoolean(getString(R.string.set_key_lrclib_prefer_synced), false)
 
     override fun onSettingChanged(key: String, listener: LyricsSettings.Listener) {
         when (key) {
             getString(R.string.set_key_lrclib_enabled) -> listener.onLrclibEnabledChanged()
-            getString(R.string.set_key_lrclib_prefer_synced) -> listener.onLrclibPreferSyncedChanged()
+            getString(R.string.set_key_lrclib_prefer_synced) ->
+                listener.onLrclibPreferSyncedChanged()
         }
     }
 }
