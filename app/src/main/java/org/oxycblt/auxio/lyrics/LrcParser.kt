@@ -27,8 +27,8 @@ import java.util.regex.Pattern
  * 1–3 digits to handle files longer than 99 minutes. Unknown lines (metadata tags, blank lines) are
  * silently ignored.
  *
- * Lines with an empty text body after stripping tags are kept as instrumental silence markers.
- * They cause the active-line highlight to turn off when reached ([LrcLine.isSilence] = true).
+ * Lines with an empty text body after stripping tags are kept as instrumental silence markers. They
+ * cause the active-line highlight to turn off when reached ([LrcLine.isSilence] = true).
  */
 object LrcParser {
 
