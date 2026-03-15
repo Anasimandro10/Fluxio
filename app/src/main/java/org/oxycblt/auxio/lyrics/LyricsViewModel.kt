@@ -91,19 +91,50 @@ constructor(
     }
 
     // -------------------------------------------------------------------------
-    // LyricsSettings.Listener — Bug 5 fix
+    // LyricsSettings.Listener
     // -------------------------------------------------------------------------
 
-    /** LRCLIB toggled — cached results may now be wrong, clear them. */
+    /**
+     * LRCLIB was enabled or disabled.
+     *
+     * When enabled: clear "no result" entries from Room so previously missed songs get a fresh
+     * search, clear the memory cache, and reload the current song immediately.
+     *
+     * When disabled: just clear the memory cache and reload so the current song stops showing
+     * LRCLIB lyrics if it had them.
+     */
     override fun onLrclibEnabledChanged() {
-        L.d("lrclibEnabled changed — clearing memory cache")
-        lyricsRepository.clearMemoryCache()
+        L.d("lrclibEnabled changed — refreshing lyrics")
+        viewModelScope.launch {
+            if (lyricsSettings.lrclibEnabled) {
+                // LRCLIB just turned ON: clear stale "no result" entries from Room
+                // so songs that previously returned nothing get another chance.
+                lyricsRepository.clearNoResultsCache()
+            }
+            lyricsRepository.clearMemoryCache()
+            reloadCurrentSong()
+        }
     }
 
-    /** Prefer-synced toggled — lookup order changed, clear cache. */
+    /**
+     * The prefer-synced option changed. Clear the memory cache and reload the current song so the
+     * new lookup order takes effect immediately.
+     */
     override fun onLrclibPreferSyncedChanged() {
-        L.d("lrclibPreferSynced changed — clearing memory cache")
+        L.d("lrclibPreferSynced changed — refreshing lyrics")
         lyricsRepository.clearMemoryCache()
+        reloadCurrentSong()
+    }
+
+    /**
+     * Reloads lyrics for the song that is currently playing, if any.
+     * Called after settings change so the new configuration takes effect immediately
+     * without the user having to skip to the next song.
+     */
+    private fun reloadCurrentSong() {
+        val song = playbackManager.currentSong ?: return
+        L.d("Reloading lyrics for current song after settings change: ${song.path.name}")
+        loadLyricsFor(song)
     }
 
     // -------------------------------------------------------------------------
@@ -130,10 +161,6 @@ constructor(
         currentProgression = progression
         updateCurrentLine(progression.calculateElapsedPositionMs())
         if (progression.isPlaying) {
-            // Bug 1 fix: only start the ticker if lyrics are already loaded.
-            // If _lines is still empty, loadLyricsFor will call startTicker once it finishes.
-            // This prevents the ticker from running on an empty list (which caused desync)
-            // while still handling the "play pressed after lyrics loaded" case correctly.
             if (_lines.value.isNotEmpty() && _isSynced.value) startTicker()
         } else {
             stopTicker()
@@ -171,8 +198,6 @@ constructor(
                     _lines.value = result.lines
                     _isSynced.value = result.isSynced
                     if (result.isSynced) {
-                        // Snap to correct line immediately, then start ticker if playing.
-                        // _lines is already populated at this point so the ticker is safe to run.
                         val posMs =
                             currentProgression?.calculateElapsedPositionMs()
                                 ?: playbackManager.progression.calculateElapsedPositionMs()
@@ -223,10 +248,7 @@ constructor(
         if (!_isSynced.value) return
         val snapshot = _lines.value
         if (snapshot.isEmpty()) return
-        // Bug 2 fix: indexOfLast correctly handles consecutive lines with the same timestamp
-        // (e.g. chorus repeats). The old loop with break exited too early in those cases.
         val active = snapshot.indexOfLast { it.startMs <= posMs }
-        // Bug 6: if the active line is a silence marker, report -1 to turn off highlight.
         val reported = if (active >= 0 && snapshot[active].isSilence) -1 else active
         if (_currentLineIndex.value != reported) _currentLineIndex.value = reported
     }
