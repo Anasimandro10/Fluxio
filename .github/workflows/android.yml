@@ -30,9 +30,9 @@ jobs:
       uses: actions/cache@v4
       with:
         path: |
-          musikr/.cxx
-          musikr/build/intermediates/cmake
-        key: native-${{ runner.os }}-${{ hashFiles('musikr/src/main/cpp/**', 'musikr/src/main/cpp/taglib/**') }}
+          musikr/src/main/cpp/taglib/pkg
+          musikr/src/main/cpp/taglib/build
+        key: native-${{ runner.os }}-${{ hashFiles('musikr/src/main/cpp/**') }}
         restore-keys: |
           native-${{ runner.os }}-
 
