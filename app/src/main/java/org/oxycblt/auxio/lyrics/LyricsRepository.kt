@@ -59,18 +59,18 @@ enum class LyricsSource {
  * 1. In-memory LRU cache (instant — no I/O at all)
  * 2. Local .lrc file next to the audio file
  * 3. Embedded lyrics in the audio file tags (ID3v2 USLT, Vorbis LYRICS, MP4 ©lyr)
- *     - If synced (LRC format): returned immediately.
- *     - If plain text and [LyricsSettings.lrclibPreferSynced] is enabled: LRCLIB is checked for a
- *       synced version only. LRCLIB plain text is NOT accepted as a replacement — embedded plain is
- *       returned as fallback in that case.
- *     - If plain text and [LyricsSettings.lrclibPreferSynced] is disabled: returned immediately.
+ *    - If synced (LRC format): returned immediately.
+ *    - If plain text and [LyricsSettings.lrclibPreferSynced] is enabled: LRCLIB is checked for a
+ *      synced version only. LRCLIB plain text is NOT accepted as a replacement — embedded plain
+ *      is returned as fallback in that case.
+ *    - If plain text and [LyricsSettings.lrclibPreferSynced] is disabled: returned immediately.
  * 4. LRCLIB (Room disk cache → network) — only if enabled in settings
  *
- * Call [clearMemoryCache] when settings that affect the lookup order change so cached results are
- * re-evaluated on next playback.
+ * Call [clearMemoryCache] when settings that affect the lookup order change so cached results
+ * are re-evaluated on next playback.
  *
- * FLAC files are parsed incrementally — only the metadata blocks at the start of the file are read,
- * never the audio data. This prevents OOM crashes on large FLAC files (90–120 MB).
+ * FLAC files are parsed incrementally — only the metadata blocks at the start of the file are
+ * read, never the audio data. This prevents OOM crashes on large FLAC files (90–120 MB).
  */
 @Singleton
 class LyricsRepository
@@ -137,9 +137,18 @@ constructor(
      * Clears only the in-memory cache without touching Room. Called by [LyricsViewModel] when
      * settings that affect the lookup order change (lrclibEnabled, lrclibPreferSynced).
      */
-    fun clearMemoryCache() {
+     fun clearMemoryCache() {
         L.d("Clearing lyrics memory cache (settings changed)")
         memoryCache.clear()
+    }
+
+    /**
+     * Clears "no result" entries from Room so songs that previously returned nothing from LRCLIB
+     * get a fresh search attempt on next playback. Does not remove entries that have actual lyrics.
+     * Called when LRCLIB is enabled so previously missed songs get another chance.
+     */
+    suspend fun clearNoResultsCache() {
+        lrclibCache.clearNoResults()
     }
 
     /** Returns the number of entries in the Room LRCLIB cache. */
@@ -230,14 +239,12 @@ constructor(
         val remote = fetchFromLrclib(artist, title, album, duration) ?: return null
         val synced = remote.syncedLyrics ?: return null
         val lines = LrcParser.parse(synced)
-        return if (lines.isNotEmpty())
-            LyricsResult(lines, isSynced = true, source = LyricsSource.LRCLIB_SYNCED)
-        else null
+        return if (lines.isNotEmpty()) LyricsResult(lines, isSynced = true, source = LyricsSource.LRCLIB_SYNCED) else null
     }
 
     /**
-     * Queries LRCLIB (Room cache first, then network) and returns the best available result (synced
-     * preferred, plain as fallback), or null if nothing is found.
+     * Queries LRCLIB (Room cache first, then network) and returns the best available result
+     * (synced preferred, plain as fallback), or null if nothing is found.
      */
     private suspend fun tryLrclib(song: Song): LyricsResult? {
         val artist = song.artists.firstOrNull()?.name?.resolve(context) ?: ""
@@ -274,13 +281,15 @@ constructor(
     // -------------------------------------------------------------------------
 
     /**
-     * Reads FLAC Vorbis Comment lyrics from a file path using an incremental stream reader. Only
-     * the metadata blocks at the start of the file are read — the audio data is never touched. This
-     * prevents OOM errors on large FLAC files.
+     * Reads FLAC Vorbis Comment lyrics from a file path using an incremental stream reader.
+     * Only the metadata blocks at the start of the file are read — the audio data is never
+     * touched. This prevents OOM errors on large FLAC files.
      */
     private fun readFlacVorbisLyrics(path: String): String? {
         return try {
-            java.io.FileInputStream(path).use { fis -> parseFlacStream(BufferedInputStream(fis)) }
+            java.io.FileInputStream(path).use { fis ->
+                parseFlacStream(BufferedInputStream(fis))
+            }
         } catch (e: Exception) {
             L.d("FLAC lyrics via path failed for $path: $e")
             null
@@ -288,8 +297,8 @@ constructor(
     }
 
     /**
-     * Reads FLAC Vorbis Comment lyrics via a content URI using an incremental stream reader. Only
-     * the metadata blocks are read — the audio data is never loaded into memory.
+     * Reads FLAC Vorbis Comment lyrics via a content URI using an incremental stream reader.
+     * Only the metadata blocks are read — the audio data is never loaded into memory.
      */
     private fun readFlacVorbisLyricsFromUri(uri: Uri): String? {
         return try {
@@ -305,12 +314,16 @@ constructor(
     /**
      * Parses FLAC metadata blocks from a stream without loading the audio data.
      *
-     * Reads exactly as many bytes as needed to walk the metadata block chain, then stops. A 1 MB
-     * safety cap prevents pathological inputs from consuming too much memory.
+     * Reads exactly as many bytes as needed to walk the metadata block chain, then stops.
+     * A 1 MB safety cap prevents pathological inputs from consuming too much memory.
      *
-     * FLAC structure: 4 bytes magic: "fLaC" Sequence of metadata blocks, each with: 1 byte: bit7 =
-     * last-block flag, bits6-0 = block type 3 bytes: block data length (big-endian) N bytes: block
-     * data Block type 4 = VORBIS_COMMENT
+     * FLAC structure:
+     *   4 bytes magic: "fLaC"
+     *   Sequence of metadata blocks, each with:
+     *     1 byte:  bit7 = last-block flag, bits6-0 = block type
+     *     3 bytes: block data length (big-endian)
+     *     N bytes: block data
+     *   Block type 4 = VORBIS_COMMENT
      */
     private fun parseFlacStream(stream: BufferedInputStream): String? {
         val magic = ByteArray(4)
@@ -321,8 +334,7 @@ constructor(
                 magic[1] != 0x4C.toByte() ||
                 magic[2] != 0x61.toByte() ||
                 magic[3] != 0x43.toByte()
-        )
-            return null
+        ) return null
 
         val header = ByteArray(4)
         var totalRead = 4
@@ -362,8 +374,8 @@ constructor(
     }
 
     /**
-     * Reads exactly [length] bytes from [stream] into a new ByteArray. Returns null if the stream
-     * ends before [length] bytes are available.
+     * Reads exactly [length] bytes from [stream] into a new ByteArray.
+     * Returns null if the stream ends before [length] bytes are available.
      */
     private fun readStreamIncrementally(stream: InputStream, length: Int): ByteArray? {
         val buf = ByteArray(length)
@@ -377,8 +389,8 @@ constructor(
     }
 
     /**
-     * Parses a Vorbis Comment block and returns the value of the LYRICS or UNSYNCEDLYRICS field, or
-     * null if neither is present. All field name comparisons are case-insensitive.
+     * Parses a Vorbis Comment block and returns the value of the LYRICS or UNSYNCEDLYRICS field,
+     * or null if neither is present. All field name comparisons are case-insensitive.
      */
     private fun parseVorbisCommentBlock(bytes: ByteArray, start: Int, length: Int): String? {
         var pos = start
@@ -429,9 +441,7 @@ constructor(
             L.d("Embedded lyrics unavailable via path $path: $e")
             null
         } finally {
-            try {
-                retriever.release()
-            } catch (_: Exception) {}
+            try { retriever.release() } catch (_: Exception) {}
         }
     }
 
@@ -445,9 +455,7 @@ constructor(
             L.d("Embedded lyrics unavailable via URI for ${song.path.name}: $e")
             null
         } finally {
-            try {
-                retriever.release()
-            } catch (_: Exception) {}
+            try { retriever.release() } catch (_: Exception) {}
         }
     }
 

@@ -26,6 +26,9 @@ import java.util.regex.Pattern
  * so [mm:ss] without centiseconds is also accepted — common in embedded tags. Minutes field accepts
  * 1–3 digits to handle files longer than 99 minutes. Unknown lines (metadata tags, blank lines) are
  * silently ignored.
+ *
+ * Lines with an empty text body after stripping tags are kept as instrumental silence markers.
+ * They cause the active-line highlight to turn off when reached ([LrcLine.isSilence] = true).
  */
 object LrcParser {
 
@@ -42,6 +45,9 @@ object LrcParser {
 
     /**
      * Parses raw LRC text into a sorted list of [LrcLine].
+     *
+     * Lines whose text is empty after stripping all tags are kept as instrumental silence markers
+     * ([LrcLine.isSilence] = true). The UI turns off the active-line highlight for these.
      *
      * @param content The raw text content of an .lrc file or embedded tag.
      * @return A list of [LrcLine] sorted by [LrcLine.startMs], or empty if unparseable.
@@ -73,11 +79,10 @@ object LrcParser {
 
             if (timestamps.isEmpty()) continue
 
-            // Strip all timestamp tags and word-level tags to get clean text
+            // Strip all timestamp tags and word-level tags to get clean text.
+            // An empty result is an instrumental silence marker — kept intentionally.
             val text =
                 line.replace(TIMESTAMP_STRIP_REGEX, "").replace(WORD_TAG_STRIP_REGEX, "").trim()
-
-            if (text.isEmpty()) continue
 
             // A line can repeat with multiple timestamps (e.g. chorus repeats)
             for (ts in timestamps) {
