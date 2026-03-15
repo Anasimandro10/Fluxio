@@ -57,14 +57,15 @@ enum class LyricsSource {
  * 1. In-memory LRU cache (instant — no I/O at all)
  * 2. Local .lrc file next to the audio file
  * 3. Embedded lyrics in the audio file tags (ID3v2 USLT, Vorbis LYRICS, MP4 ©lyr)
- *     - If synced (LRC format): returned immediately.
- *     - If plain text and [LyricsSettings.lrclibPreferSynced] is enabled: held as fallback, LRCLIB
- *       is tried first (step 4). If LRCLIB has nothing, the plain text is used.
- *     - If plain text and [LyricsSettings.lrclibPreferSynced] is disabled: returned immediately.
+ *    - If synced (LRC format): returned immediately.
+ *    - If plain text and [LyricsSettings.lrclibPreferSynced] is enabled: LRCLIB is checked for a
+ *      synced version only. LRCLIB plain text is NOT accepted as a replacement — embedded plain
+ *      is returned as fallback in that case.
+ *    - If plain text and [LyricsSettings.lrclibPreferSynced] is disabled: returned immediately.
  * 4. LRCLIB (Room disk cache → network) — only if enabled in settings
  *
- * For FLAC files, embedded lyrics are read by directly parsing the Vorbis Comment block, because
- * Android's [MediaMetadataRetriever] does not reliably expose the LYRICS field from FLAC files.
+ * Call [clearMemoryCache] when settings that affect the lookup order change so cached results
+ * are re-evaluated on next playback.
  */
 @Singleton
 class LyricsRepository
@@ -127,6 +128,15 @@ constructor(
         memoryCache.clear()
     }
 
+    /**
+     * Clears only the in-memory cache without touching Room. Called by [LyricsViewModel] when
+     * settings that affect the lookup order change (lrclibEnabled, lrclibPreferSynced).
+     */
+    fun clearMemoryCache() {
+        L.d("Clearing lyrics memory cache (settings changed)")
+        memoryCache.clear()
+    }
+
     /** Returns the number of entries in the Room LRCLIB cache. */
     suspend fun lrclibCacheCount(): Int = lrclibCache.count()
 
@@ -146,9 +156,6 @@ constructor(
         }
 
         // 2. Embedded tags
-        // FLAC files are handled with a dedicated Vorbis Comment parser because Android's
-        // MediaMetadataRetriever does not reliably read the LYRICS field from FLAC.
-        // All other formats use MediaMetadataRetriever (requires Android 9 / API 28).
         val embedded =
             withTimeoutOrNull(3_000L) {
                 withContext(Dispatchers.IO) {
@@ -175,7 +182,6 @@ constructor(
                     source = LyricsSource.EMBEDDED_SYNCED,
                 )
             }
-            // Embedded text is plain (no timestamps). Build the fallback result now.
             val plainLines =
                 embedded
                     .lines()
@@ -183,18 +189,16 @@ constructor(
                     .filter { it.isNotEmpty() }
                     .map { LrcLine(startMs = 0L, text = it) }
             if (plainLines.isNotEmpty()) {
-                // If the user wants LRCLIB synced to take priority over plain embedded lyrics,
-                // save this as a fallback and let LRCLIB run first (step 3 below).
+                // Bug 4 fix: when lrclibPreferSynced is on, only accept LRCLIB if it has a
+                // synced version. If LRCLIB only has plain text, use the embedded lyrics —
+                // they are the official lyrics of the file and LRCLIB plain may differ.
                 if (lyricsSettings.lrclibEnabled && lyricsSettings.lrclibPreferSynced) {
-                    L.d("Lyrics: embedded plain — deferring to LRCLIB (prefer synced enabled)")
-                    val embeddedPlainFallback =
-                        LyricsResult(
-                            plainLines,
-                            isSynced = false,
-                            source = LyricsSource.EMBEDDED_PLAIN,
-                        )
-                    val lrclibResult = tryLrclib(song)
-                    return lrclibResult ?: embeddedPlainFallback
+                    L.d("Lyrics: embedded plain — checking LRCLIB for synced version only")
+                    val syncedFromLrclib = tryLrclibSyncedOnly(song)
+                    if (syncedFromLrclib != null) {
+                        L.d("Lyrics: LRCLIB synced preferred over embedded plain")
+                        return syncedFromLrclib
+                    }
                 }
                 L.d("Lyrics: embedded tag, plain text (${plainLines.size} lines)")
                 return LyricsResult(
@@ -205,24 +209,37 @@ constructor(
             }
         }
 
-        // 3. LRCLIB
+        // 3. LRCLIB (full — synced preferred, plain as fallback)
         if (!lyricsSettings.lrclibEnabled) return null
         return tryLrclib(song)
     }
 
     /**
-     * Queries LRCLIB (Room cache first, then network) and returns the best available result, or
-     * null if nothing is found. Extracted so it can be called both from the normal flow and from
-     * the "prefer synced" branch inside the embedded-plain block.
+     * Queries LRCLIB and returns a result ONLY if it has synced lyrics. Plain-text results are
+     * discarded. Used by the lrclibPreferSynced path so we never replace embedded plain text with
+     * LRCLIB plain text (which could be a different or lower-quality version).
+     */
+    private suspend fun tryLrclibSyncedOnly(song: Song): LyricsResult? {
+        val artist = song.artists.firstOrNull()?.name?.resolve(context) ?: ""
+        val title = song.name.resolve(context)
+        val album = song.album.name.resolve(context)
+        val duration = (song.durationMs / 1000).toInt()
+        val remote = fetchFromLrclib(artist, title, album, duration) ?: return null
+        val synced = remote.syncedLyrics ?: return null
+        val lines = LrcParser.parse(synced)
+        return if (lines.isNotEmpty()) LyricsResult(lines, isSynced = true, source = LyricsSource.LRCLIB_SYNCED) else null
+    }
+
+    /**
+     * Queries LRCLIB (Room cache first, then network) and returns the best available result
+     * (synced preferred, plain as fallback), or null if nothing is found.
      */
     private suspend fun tryLrclib(song: Song): LyricsResult? {
         val artist = song.artists.firstOrNull()?.name?.resolve(context) ?: ""
         val title = song.name.resolve(context)
         val album = song.album.name.resolve(context)
         val duration = (song.durationMs / 1000).toInt()
-
         val remote = fetchFromLrclib(artist, title, album, duration) ?: return null
-
         val synced = remote.syncedLyrics
         if (synced != null) {
             val lines = LrcParser.parse(synced)
@@ -231,7 +248,6 @@ constructor(
                 return LyricsResult(lines, isSynced = true, source = LyricsSource.LRCLIB_SYNCED)
             }
         }
-
         val plain = remote.plainLyrics
         if (!plain.isNullOrBlank()) {
             val lines =
@@ -245,7 +261,6 @@ constructor(
                 return LyricsResult(lines, isSynced = false, source = LyricsSource.LRCLIB_PLAIN)
             }
         }
-
         return null
     }
 
@@ -253,21 +268,6 @@ constructor(
     // FLAC Vorbis Comment parser
     // -------------------------------------------------------------------------
 
-    /**
-     * Parses a FLAC file's Vorbis Comment metadata block directly from its raw bytes to extract the
-     * LYRICS field.
-     *
-     * Android's MediaMetadataRetriever does not reliably read LYRICS from FLAC files, so we parse
-     * the binary format ourselves. FLAC structure:
-     * - 4 bytes magic: "fLaC"
-     * - Sequence of metadata blocks, each with:
-     *     - 1 byte: bit7 = last-block flag, bits6-0 = block type
-     *     - 3 bytes big-endian: block data length
-     *     - N bytes: block data
-     * - Block type 4 = VORBIS_COMMENT, containing UTF-8 "KEY=VALUE" pairs
-     *
-     * Recognised field names (case-insensitive): LYRICS, UNSYNCEDLYRICS.
-     */
     private fun readFlacVorbisLyrics(path: String): String? {
         return try {
             val bytes = java.io.File(path).readBytes()
@@ -278,11 +278,11 @@ constructor(
         }
     }
 
-    /** Fallback: reads FLAC bytes via content URI when the direct path is unavailable. */
     private fun readFlacVorbisLyricsFromUri(uri: Uri): String? {
         return try {
             val bytes =
-                context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return null
+                context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    ?: return null
             parseFlacLyrics(bytes)
         } catch (e: Exception) {
             L.d("FLAC lyrics via URI failed for $uri: $e")
@@ -290,10 +290,6 @@ constructor(
         }
     }
 
-    /**
-     * Core FLAC Vorbis Comment parser. Walks the metadata block chain looking for block type 4,
-     * then scans the comment list for a LYRICS or UNSYNCEDLYRICS entry.
-     */
     private fun parseFlacLyrics(bytes: ByteArray): String? {
         if (bytes.size < 4) return null
         if (
@@ -303,7 +299,6 @@ constructor(
                 bytes[3] != 0x43.toByte()
         )
             return null
-
         var pos = 4
         while (pos + 4 <= bytes.size) {
             val header = bytes[pos].toInt() and 0xFF
@@ -314,36 +309,26 @@ constructor(
                     ((bytes[pos + 2].toInt() and 0xFF) shl 8) or
                     (bytes[pos + 3].toInt() and 0xFF)
             pos += 4
-
             if (pos + length > bytes.size) break
-
             if (blockType == 4) {
                 val lyrics = parseVorbisCommentBlock(bytes, pos, length)
                 if (lyrics != null) return lyrics
             }
-
             pos += length
             if (isLast) break
         }
         return null
     }
 
-    /**
-     * Parses a Vorbis Comment block and returns the value of the LYRICS or UNSYNCEDLYRICS field, or
-     * null if neither is present. All field name comparisons are case-insensitive.
-     */
     private fun parseVorbisCommentBlock(bytes: ByteArray, start: Int, length: Int): String? {
         var pos = start
         val end = start + length
-
         if (pos + 4 > end) return null
         val vendorLen = readLeInt(bytes, pos)
         pos += 4 + vendorLen
-
         if (pos + 4 > end) return null
         val commentCount = readLeInt(bytes, pos)
         pos += 4
-
         repeat(commentCount) {
             if (pos + 4 > end) return null
             val commentLen = readLeInt(bytes, pos)
@@ -351,7 +336,6 @@ constructor(
             if (pos + commentLen > end) return null
             val comment = String(bytes, pos, commentLen, Charsets.UTF_8)
             pos += commentLen
-
             val upper = comment.uppercase()
             if (upper.startsWith("LYRICS=") || upper.startsWith("UNSYNCEDLYRICS=")) {
                 val sepIdx = comment.indexOf('=')
@@ -364,7 +348,6 @@ constructor(
         return null
     }
 
-    /** Reads a 4-byte little-endian unsigned integer from [bytes] at [offset]. */
     private fun readLeInt(bytes: ByteArray, offset: Int): Int =
         (bytes[offset].toInt() and 0xFF) or
             ((bytes[offset + 1].toInt() and 0xFF) shl 8) or
@@ -375,25 +358,20 @@ constructor(
     // MediaMetadataRetriever — MP3 / M4A / OGG / Opus (Android 9+ only)
     // -------------------------------------------------------------------------
 
-    /** Reads embedded lyrics using the direct file path (preferred). */
     private fun readEmbeddedFromPath(path: String): String? {
         val retriever = MediaMetadataRetriever()
         return try {
             retriever.setDataSource(path)
-            // 28 = MediaMetadataRetriever.METADATA_KEY_LYRICS
             val raw = retriever.extractMetadata(28)
             if (raw.isNullOrBlank()) null else raw.trim()
         } catch (e: Exception) {
             L.d("Embedded lyrics unavailable via path $path: $e")
             null
         } finally {
-            try {
-                retriever.release()
-            } catch (_: Exception) {}
+            try { retriever.release() } catch (_: Exception) {}
         }
     }
 
-    /** Fallback: reads embedded lyrics via content URI. */
     private fun readEmbeddedFromUri(uri: Uri, song: Song): String? {
         val retriever = MediaMetadataRetriever()
         return try {
@@ -404,9 +382,7 @@ constructor(
             L.d("Embedded lyrics unavailable via URI for ${song.path.name}: $e")
             null
         } finally {
-            try {
-                retriever.release()
-            } catch (_: Exception) {}
+            try { retriever.release() } catch (_: Exception) {}
         }
     }
 
@@ -438,14 +414,12 @@ constructor(
     private fun readLrcForSong(song: Song): String? {
         val songFileName = song.path.name ?: return null
         val lrcFileName = songFileName.replaceAfterLast('.', "lrc", "$songFileName.lrc")
-
         val dataPath = getDataPath(song.uri)
         if (dataPath != null) {
             val lrcPath = dataPath.replaceAfterLast('.', "lrc", "$dataPath.lrc")
             val result = readFile(lrcPath)
             if (result != null) return result
         }
-
         return searchMediaStore(lrcFileName)
     }
 

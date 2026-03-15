@@ -270,11 +270,14 @@ class PlaybackPanelFragment :
         lyricsAdapter?.setIsSynced(isSynced)
     }
 
-    /** Scrolls to keep the active lyric line visible and highlights it. */
+        /** Scrolls to keep the active lyric line visible and highlights it. */
     private fun updateCurrentLine(index: Int) {
         val adapter = lyricsAdapter ?: return
+        val previousIndex = adapter.activeIndex
         adapter.setActiveIndex(index)
-        if (index >= 0) {
+        // Only scroll when the active line actually changed.
+        // Scrolling on every emission interrupted manual scrolling by the user.
+        if (index >= 0 && index != previousIndex) {
             requireBinding().playbackLyrics?.smoothScrollToPosition(index)
         }
     }
@@ -320,7 +323,8 @@ class PlaybackPanelFragment :
     /** Adapter that renders a list of [LrcLine] items and highlights the active one. */
     private class LyricsAdapter : ListAdapter<LrcLine, LyricsAdapter.ViewHolder>(LrcLineDiff) {
 
-        private var activeIndex = -1
+                var activeIndex = -1
+            private set
         private var isSynced = true
 
         fun setActiveIndex(index: Int) {

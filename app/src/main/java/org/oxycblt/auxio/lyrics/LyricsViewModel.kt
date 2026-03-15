@@ -50,7 +50,8 @@ class LyricsViewModel
 constructor(
     private val playbackManager: PlaybackStateManager,
     private val lyricsRepository: LyricsRepository,
-) : ViewModel(), PlaybackStateManager.Listener {
+    private val lyricsSettings: LyricsSettings,
+) : ViewModel(), PlaybackStateManager.Listener, LyricsSettings.Listener {
 
     private val _lines = MutableStateFlow<List<LrcLine>>(emptyList())
 
@@ -61,8 +62,8 @@ constructor(
     private val _isSynced = MutableStateFlow(true)
 
     /**
-     * True when the current lyrics have timestamps. False for plain text (LRCLIB fallback). The UI
-     * uses this to show all lines at full opacity instead of dimming inactive ones.
+     * True when the current lyrics have timestamps. False for plain text. The UI uses this to show
+     * all lines at full opacity instead of dimming inactive ones.
      */
     val isSynced: StateFlow<Boolean>
         get() = _isSynced
@@ -80,12 +81,34 @@ constructor(
 
     init {
         playbackManager.addListener(this)
+        lyricsSettings.registerListener(this)
     }
 
     override fun onCleared() {
         playbackManager.removeListener(this)
+        lyricsSettings.unregisterListener(this)
         stopTicker()
     }
+
+    // -------------------------------------------------------------------------
+    // LyricsSettings.Listener — Bug 5 fix
+    // -------------------------------------------------------------------------
+
+    /** LRCLIB toggled — cached results may now be wrong, clear them. */
+    override fun onLrclibEnabledChanged() {
+        L.d("lrclibEnabled changed — clearing memory cache")
+        lyricsRepository.clearMemoryCache()
+    }
+
+    /** Prefer-synced toggled — lookup order changed, clear cache. */
+    override fun onLrclibPreferSyncedChanged() {
+        L.d("lrclibPreferSynced changed — clearing memory cache")
+        lyricsRepository.clearMemoryCache()
+    }
+
+    // -------------------------------------------------------------------------
+    // PlaybackStateManager.Listener
+    // -------------------------------------------------------------------------
 
     override fun onNewPlayback(
         parent: MusicParent?,
@@ -106,7 +129,15 @@ constructor(
     override fun onProgressionChanged(progression: Progression) {
         currentProgression = progression
         updateCurrentLine(progression.calculateElapsedPositionMs())
-        if (progression.isPlaying) startTicker() else stopTicker()
+        if (progression.isPlaying) {
+            // Bug 1 fix: only start the ticker if lyrics are already loaded.
+            // If _lines is still empty, loadLyricsFor will call startTicker once it finishes.
+            // This prevents the ticker from running on an empty list (which caused desync)
+            // while still handling the "play pressed after lyrics loaded" case correctly.
+            if (_lines.value.isNotEmpty() && _isSynced.value) startTicker()
+        } else {
+            stopTicker()
+        }
     }
 
     override fun onSessionEnded() {
@@ -140,6 +171,8 @@ constructor(
                     _lines.value = result.lines
                     _isSynced.value = result.isSynced
                     if (result.isSynced) {
+                        // Snap to correct line immediately, then start ticker if playing.
+                        // _lines is already populated at this point so the ticker is safe to run.
                         val posMs =
                             currentProgression?.calculateElapsedPositionMs()
                                 ?: playbackManager.progression.calculateElapsedPositionMs()
@@ -190,10 +223,11 @@ constructor(
         if (!_isSynced.value) return
         val snapshot = _lines.value
         if (snapshot.isEmpty()) return
-        var active = -1
-        for (i in snapshot.indices) {
-            if (snapshot[i].startMs <= posMs) active = i else break
-        }
-        if (_currentLineIndex.value != active) _currentLineIndex.value = active
+        // Bug 2 fix: indexOfLast correctly handles consecutive lines with the same timestamp
+        // (e.g. chorus repeats). The old loop with break exited too early in those cases.
+        val active = snapshot.indexOfLast { it.startMs <= posMs }
+        // Bug 6: if the active line is a silence marker, report -1 to turn off highlight.
+        val reported = if (active >= 0 && snapshot[active].isSilence) -1 else active
+        if (_currentLineIndex.value != reported) _currentLineIndex.value = reported
     }
 }

@@ -21,6 +21,11 @@ package org.oxycblt.auxio.lyrics
  * A single line of a synced lyric file.
  *
  * @param startMs The timestamp in milliseconds when this line should be highlighted.
- * @param text The lyric text to display.
+ * @param text The lyric text to display. An empty string means an instrumental silence marker —
+ *   the active-line highlight should be turned off when this line is reached.
  */
-data class LrcLine(val startMs: Long, val text: String)
+data class LrcLine(val startMs: Long, val text: String) {
+    /** True when this line represents an instrumental silence (empty text body in the LRC file). */
+    val isSilence: Boolean
+        get() = text.isEmpty()
+}
