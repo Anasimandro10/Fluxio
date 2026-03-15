@@ -127,9 +127,9 @@ constructor(
     }
 
     /**
-     * Reloads lyrics for the song that is currently playing, if any.
-     * Called after settings change so the new configuration takes effect immediately
-     * without the user having to skip to the next song.
+     * Reloads lyrics for the song that is currently playing, if any. Called after settings change
+     * so the new configuration takes effect immediately without the user having to skip to the next
+     * song.
      */
     private fun reloadCurrentSong() {
         val song = playbackManager.currentSong ?: return
