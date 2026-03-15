@@ -24,6 +24,8 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.BufferedInputStream
+import java.io.InputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
@@ -57,15 +59,18 @@ enum class LyricsSource {
  * 1. In-memory LRU cache (instant — no I/O at all)
  * 2. Local .lrc file next to the audio file
  * 3. Embedded lyrics in the audio file tags (ID3v2 USLT, Vorbis LYRICS, MP4 ©lyr)
- *     - If synced (LRC format): returned immediately.
- *     - If plain text and [LyricsSettings.lrclibPreferSynced] is enabled: LRCLIB is checked for a
- *       synced version only. LRCLIB plain text is NOT accepted as a replacement — embedded plain is
- *       returned as fallback in that case.
- *     - If plain text and [LyricsSettings.lrclibPreferSynced] is disabled: returned immediately.
+ *    - If synced (LRC format): returned immediately.
+ *    - If plain text and [LyricsSettings.lrclibPreferSynced] is enabled: LRCLIB is checked for a
+ *      synced version only. LRCLIB plain text is NOT accepted as a replacement — embedded plain
+ *      is returned as fallback in that case.
+ *    - If plain text and [LyricsSettings.lrclibPreferSynced] is disabled: returned immediately.
  * 4. LRCLIB (Room disk cache → network) — only if enabled in settings
  *
- * Call [clearMemoryCache] when settings that affect the lookup order change so cached results are
- * re-evaluated on next playback.
+ * Call [clearMemoryCache] when settings that affect the lookup order change so cached results
+ * are re-evaluated on next playback.
+ *
+ * FLAC files are parsed incrementally — only the metadata blocks at the start of the file are
+ * read, never the audio data. This prevents OOM crashes on large FLAC files (90–120 MB).
  */
 @Singleton
 class LyricsRepository
@@ -189,9 +194,8 @@ constructor(
                     .filter { it.isNotEmpty() }
                     .map { LrcLine(startMs = 0L, text = it) }
             if (plainLines.isNotEmpty()) {
-                // Bug 4 fix: when lrclibPreferSynced is on, only accept LRCLIB if it has a
-                // synced version. If LRCLIB only has plain text, use the embedded lyrics —
-                // they are the official lyrics of the file and LRCLIB plain may differ.
+                // When lrclibPreferSynced is on, only accept LRCLIB if it has a synced version.
+                // If LRCLIB only has plain text, use the embedded lyrics.
                 if (lyricsSettings.lrclibEnabled && lyricsSettings.lrclibPreferSynced) {
                     L.d("Lyrics: embedded plain — checking LRCLIB for synced version only")
                     val syncedFromLrclib = tryLrclibSyncedOnly(song)
@@ -216,8 +220,7 @@ constructor(
 
     /**
      * Queries LRCLIB and returns a result ONLY if it has synced lyrics. Plain-text results are
-     * discarded. Used by the lrclibPreferSynced path so we never replace embedded plain text with
-     * LRCLIB plain text (which could be a different or lower-quality version).
+     * discarded. Used by the lrclibPreferSynced path.
      */
     private suspend fun tryLrclibSyncedOnly(song: Song): LyricsResult? {
         val artist = song.artists.firstOrNull()?.name?.resolve(context) ?: ""
@@ -227,14 +230,12 @@ constructor(
         val remote = fetchFromLrclib(artist, title, album, duration) ?: return null
         val synced = remote.syncedLyrics ?: return null
         val lines = LrcParser.parse(synced)
-        return if (lines.isNotEmpty())
-            LyricsResult(lines, isSynced = true, source = LyricsSource.LRCLIB_SYNCED)
-        else null
+        return if (lines.isNotEmpty()) LyricsResult(lines, isSynced = true, source = LyricsSource.LRCLIB_SYNCED) else null
     }
 
     /**
-     * Queries LRCLIB (Room cache first, then network) and returns the best available result (synced
-     * preferred, plain as fallback), or null if nothing is found.
+     * Queries LRCLIB (Room cache first, then network) and returns the best available result
+     * (synced preferred, plain as fallback), or null if nothing is found.
      */
     private suspend fun tryLrclib(song: Song): LyricsResult? {
         val artist = song.artists.firstOrNull()?.name?.resolve(context) ?: ""
@@ -267,60 +268,121 @@ constructor(
     }
 
     // -------------------------------------------------------------------------
-    // FLAC Vorbis Comment parser
+    // FLAC Vorbis Comment parser — incremental (no full-file load)
     // -------------------------------------------------------------------------
 
+    /**
+     * Reads FLAC Vorbis Comment lyrics from a file path using an incremental stream reader.
+     * Only the metadata blocks at the start of the file are read — the audio data is never
+     * touched. This prevents OOM errors on large FLAC files.
+     */
     private fun readFlacVorbisLyrics(path: String): String? {
         return try {
-            val bytes = java.io.File(path).readBytes()
-            parseFlacLyrics(bytes)
+            java.io.FileInputStream(path).use { fis ->
+                parseFlacStream(BufferedInputStream(fis))
+            }
         } catch (e: Exception) {
             L.d("FLAC lyrics via path failed for $path: $e")
             null
         }
     }
 
+    /**
+     * Reads FLAC Vorbis Comment lyrics via a content URI using an incremental stream reader.
+     * Only the metadata blocks are read — the audio data is never loaded into memory.
+     */
     private fun readFlacVorbisLyricsFromUri(uri: Uri): String? {
         return try {
-            val bytes =
-                context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return null
-            parseFlacLyrics(bytes)
+            context.contentResolver.openInputStream(uri)?.use { raw ->
+                parseFlacStream(BufferedInputStream(raw))
+            }
         } catch (e: Exception) {
             L.d("FLAC lyrics via URI failed for $uri: $e")
             null
         }
     }
 
-    private fun parseFlacLyrics(bytes: ByteArray): String? {
-        if (bytes.size < 4) return null
+    /**
+     * Parses FLAC metadata blocks from a stream without loading the audio data.
+     *
+     * Reads exactly as many bytes as needed to walk the metadata block chain, then stops.
+     * A 1 MB safety cap prevents pathological inputs from consuming too much memory.
+     *
+     * FLAC structure:
+     *   4 bytes magic: "fLaC"
+     *   Sequence of metadata blocks, each with:
+     *     1 byte:  bit7 = last-block flag, bits6-0 = block type
+     *     3 bytes: block data length (big-endian)
+     *     N bytes: block data
+     *   Block type 4 = VORBIS_COMMENT
+     */
+    private fun parseFlacStream(stream: BufferedInputStream): String? {
+        val magic = ByteArray(4)
+        if (stream.read(magic) != 4) return null
+        // Verify FLAC magic: f L a C
         if (
-            bytes[0] != 0x66.toByte() ||
-                bytes[1] != 0x4C.toByte() ||
-                bytes[2] != 0x61.toByte() ||
-                bytes[3] != 0x43.toByte()
-        )
-            return null
-        var pos = 4
-        while (pos + 4 <= bytes.size) {
-            val header = bytes[pos].toInt() and 0xFF
-            val isLast = (header and 0x80) != 0
-            val blockType = header and 0x7F
+            magic[0] != 0x66.toByte() ||
+                magic[1] != 0x4C.toByte() ||
+                magic[2] != 0x61.toByte() ||
+                magic[3] != 0x43.toByte()
+        ) return null
+
+        val header = ByteArray(4)
+        var totalRead = 4
+        // 1 MB safety cap — metadata blocks are never this large in practice
+        val maxBytes = 1 * 1024 * 1024
+
+        while (totalRead < maxBytes) {
+            if (stream.read(header) != 4) break
+            totalRead += 4
+
+            val blockHeader = header[0].toInt() and 0xFF
+            val isLast = (blockHeader and 0x80) != 0
+            val blockType = blockHeader and 0x7F
             val length =
-                ((bytes[pos + 1].toInt() and 0xFF) shl 16) or
-                    ((bytes[pos + 2].toInt() and 0xFF) shl 8) or
-                    (bytes[pos + 3].toInt() and 0xFF)
-            pos += 4
-            if (pos + length > bytes.size) break
+                ((header[1].toInt() and 0xFF) shl 16) or
+                    ((header[2].toInt() and 0xFF) shl 8) or
+                    (header[3].toInt() and 0xFF)
+
+            if (length <= 0 || totalRead + length > maxBytes) break
+
             if (blockType == 4) {
-                val lyrics = parseVorbisCommentBlock(bytes, pos, length)
-                if (lyrics != null) return lyrics
+                // Vorbis Comment block — read it fully and parse
+                val blockData = readStreamIncrementally(stream, length) ?: break
+                totalRead += length
+                val result = parseVorbisCommentBlock(blockData, 0, length)
+                if (result != null) return result
+            } else {
+                // Skip this block by reading and discarding its bytes
+                val skipped = stream.skip(length.toLong())
+                totalRead += skipped.toInt()
+                if (skipped < length) break
             }
-            pos += length
+
             if (isLast) break
         }
         return null
     }
 
+    /**
+     * Reads exactly [length] bytes from [stream] into a new ByteArray.
+     * Returns null if the stream ends before [length] bytes are available.
+     */
+    private fun readStreamIncrementally(stream: InputStream, length: Int): ByteArray? {
+        val buf = ByteArray(length)
+        var offset = 0
+        while (offset < length) {
+            val n = stream.read(buf, offset, length - offset)
+            if (n < 0) return null
+            offset += n
+        }
+        return buf
+    }
+
+    /**
+     * Parses a Vorbis Comment block and returns the value of the LYRICS or UNSYNCEDLYRICS field,
+     * or null if neither is present. All field name comparisons are case-insensitive.
+     */
     private fun parseVorbisCommentBlock(bytes: ByteArray, start: Int, length: Int): String? {
         var pos = start
         val end = start + length
@@ -349,6 +411,7 @@ constructor(
         return null
     }
 
+    /** Reads a 4-byte little-endian unsigned integer from [bytes] at [offset]. */
     private fun readLeInt(bytes: ByteArray, offset: Int): Int =
         (bytes[offset].toInt() and 0xFF) or
             ((bytes[offset + 1].toInt() and 0xFF) shl 8) or
@@ -369,9 +432,7 @@ constructor(
             L.d("Embedded lyrics unavailable via path $path: $e")
             null
         } finally {
-            try {
-                retriever.release()
-            } catch (_: Exception) {}
+            try { retriever.release() } catch (_: Exception) {}
         }
     }
 
@@ -385,9 +446,7 @@ constructor(
             L.d("Embedded lyrics unavailable via URI for ${song.path.name}: $e")
             null
         } finally {
-            try {
-                retriever.release()
-            } catch (_: Exception) {}
+            try { retriever.release() } catch (_: Exception) {}
         }
     }
 
