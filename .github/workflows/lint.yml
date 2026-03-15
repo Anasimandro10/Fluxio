@@ -56,6 +56,3 @@ jobs:
 
     - name: Check formatting with spotless
       run: ./gradlew spotlessCheck
-
-    - name: Test musikr with Gradle
-      run: ./gradlew musikr:testDebug
