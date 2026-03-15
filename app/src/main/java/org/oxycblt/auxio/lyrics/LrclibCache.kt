@@ -70,6 +70,10 @@ interface LrclibCacheDao {
     /** Delete all cached entries. Called from the "Clear lyrics cache" settings button. */
     @Query("DELETE FROM lrclib_cache") suspend fun nukeAll()
 
+    /** Delete only entries where no result was found. Called when LRCLIB is enabled so previously
+     *  missed songs get a fresh attempt on next playback. */
+    @Query("DELETE FROM lrclib_cache WHERE noResult = 1") suspend fun deleteNoResults()
+
     /** Delete the cached entry for a specific song (for the "refresh" button per song). */
     @Query("DELETE FROM lrclib_cache WHERE cacheKey = :key") suspend fun delete(key: String)
 
@@ -122,6 +126,9 @@ class LrclibCache @Inject constructor(private val dao: LrclibCacheDao) {
     /** Deletes the cache entry for this song (used by the "refresh" button). */
     suspend fun invalidate(artistName: String, trackTitle: String) =
         dao.delete(keyFor(artistName, trackTitle))
+
+    /** Deletes all "no result" entries so previously missed songs get a fresh search. */
+    suspend fun clearNoResults() = dao.deleteNoResults()
 
     /** Deletes all cached entries. */
     suspend fun clearAll() = dao.nukeAll()
