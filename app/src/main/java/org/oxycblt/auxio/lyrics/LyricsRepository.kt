@@ -57,15 +57,15 @@ enum class LyricsSource {
  * 1. In-memory LRU cache (instant — no I/O at all)
  * 2. Local .lrc file next to the audio file
  * 3. Embedded lyrics in the audio file tags (ID3v2 USLT, Vorbis LYRICS, MP4 ©lyr)
- *    - If synced (LRC format): returned immediately.
- *    - If plain text and [LyricsSettings.lrclibPreferSynced] is enabled: LRCLIB is checked for a
- *      synced version only. LRCLIB plain text is NOT accepted as a replacement — embedded plain
- *      is returned as fallback in that case.
- *    - If plain text and [LyricsSettings.lrclibPreferSynced] is disabled: returned immediately.
+ *     - If synced (LRC format): returned immediately.
+ *     - If plain text and [LyricsSettings.lrclibPreferSynced] is enabled: LRCLIB is checked for a
+ *       synced version only. LRCLIB plain text is NOT accepted as a replacement — embedded plain is
+ *       returned as fallback in that case.
+ *     - If plain text and [LyricsSettings.lrclibPreferSynced] is disabled: returned immediately.
  * 4. LRCLIB (Room disk cache → network) — only if enabled in settings
  *
- * Call [clearMemoryCache] when settings that affect the lookup order change so cached results
- * are re-evaluated on next playback.
+ * Call [clearMemoryCache] when settings that affect the lookup order change so cached results are
+ * re-evaluated on next playback.
  */
 @Singleton
 class LyricsRepository
@@ -227,12 +227,14 @@ constructor(
         val remote = fetchFromLrclib(artist, title, album, duration) ?: return null
         val synced = remote.syncedLyrics ?: return null
         val lines = LrcParser.parse(synced)
-        return if (lines.isNotEmpty()) LyricsResult(lines, isSynced = true, source = LyricsSource.LRCLIB_SYNCED) else null
+        return if (lines.isNotEmpty())
+            LyricsResult(lines, isSynced = true, source = LyricsSource.LRCLIB_SYNCED)
+        else null
     }
 
     /**
-     * Queries LRCLIB (Room cache first, then network) and returns the best available result
-     * (synced preferred, plain as fallback), or null if nothing is found.
+     * Queries LRCLIB (Room cache first, then network) and returns the best available result (synced
+     * preferred, plain as fallback), or null if nothing is found.
      */
     private suspend fun tryLrclib(song: Song): LyricsResult? {
         val artist = song.artists.firstOrNull()?.name?.resolve(context) ?: ""
@@ -281,8 +283,7 @@ constructor(
     private fun readFlacVorbisLyricsFromUri(uri: Uri): String? {
         return try {
             val bytes =
-                context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                    ?: return null
+                context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return null
             parseFlacLyrics(bytes)
         } catch (e: Exception) {
             L.d("FLAC lyrics via URI failed for $uri: $e")
@@ -368,7 +369,9 @@ constructor(
             L.d("Embedded lyrics unavailable via path $path: $e")
             null
         } finally {
-            try { retriever.release() } catch (_: Exception) {}
+            try {
+                retriever.release()
+            } catch (_: Exception) {}
         }
     }
 
@@ -382,7 +385,9 @@ constructor(
             L.d("Embedded lyrics unavailable via URI for ${song.path.name}: $e")
             null
         } finally {
-            try { retriever.release() } catch (_: Exception) {}
+            try {
+                retriever.release()
+            } catch (_: Exception) {}
         }
     }
 
