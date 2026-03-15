@@ -31,6 +31,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.oxycblt.auxio.music.resolve
 import org.oxycblt.musikr.Song
+import org.oxycblt.musikr.fs.Format
 import timber.log.Timber as L
 
 /**
@@ -57,6 +58,10 @@ enum class LyricsSource {
  * 2. Local .lrc file next to the audio file
  * 3. Embedded lyrics in the audio file tags (ID3v2 USLT, Vorbis LYRICS, MP4 ©lyr)
  * 4. LRCLIB (Room disk cache → network) — only if enabled in settings
+ *
+ * For FLAC files, embedded lyrics are read by directly parsing the Vorbis Comment block, because
+ * Android's [MediaMetadataRetriever] does not reliably expose the LYRICS field from FLAC files.
+ * For all other formats (MP3, M4A, OGG, Opus), [MediaMetadataRetriever] is used as before.
  *
  * The in-memory cache holds 30 entries so recently played songs show lyrics instantly. The
  * [prefetch] method warms the cache for the next song in the queue while the current one is
@@ -141,41 +146,49 @@ constructor(
             }
         }
 
-        // 2. Embedded tags (ID3v2 USLT / Vorbis LYRICS / MP4 ©lyr)
-        // Requires Android 9 (API 28). On older devices this step is silently skipped.
-        // A 3-second timeout guards against MediaMetadataRetriever hanging on slow storage —
-        // if it times out we simply fall through to LRCLIB without losing anything.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val embedded =
-                withTimeoutOrNull(3_000L) {
-                    withContext(Dispatchers.IO) { readEmbeddedLyrics(song.uri, song) }
+        // 2. Embedded tags
+        // FLAC files are handled with a dedicated Vorbis Comment parser because Android's
+        // MediaMetadataRetriever does not reliably read the LYRICS field from FLAC.
+        // All other formats use MediaMetadataRetriever (requires Android 9 / API 28).
+        val embedded =
+            withTimeoutOrNull(3_000L) {
+                withContext(Dispatchers.IO) {
+                    val dataPath = getDataPath(song.uri)
+                    if (song.format is Format.FLAC) {
+                        if (dataPath != null) readFlacVorbisLyrics(dataPath)
+                        else readFlacVorbisLyricsFromUri(song.uri)
+                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        if (dataPath != null) readEmbeddedFromPath(dataPath)
+                        else readEmbeddedFromUri(song.uri, song)
+                    } else {
+                        null
+                    }
                 }
-            if (embedded != null) {
-                // The tag may contain LRC-formatted content — try to parse it first.
-                val lrcLines = LrcParser.parse(embedded)
-                if (lrcLines.isNotEmpty()) {
-                    L.d("Lyrics: embedded tag, LRC format (${lrcLines.size} lines)")
-                    return LyricsResult(
-                        lrcLines,
-                        isSynced = true,
-                        source = LyricsSource.EMBEDDED_SYNCED,
-                    )
-                }
-                // Otherwise treat it as plain text.
-                val plainLines =
-                    embedded
-                        .lines()
-                        .map { it.trim() }
-                        .filter { it.isNotEmpty() }
-                        .map { LrcLine(startMs = 0L, text = it) }
-                if (plainLines.isNotEmpty()) {
-                    L.d("Lyrics: embedded tag, plain text (${plainLines.size} lines)")
-                    return LyricsResult(
-                        plainLines,
-                        isSynced = false,
-                        source = LyricsSource.EMBEDDED_PLAIN,
-                    )
-                }
+            }
+
+        if (embedded != null) {
+            val lrcLines = LrcParser.parse(embedded)
+            if (lrcLines.isNotEmpty()) {
+                L.d("Lyrics: embedded tag, LRC format (${lrcLines.size} lines)")
+                return LyricsResult(
+                    lrcLines,
+                    isSynced = true,
+                    source = LyricsSource.EMBEDDED_SYNCED,
+                )
+            }
+            val plainLines =
+                embedded
+                    .lines()
+                    .map { it.trim() }
+                    .filter { it.isNotEmpty() }
+                    .map { LrcLine(startMs = 0L, text = it) }
+            if (plainLines.isNotEmpty()) {
+                L.d("Lyrics: embedded tag, plain text (${plainLines.size} lines)")
+                return LyricsResult(
+                    plainLines,
+                    isSynced = false,
+                    source = LyricsSource.EMBEDDED_PLAIN,
+                )
             }
         }
 
@@ -216,37 +229,141 @@ constructor(
     }
 
     // -------------------------------------------------------------------------
-    // Embedded tags — Android 9+ only
+    // FLAC Vorbis Comment parser
     // -------------------------------------------------------------------------
 
     /**
-     * Reads the lyrics embedded in the audio file's tags using [MediaMetadataRetriever].
+     * Parses a FLAC file's Vorbis Comment metadata block directly from its raw bytes to extract
+     * the LYRICS field.
      *
-     * Covers:
-     * - MP3: ID3v2 USLT frame (unsynchronized lyrics)
-     * - FLAC / OGG / Opus: Vorbis LYRICS field
-     * - M4A / AAC / ALAC: MP4 ©lyr atom
+     * Android's MediaMetadataRetriever does not reliably read LYRICS from FLAC files, so we parse
+     * the binary format ourselves. FLAC structure:
+     * - 4 bytes magic: "fLaC"
+     * - Sequence of metadata blocks, each with:
+     *   - 1 byte: bit7 = last-block flag, bits6-0 = block type
+     *   - 3 bytes big-endian: block data length
+     *   - N bytes: block data
+     * - Block type 4 = VORBIS_COMMENT, containing UTF-8 "KEY=VALUE" pairs
      *
-     * Tries the direct file path first (more reliable on Android 10+ for tag reading), then falls
-     * back to the content URI. Returns null if no embedded lyrics are found. Must be called from a
-     * background thread.
+     * Recognised field names (case-insensitive): LYRICS, UNSYNCEDLYRICS.
      */
-    private fun readEmbeddedLyrics(uri: Uri, song: Song): String? {
-        // Try direct file path first — avoids content:// overhead, more reliable for tag reading
-        val dataPath = getDataPath(uri)
-        if (dataPath != null) {
-            val result = readEmbeddedFromPath(dataPath)
-            if (result != null) return result
+    private fun readFlacVorbisLyrics(path: String): String? {
+        return try {
+            val bytes = java.io.File(path).readBytes()
+            parseFlacLyrics(bytes)
+        } catch (e: Exception) {
+            L.d("FLAC lyrics via path failed for $path: $e")
+            null
         }
+    }
 
-        // Fallback: use the content URI directly
+    /** Fallback: reads FLAC bytes via content URI when the direct path is unavailable. */
+    private fun readFlacVorbisLyricsFromUri(uri: Uri): String? {
+        return try {
+            val bytes =
+                context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return null
+            parseFlacLyrics(bytes)
+        } catch (e: Exception) {
+            L.d("FLAC lyrics via URI failed for $uri: $e")
+            null
+        }
+    }
+
+    /**
+     * Core FLAC Vorbis Comment parser. Walks the metadata block chain looking for block type 4,
+     * then scans the comment list for a LYRICS or UNSYNCEDLYRICS entry.
+     */
+    private fun parseFlacLyrics(bytes: ByteArray): String? {
+        if (bytes.size < 4) return null
+        // Verify FLAC magic bytes: f L a C
+        if (bytes[0] != 0x66.toByte() ||
+            bytes[1] != 0x4C.toByte() ||
+            bytes[2] != 0x61.toByte() ||
+            bytes[3] != 0x43.toByte()
+        )
+            return null
+
+        var pos = 4
+        while (pos + 4 <= bytes.size) {
+            val header = bytes[pos].toInt() and 0xFF
+            val isLast = (header and 0x80) != 0
+            val blockType = header and 0x7F
+            val length =
+                ((bytes[pos + 1].toInt() and 0xFF) shl 16) or
+                    ((bytes[pos + 2].toInt() and 0xFF) shl 8) or
+                    (bytes[pos + 3].toInt() and 0xFF)
+            pos += 4
+
+            if (pos + length > bytes.size) break
+
+            if (blockType == 4) {
+                val lyrics = parseVorbisCommentBlock(bytes, pos, length)
+                if (lyrics != null) return lyrics
+            }
+
+            pos += length
+            if (isLast) break
+        }
+        return null
+    }
+
+    /**
+     * Parses a Vorbis Comment block and returns the value of the LYRICS or UNSYNCEDLYRICS field,
+     * or null if neither is present. All field name comparisons are case-insensitive.
+     */
+    private fun parseVorbisCommentBlock(bytes: ByteArray, start: Int, length: Int): String? {
+        var pos = start
+        val end = start + length
+
+        if (pos + 4 > end) return null
+        val vendorLen = readLeInt(bytes, pos)
+        pos += 4 + vendorLen
+
+        if (pos + 4 > end) return null
+        val commentCount = readLeInt(bytes, pos)
+        pos += 4
+
+        repeat(commentCount) {
+            if (pos + 4 > end) return null
+            val commentLen = readLeInt(bytes, pos)
+            pos += 4
+            if (pos + commentLen > end) return null
+            val comment = String(bytes, pos, commentLen, Charsets.UTF_8)
+            pos += commentLen
+
+            val upper = comment.uppercase()
+            if (upper.startsWith("LYRICS=") || upper.startsWith("UNSYNCEDLYRICS=")) {
+                val sepIdx = comment.indexOf('=')
+                if (sepIdx >= 0) {
+                    val value = comment.substring(sepIdx + 1).trim()
+                    if (value.isNotEmpty()) return value
+                }
+            }
+        }
+        return null
+    }
+
+    /** Reads a 4-byte little-endian unsigned integer from [bytes] at [offset]. */
+    private fun readLeInt(bytes: ByteArray, offset: Int): Int =
+        (bytes[offset].toInt() and 0xFF) or
+            ((bytes[offset + 1].toInt() and 0xFF) shl 8) or
+            ((bytes[offset + 2].toInt() and 0xFF) shl 16) or
+            ((bytes[offset + 3].toInt() and 0xFF) shl 24)
+
+    // -------------------------------------------------------------------------
+    // MediaMetadataRetriever — MP3 / M4A / OGG / Opus (Android 9+ only)
+    // -------------------------------------------------------------------------
+
+    /** Reads embedded lyrics using the direct file path (preferred). */
+    private fun readEmbeddedFromPath(path: String): String? {
         val retriever = MediaMetadataRetriever()
         return try {
-            retriever.setDataSource(context, uri)
+            retriever.setDataSource(path)
+            // 28 = MediaMetadataRetriever.METADATA_KEY_LYRICS
             val raw = retriever.extractMetadata(28)
             if (raw.isNullOrBlank()) null else raw.trim()
         } catch (e: Exception) {
-            L.d("Embedded lyrics unavailable via URI for ${song.path.name}: $e")
+            L.d("Embedded lyrics unavailable via path $path: $e")
             null
         } finally {
             try {
@@ -255,18 +372,15 @@ constructor(
         }
     }
 
-    /**
-     * Reads embedded lyrics using a direct file path. Faster and more reliable than content URIs on
-     * some Android versions.
-     */
-    private fun readEmbeddedFromPath(path: String): String? {
+    /** Fallback: reads embedded lyrics via content URI. */
+    private fun readEmbeddedFromUri(uri: Uri, song: Song): String? {
         val retriever = MediaMetadataRetriever()
         return try {
-            retriever.setDataSource(path)
+            retriever.setDataSource(context, uri)
             val raw = retriever.extractMetadata(28)
             if (raw.isNullOrBlank()) null else raw.trim()
         } catch (e: Exception) {
-            L.d("Embedded lyrics unavailable via path $path: $e")
+            L.d("Embedded lyrics unavailable via URI for ${song.path.name}: $e")
             null
         } finally {
             try {
