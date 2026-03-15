@@ -60,8 +60,8 @@ enum class LyricsSource {
  * 4. LRCLIB (Room disk cache → network) — only if enabled in settings
  *
  * For FLAC files, embedded lyrics are read by directly parsing the Vorbis Comment block, because
- * Android's [MediaMetadataRetriever] does not reliably expose the LYRICS field from FLAC files.
- * For all other formats (MP3, M4A, OGG, Opus), [MediaMetadataRetriever] is used as before.
+ * Android's [MediaMetadataRetriever] does not reliably expose the LYRICS field from FLAC files. For
+ * all other formats (MP3, M4A, OGG, Opus), [MediaMetadataRetriever] is used as before.
  *
  * The in-memory cache holds 30 entries so recently played songs show lyrics instantly. The
  * [prefetch] method warms the cache for the next song in the queue while the current one is
@@ -233,16 +233,16 @@ constructor(
     // -------------------------------------------------------------------------
 
     /**
-     * Parses a FLAC file's Vorbis Comment metadata block directly from its raw bytes to extract
-     * the LYRICS field.
+     * Parses a FLAC file's Vorbis Comment metadata block directly from its raw bytes to extract the
+     * LYRICS field.
      *
      * Android's MediaMetadataRetriever does not reliably read LYRICS from FLAC files, so we parse
      * the binary format ourselves. FLAC structure:
      * - 4 bytes magic: "fLaC"
      * - Sequence of metadata blocks, each with:
-     *   - 1 byte: bit7 = last-block flag, bits6-0 = block type
-     *   - 3 bytes big-endian: block data length
-     *   - N bytes: block data
+     *     - 1 byte: bit7 = last-block flag, bits6-0 = block type
+     *     - 3 bytes big-endian: block data length
+     *     - N bytes: block data
      * - Block type 4 = VORBIS_COMMENT, containing UTF-8 "KEY=VALUE" pairs
      *
      * Recognised field names (case-insensitive): LYRICS, UNSYNCEDLYRICS.
@@ -276,10 +276,11 @@ constructor(
     private fun parseFlacLyrics(bytes: ByteArray): String? {
         if (bytes.size < 4) return null
         // Verify FLAC magic bytes: f L a C
-        if (bytes[0] != 0x66.toByte() ||
-            bytes[1] != 0x4C.toByte() ||
-            bytes[2] != 0x61.toByte() ||
-            bytes[3] != 0x43.toByte()
+        if (
+            bytes[0] != 0x66.toByte() ||
+                bytes[1] != 0x4C.toByte() ||
+                bytes[2] != 0x61.toByte() ||
+                bytes[3] != 0x43.toByte()
         )
             return null
 
@@ -308,8 +309,8 @@ constructor(
     }
 
     /**
-     * Parses a Vorbis Comment block and returns the value of the LYRICS or UNSYNCEDLYRICS field,
-     * or null if neither is present. All field name comparisons are case-insensitive.
+     * Parses a Vorbis Comment block and returns the value of the LYRICS or UNSYNCEDLYRICS field, or
+     * null if neither is present. All field name comparisons are case-insensitive.
      */
     private fun parseVorbisCommentBlock(bytes: ByteArray, start: Int, length: Int): String? {
         var pos = start
