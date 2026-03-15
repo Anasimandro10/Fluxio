@@ -499,5 +499,7 @@
     <string name="set_lrclib_enabled_desc">Search for synced lyrics online when no local .lrc file is found. Sends: song title, artist, album and duration. Disabled by default.</string>
     <string name="set_lrclib_clear_cache">Clear lyrics cache</string>
     <string name="set_lrclib_clear_cache_desc">Delete all lyrics downloaded from LRCLIB</string>
+        <string name="set_lrclib_prefer_synced">Prefer synced lyrics from LRCLIB</string>
+    <string name="set_lrclib_prefer_synced_desc">When embedded lyrics have no timestamps, search LRCLIB first for a synced version. If LRCLIB has nothing, the embedded lyrics are used as fallback.</string>
     <string name="lyrics_no_sync_notice">Lyrics without synchronization</string>
 </resources>

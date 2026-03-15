@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     app:title="@string/set_lyrics">
 
@@ -10,6 +11,13 @@
             app:key="@string/set_key_lrclib_enabled"
             app:summary="@string/set_lrclib_enabled_desc"
             app:title="@string/set_lrclib_enabled" />
+
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:dependency="@string/set_key_lrclib_enabled"
+            app:key="@string/set_key_lrclib_prefer_synced"
+            app:summary="@string/set_lrclib_prefer_synced_desc"
+            app:title="@string/set_lrclib_prefer_synced" />
 
         <Preference
             app:dependency="@string/set_key_lrclib_enabled"

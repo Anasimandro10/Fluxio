@@ -57,15 +57,14 @@ enum class LyricsSource {
  * 1. In-memory LRU cache (instant — no I/O at all)
  * 2. Local .lrc file next to the audio file
  * 3. Embedded lyrics in the audio file tags (ID3v2 USLT, Vorbis LYRICS, MP4 ©lyr)
+ *    - If synced (LRC format): returned immediately.
+ *    - If plain text and [LyricsSettings.lrclibPreferSynced] is enabled: held as fallback,
+ *      LRCLIB is tried first (step 4). If LRCLIB has nothing, the plain text is used.
+ *    - If plain text and [LyricsSettings.lrclibPreferSynced] is disabled: returned immediately.
  * 4. LRCLIB (Room disk cache → network) — only if enabled in settings
  *
  * For FLAC files, embedded lyrics are read by directly parsing the Vorbis Comment block, because
- * Android's [MediaMetadataRetriever] does not reliably expose the LYRICS field from FLAC files. For
- * all other formats (MP3, M4A, OGG, Opus), [MediaMetadataRetriever] is used as before.
- *
- * The in-memory cache holds 30 entries so recently played songs show lyrics instantly. The
- * [prefetch] method warms the cache for the next song in the queue while the current one is
- * playing, making the transition feel immediate.
+ * Android's [MediaMetadataRetriever] does not reliably expose the LYRICS field from FLAC files.
  */
 @Singleton
 class LyricsRepository
@@ -176,6 +175,7 @@ constructor(
                     source = LyricsSource.EMBEDDED_SYNCED,
                 )
             }
+            // Embedded text is plain (no timestamps). Build the fallback result now.
             val plainLines =
                 embedded
                     .lines()
@@ -183,6 +183,15 @@ constructor(
                     .filter { it.isNotEmpty() }
                     .map { LrcLine(startMs = 0L, text = it) }
             if (plainLines.isNotEmpty()) {
+                // If the user wants LRCLIB synced to take priority over plain embedded lyrics,
+                // save this as a fallback and let LRCLIB run first (step 3 below).
+                if (lyricsSettings.lrclibEnabled && lyricsSettings.lrclibPreferSynced) {
+                    L.d("Lyrics: embedded plain — deferring to LRCLIB (prefer synced enabled)")
+                    val embeddedPlainFallback =
+                        LyricsResult(plainLines, isSynced = false, source = LyricsSource.EMBEDDED_PLAIN)
+                    val lrclibResult = tryLrclib(song)
+                    return lrclibResult ?: embeddedPlainFallback
+                }
                 L.d("Lyrics: embedded tag, plain text (${plainLines.size} lines)")
                 return LyricsResult(
                     plainLines,
@@ -194,7 +203,15 @@ constructor(
 
         // 3. LRCLIB
         if (!lyricsSettings.lrclibEnabled) return null
+        return tryLrclib(song)
+    }
 
+    /**
+     * Queries LRCLIB (Room cache first, then network) and returns the best available result, or
+     * null if nothing is found. Extracted so it can be called both from the normal flow and from
+     * the "prefer synced" branch inside the embedded-plain block.
+     */
+    private suspend fun tryLrclib(song: Song): LyricsResult? {
         val artist = song.artists.firstOrNull()?.name?.resolve(context) ?: ""
         val title = song.name.resolve(context)
         val album = song.album.name.resolve(context)
@@ -275,7 +292,6 @@ constructor(
      */
     private fun parseFlacLyrics(bytes: ByteArray): String? {
         if (bytes.size < 4) return null
-        // Verify FLAC magic bytes: f L a C
         if (
             bytes[0] != 0x66.toByte() ||
                 bytes[1] != 0x4C.toByte() ||
@@ -309,8 +325,8 @@ constructor(
     }
 
     /**
-     * Parses a Vorbis Comment block and returns the value of the LYRICS or UNSYNCEDLYRICS field, or
-     * null if neither is present. All field name comparisons are case-insensitive.
+     * Parses a Vorbis Comment block and returns the value of the LYRICS or UNSYNCEDLYRICS field,
+     * or null if neither is present. All field name comparisons are case-insensitive.
      */
     private fun parseVorbisCommentBlock(bytes: ByteArray, start: Int, length: Int): String? {
         var pos = start
@@ -367,9 +383,7 @@ constructor(
             L.d("Embedded lyrics unavailable via path $path: $e")
             null
         } finally {
-            try {
-                retriever.release()
-            } catch (_: Exception) {}
+            try { retriever.release() } catch (_: Exception) {}
         }
     }
 
@@ -384,9 +398,7 @@ constructor(
             L.d("Embedded lyrics unavailable via URI for ${song.path.name}: $e")
             null
         } finally {
-            try {
-                retriever.release()
-            } catch (_: Exception) {}
+            try { retriever.release() } catch (_: Exception) {}
         }
     }
 
