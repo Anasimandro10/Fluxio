@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Fluxio Project
+ * Copyright (c) 2026 Fluxio Project
  * MusicBrowser.kt is part of Fluxio.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -206,7 +206,7 @@ private constructor(
                     MusicType.ALBUMS -> homeGenerator.albums().map { it.toMediaItem(context) }
                     MusicType.ARTISTS -> homeGenerator.artists().map { it.toMediaItem(context) }
                     MusicType.GENRES -> homeGenerator.genres().map { it.toMediaItem(context) }
-                    MusicType.PLAYLISTS -> homeGenerator.playlists().map { it.toMediaItem(context) }
+                    MusicType.FOLDERS -> emptyList()
                 }
         }
 
