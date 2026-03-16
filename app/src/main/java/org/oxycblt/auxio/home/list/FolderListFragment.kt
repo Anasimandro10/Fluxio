@@ -41,9 +41,7 @@ import org.oxycblt.auxio.playback.PlaybackViewModel
 import org.oxycblt.auxio.ui.ViewBindingFragment
 import org.oxycblt.auxio.util.collectImmediately
 
-/**
- * A [ViewBindingFragment] that shows a list of [Folder]s in the library.
- */
+/** A [ViewBindingFragment] that shows a list of [Folder]s in the library. */
 @AndroidEntryPoint
 class FolderListFragment :
     ViewBindingFragment<FragmentHomeListBinding>(),
@@ -132,9 +130,7 @@ class FolderListFragment :
             indexingState == null || (empty && indexingState is IndexingState.Completed)
     }
 
-    /**
-     * A [SelectionIndicatorAdapter] that shows a list of [Folder]s using [FolderViewHolder].
-     */
+    /** A [SelectionIndicatorAdapter] that shows a list of [Folder]s using [FolderViewHolder]. */
     private class FolderAdapter(private val listener: SelectableListListener<Folder>) :
         SelectionIndicatorAdapter<Folder, FolderViewHolder>(
             object : SimpleDiffCallback<Folder>() {
