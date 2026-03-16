@@ -325,7 +325,9 @@ class PlaylistViewHolder private constructor(private val binding: ItemParentBind
     }
 }
 
-/** A [RecyclerView.ViewHolder] that displays a [Folder]. Use [from] to create an instance. */
+/**
+ * A [RecyclerView.ViewHolder] that displays a [Folder]. Use [from] to create an instance.
+ */
 class FolderViewHolder private constructor(private val binding: ItemParentBinding) :
     SelectionIndicatorAdapter.ViewHolder(binding.root) {
     /**
@@ -336,7 +338,7 @@ class FolderViewHolder private constructor(private val binding: ItemParentBindin
      */
     fun bind(folder: Folder, listener: SelectableListListener<Folder>) {
         listener.bind(folder, this, menuButton = binding.parentMenu)
-        binding.parentImage.setImageResource(R.drawable.ic_folder_24)
+        binding.parentImage.bind(folder.songs, folder.name, R.drawable.ic_folder_24)
         binding.parentName.text = folder.name
         binding.parentInfo.text =
             binding.context.getPlural(R.plurals.fmt_song_count, folder.songs.size)

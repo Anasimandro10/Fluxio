@@ -198,6 +198,7 @@ constructor(
             MusicType.ARTISTS -> R.id.option_filter_artists
             MusicType.GENRES -> R.id.option_filter_genres
             MusicType.PLAYLISTS -> R.id.option_filter_playlists
+            MusicType.FOLDERS -> R.id.option_filter_all
             // Null maps to filtering nothing.
             null -> R.id.option_filter_all
         }
