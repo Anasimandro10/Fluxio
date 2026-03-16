@@ -325,9 +325,7 @@ class PlaylistViewHolder private constructor(private val binding: ItemParentBind
     }
 }
 
-/**
- * A [RecyclerView.ViewHolder] that displays a [Folder]. Use [from] to create an instance.
- */
+/** A [RecyclerView.ViewHolder] that displays a [Folder]. Use [from] to create an instance. */
 class FolderViewHolder private constructor(private val binding: ItemParentBinding) :
     SelectionIndicatorAdapter.ViewHolder(binding.root) {
     /**
