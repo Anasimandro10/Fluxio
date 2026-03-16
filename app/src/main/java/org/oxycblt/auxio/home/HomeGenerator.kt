@@ -18,6 +18,7 @@
 package org.oxycblt.auxio.home
 
 import javax.inject.Inject
+import org.oxycblt.auxio.home.folders.Folder
 import org.oxycblt.auxio.home.tabs.Tab
 import org.oxycblt.auxio.list.ListSettings
 import org.oxycblt.auxio.list.adapter.UpdateInstructions
@@ -46,6 +47,8 @@ interface HomeGenerator {
     fun genres(): List<Genre>
 
     fun playlists(): List<Playlist>
+
+    fun folders(): List<Folder>
 
     fun tabs(): List<MusicType>
 
@@ -90,8 +93,6 @@ private class HomeGeneratorImpl(
     }
 
     override fun onHideCollaboratorsChanged() {
-        // Changes in the hide collaborator setting will change the artist contents
-        // of the library, consider it a library update.
         L.d("Collaborator setting changed, forwarding update")
         invalidator.invalidateMusic(MusicType.ARTISTS, UpdateInstructions.Diff)
     }
@@ -121,18 +122,22 @@ private class HomeGeneratorImpl(
         invalidator.invalidateMusic(MusicType.PLAYLISTS, UpdateInstructions.Replace(0))
     }
 
+    override fun onFolderSortChanged() {
+        super.onFolderSortChanged()
+        invalidator.invalidateMusic(MusicType.FOLDERS, UpdateInstructions.Replace(0))
+    }
+
     override fun onMusicChanges(changes: MusicRepository.Changes) {
         invalidator.invalidateEmpty()
 
         val library = musicRepository.library
         if (changes.deviceLibrary && library != null) {
             L.d("Refreshing library")
-            // Get the each list of items in the library to use as our list data.
-            // Applying the preferred sorting to them.
             invalidator.invalidateMusic(MusicType.SONGS, UpdateInstructions.Diff)
             invalidator.invalidateMusic(MusicType.ALBUMS, UpdateInstructions.Diff)
             invalidator.invalidateMusic(MusicType.ARTISTS, UpdateInstructions.Diff)
             invalidator.invalidateMusic(MusicType.GENRES, UpdateInstructions.Diff)
+            invalidator.invalidateMusic(MusicType.FOLDERS, UpdateInstructions.Diff)
         }
 
         if (changes.userLibrary && library != null) {
@@ -171,6 +176,27 @@ private class HomeGeneratorImpl(
     override fun playlists() =
         musicRepository.library?.let { listSettings.playlistSort.playlists(it.playlists) }
             ?: emptyList()
+
+    override fun folders(): List<Folder> {
+        val library = musicRepository.library ?: return emptyList()
+        // Group songs by their parent directory path
+        val grouped =
+            library.songs.groupBy { song ->
+                // Use the directory of the song's path as the folder key
+                song.path.directory
+            }
+        // Build Folder objects and sort by name ascending
+        return grouped
+            .map { (dirPath, songs) -> Folder(dirPath, songs) }
+            .sortedWith(
+                when (listSettings.folderSort.direction) {
+                    org.oxycblt.auxio.list.sort.Sort.Direction.ASCENDING ->
+                        compareBy { it.name.lowercase() }
+                    org.oxycblt.auxio.list.sort.Sort.Direction.DESCENDING ->
+                        compareByDescending { it.name.lowercase() }
+                }
+            )
+    }
 
     override fun tabs() = homeSettings.homeTabs.filterIsInstance<Tab.Visible>().map { it.type }
 }

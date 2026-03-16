@@ -26,6 +26,7 @@ import org.oxycblt.auxio.R
 import org.oxycblt.auxio.databinding.ItemHeaderBinding
 import org.oxycblt.auxio.databinding.ItemParentBinding
 import org.oxycblt.auxio.databinding.ItemSongBinding
+import org.oxycblt.auxio.home.folders.Folder
 import org.oxycblt.auxio.list.BasicHeader
 import org.oxycblt.auxio.list.PlainDivider
 import org.oxycblt.auxio.list.SelectableListListener
@@ -319,6 +320,55 @@ class PlaylistViewHolder private constructor(private val binding: ItemParentBind
         val DIFF_CALLBACK =
             object : SimpleDiffCallback<Playlist>() {
                 override fun areContentsTheSame(oldItem: Playlist, newItem: Playlist) =
+                    oldItem.name == newItem.name && oldItem.songs.size == newItem.songs.size
+            }
+    }
+}
+
+/**
+ * A [RecyclerView.ViewHolder] that displays a [Folder]. Use [from] to create an instance.
+ */
+class FolderViewHolder private constructor(private val binding: ItemParentBinding) :
+    SelectionIndicatorAdapter.ViewHolder(binding.root) {
+    /**
+     * Bind new data to this instance.
+     *
+     * @param folder The new [Folder] to bind.
+     * @param listener An [SelectableListListener] to bind interactions to.
+     */
+    fun bind(folder: Folder, listener: SelectableListListener<Folder>) {
+        listener.bind(folder, this, menuButton = binding.parentMenu)
+        binding.parentImage.setImageResource(R.drawable.ic_folder_24)
+        binding.parentName.text = folder.name
+        binding.parentInfo.text =
+            binding.context.getPlural(R.plurals.fmt_song_count, folder.songs.size)
+    }
+
+    override fun updatePlayingIndicator(isActive: Boolean, isPlaying: Boolean) {
+        binding.root.isSelected = isActive
+    }
+
+    override fun updateSelectionIndicator(isSelected: Boolean) {
+        binding.root.isActivated = isSelected
+    }
+
+    companion object {
+        /** Unique ID for this ViewHolder type. */
+        const val VIEW_TYPE = IntegerTable.VIEW_TYPE_FOLDER
+
+        /**
+         * Create a new instance.
+         *
+         * @param parent The parent to inflate this instance from.
+         * @return A new instance.
+         */
+        fun from(parent: View) =
+            FolderViewHolder(ItemParentBinding.inflate(parent.context.inflater))
+
+        /** A comparator that can be used with DiffUtil. */
+        val DIFF_CALLBACK =
+            object : SimpleDiffCallback<Folder>() {
+                override fun areContentsTheSame(oldItem: Folder, newItem: Folder) =
                     oldItem.name == newItem.name && oldItem.songs.size == newItem.songs.size
             }
     }

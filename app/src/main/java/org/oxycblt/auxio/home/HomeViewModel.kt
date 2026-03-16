@@ -22,6 +22,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import org.oxycblt.auxio.home.folders.Folder
 import org.oxycblt.auxio.home.tabs.Tab
 import org.oxycblt.auxio.list.ListSettings
 import org.oxycblt.auxio.list.adapter.UpdateInstructions
@@ -124,13 +125,27 @@ constructor(
         get() = _empty
 
     private val _playlistInstructions = MutableEvent<UpdateInstructions>()
-    /** Instructions for how to update [genreList] in the UI. */
+    /** Instructions for how to update [playlistList] in the UI. */
     val playlistInstructions: Event<UpdateInstructions>
         get() = _playlistInstructions
 
-    /** The current [Sort] used for [genreList]. */
+    /** The current [Sort] used for [playlistList]. */
     val playlistSort: Sort
         get() = listSettings.playlistSort
+
+    private val _folderList = MutableStateFlow(listOf<Folder>())
+    /** A list of [Folder]s derived from song paths, to be shown in the home view. */
+    val folderList: StateFlow<List<Folder>>
+        get() = _folderList
+
+    private val _folderInstructions = MutableEvent<UpdateInstructions>()
+    /** Instructions for how to update [folderList] in the UI. */
+    val folderInstructions: Event<UpdateInstructions>
+        get() = _folderInstructions
+
+    /** The current [Sort] used for [folderList]. */
+    val folderSort: Sort
+        get() = listSettings.folderSort
 
     private val homeGenerator = homeGeneratorFactory.create(this)
 
@@ -201,6 +216,10 @@ constructor(
                 _playlistInstructions.put(instructions)
                 _playlistList.value = homeGenerator.playlists()
             }
+            MusicType.FOLDERS -> {
+                _folderInstructions.put(instructions)
+                _folderList.value = homeGenerator.folders()
+            }
         }
     }
 
@@ -209,53 +228,32 @@ constructor(
         _shouldRecreate.put(Unit)
     }
 
-    /**
-     * Apply a new [Sort] to [songList].
-     *
-     * @param sort The [Sort] to apply.
-     */
     fun applySongSort(sort: Sort) {
         listSettings.songSort = sort
     }
 
-    /**
-     * Apply a new [Sort] to [albumList].
-     *
-     * @param sort The [Sort] to apply.
-     */
     fun applyAlbumSort(sort: Sort) {
         listSettings.albumSort = sort
     }
 
-    /**
-     * Apply a new [Sort] to [artistList].
-     *
-     * @param sort The [Sort] to apply.
-     */
     fun applyArtistSort(sort: Sort) {
         listSettings.artistSort = sort
     }
 
-    /**
-     * Apply a new [Sort] to [genreList].
-     *
-     * @param sort The [Sort] to apply.
-     */
     fun applyGenreSort(sort: Sort) {
         listSettings.genreSort = sort
     }
 
-    /**
-     * Apply a new [Sort] to [playlistList].
-     *
-     * @param sort The [Sort] to apply.
-     */
     fun applyPlaylistSort(sort: Sort) {
         listSettings.playlistSort = sort
     }
 
+    fun applyFolderSort(sort: Sort) {
+        listSettings.folderSort = sort
+    }
+
     /**
-     * Update [currentTabType] to reflect a new ViewPager2 position
+     * Update [currentTabType] to reflect a new ViewPager2 position.
      *
      * @param pagerPos The new position of the ViewPager2 instance.
      */

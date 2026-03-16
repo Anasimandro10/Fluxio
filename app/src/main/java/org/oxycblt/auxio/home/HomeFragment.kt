@@ -47,6 +47,7 @@ import org.oxycblt.auxio.detail.DetailViewModel
 import org.oxycblt.auxio.detail.Show
 import org.oxycblt.auxio.home.list.AlbumListFragment
 import org.oxycblt.auxio.home.list.ArtistListFragment
+import org.oxycblt.auxio.home.list.FolderListFragment
 import org.oxycblt.auxio.home.list.GenreListFragment
 import org.oxycblt.auxio.home.list.PlaylistListFragment
 import org.oxycblt.auxio.home.list.SongListFragment
@@ -108,7 +109,6 @@ class HomeFragment :
     override fun onBindingCreated(binding: FragmentHomeBinding, savedInstanceState: Bundle?) {
         super.onBindingCreated(binding, savedInstanceState)
 
-        // Have to set up the permission launcher before the view is shown
         storagePermissionLauncher =
             registerForActivityResult(ActivityResultContracts.RequestPermission()) {
                 musicModel.refresh()
@@ -125,8 +125,6 @@ class HomeFragment :
                 musicModel.importPlaylist(uri, pendingImportTarget)
             }
 
-        // --- UI SETUP ---
-
         binding.homeAppbar.addOnOffsetChangedListener(this)
         binding.homeNormalToolbar.apply {
             setOnMenuItemClickListener(this@HomeFragment)
@@ -134,9 +132,6 @@ class HomeFragment :
         }
 
         binding.homePager.apply {
-            // Update HomeViewModel whenever the user swipes through the ViewPager.
-            // This would be implemented in HomeFragment itself, but OnPageChangeCallback
-            // is an object for some reason.
             registerOnPageChangeCallback(
                 object : ViewPager2.OnPageChangeCallback() {
                     override fun onPageSelected(position: Int) {
@@ -145,32 +140,17 @@ class HomeFragment :
                 }
             )
 
-            // ViewPager2 will nominally consume window insets, which will then break the window
-            // insets applied to the indexing view before API 30. Fix this by overriding the
-            // listener with a non-consuming listener.
             setOnApplyWindowInsetsListener { _, insets -> insets }
 
-            // We know that there will only be a fixed amount of tabs, so we manually set this
-            // limit to the maximum amount possible. This will prevent the tab ripple from
-            // bugging out due to dynamically inflating each fragment, at the cost of slower
-            // debug UI performance.
             offscreenPageLimit = Tab.MAX_SEQUENCE_IDX + 1
 
-            // By default, ViewPager2's sensitivity is high enough to result in vertical scroll
-            // events being registered as horizontal scroll events. Reflect into the internal
-            // RecyclerView and change the touch slope so that touch actions will act more as a
-            // scroll than as a swipe. Derived from:
-            // https://al-e-shevelev.medium.com/how-to-reduce-scroll-sensitivity-of-viewpager2-widget-87797ad02414
             val recycler = VP_RECYCLER_FIELD.get(this@apply)
             val slop = RV_TOUCH_SLOP_FIELD.get(recycler) as Int
             RV_TOUCH_SLOP_FIELD.set(recycler, slop * 3)
         }
 
-        // Further initialization must be done in the function that also handles
-        // re-creating the ViewPager.
         setupPager(binding)
 
-        // --- VIEWMODEL SETUP ---
         collect(homeModel.recreateTabs.flow, ::handleRecreate)
         collect(homeModel.chooseMusicLocations.flow, ::handleChooseFolders)
         collectImmediately(homeModel.currentTabType, ::updateCurrentTab)
@@ -193,9 +173,6 @@ class HomeFragment :
     override fun onOffsetChanged(appBarLayout: AppBarLayout, verticalOffset: Int) {
         val binding = requireBinding()
         val range = appBarLayout.totalScrollRange
-        // Fade out the toolbar as the AppBarLayout collapses. To prevent status bar overlap,
-        // the alpha transition is shifted such that the Toolbar becomes fully transparent
-        // when the AppBarLayout is only at half-collapsed.
         binding.homeToolbar.alpha = 1f - (abs(verticalOffset.toFloat()) / (range.toFloat() / 2))
         binding.homeContent.updatePadding(
             bottom = binding.homeAppbar.totalScrollRange + verticalOffset
@@ -208,7 +185,6 @@ class HomeFragment :
         }
 
         return when (item.itemId) {
-            // Handle main actions (Search, Settings, About)
             R.id.action_search -> {
                 L.d("Navigating to search")
                 findNavController().navigateSafe(HomeFragmentDirections.search())
@@ -225,9 +201,7 @@ class HomeFragment :
                 true
             }
 
-            // Handle sort menu
             R.id.action_sort -> {
-                // Junk click event when opening the menu
                 val directions =
                     when (homeModel.currentTabType.value) {
                         MusicType.SONGS -> HomeFragmentDirections.sortSongs()
@@ -235,6 +209,8 @@ class HomeFragment :
                         MusicType.ARTISTS -> HomeFragmentDirections.sortArtists()
                         MusicType.GENRES -> HomeFragmentDirections.sortGenres()
                         MusicType.PLAYLISTS -> HomeFragmentDirections.sortPlaylists()
+                        // Folders don't have a sort dialog yet — do nothing
+                        MusicType.FOLDERS -> return true
                     }
                 findNavController().navigateSafe(directions)
                 true
@@ -252,8 +228,6 @@ class HomeFragment :
 
         val toolbarParams = binding.homeToolbar.layoutParams as AppBarLayout.LayoutParams
         if (homeModel.currentTabTypes.size == 1) {
-            // A single tab makes the tab layout redundant, hide it and disable the collapsing
-            // behavior.
             L.d("Single tab shown, disabling TabLayout")
             binding.homeTabs.isVisible = false
             binding.homeAppbar.setExpanded(true, false)
@@ -265,7 +239,6 @@ class HomeFragment :
                     AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS
         }
 
-        // Set up the mapping between the ViewPager and TabLayout.
         TabLayoutMediator(
                 binding.homeTabs,
                 binding.homePager,
@@ -276,10 +249,6 @@ class HomeFragment :
 
     private fun updateCurrentTab(tabType: MusicType) {
         val binding = requireBinding()
-
-        // Update the scrolling view in AppBarLayout to align with the current tab's
-        // scrolling state. This prevents the lift state from being confused as one
-        // goes between different tabs.
         binding.homeAppbar.liftOnScrollTargetViewId =
             when (tabType) {
                 MusicType.SONGS -> R.id.home_song_recycler
@@ -287,6 +256,7 @@ class HomeFragment :
                 MusicType.ARTISTS -> R.id.home_artist_recycler
                 MusicType.GENRES -> R.id.home_genre_recycler
                 MusicType.PLAYLISTS -> R.id.home_playlist_recycler
+                MusicType.FOLDERS -> R.id.home_folder_recycler
             }
     }
 
@@ -294,9 +264,7 @@ class HomeFragment :
         if (recreate == null) return
         val binding = requireBinding()
         L.d("Recreating ViewPager")
-        // Move back to position zero, as there must be a tab there.
         binding.homePager.currentItem = 0
-        // Make sure tabs are set up to also follow the new ViewPager configuration.
         setupPager(binding)
         homeModel.recreateTabs.consume()
     }
@@ -478,7 +446,6 @@ class HomeFragment :
         if (selected.isNotEmpty()) {
             binding.homeSelectionToolbar.title = getString(R.string.fmt_selected, selected.size)
             if (binding.homeToolbar.setVisible(R.id.home_selection_toolbar)) {
-                // New selection started, show the AppBarLayout to indicate the new state.
                 L.d("Significant selection occurred, expanding AppBar")
                 binding.homeAppbar.expandWithScrollingRecycler()
             }
@@ -509,6 +476,7 @@ class HomeFragment :
                 MusicType.ARTISTS -> ArtistListFragment()
                 MusicType.GENRES -> GenreListFragment()
                 MusicType.PLAYLISTS -> PlaylistListFragment()
+                MusicType.FOLDERS -> FolderListFragment()
             }
     }
 

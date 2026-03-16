@@ -54,6 +54,8 @@ object IntegerTable {
     const val VIEW_TYPE_EDIT_HEADER = 0xA00D
     /** PlaylistSongViewHolder */
     const val VIEW_TYPE_PLAYLIST_SONG = 0xA00E
+    /** FolderViewHolder */
+    const val VIEW_TYPE_FOLDER = 0xA00F
     /** "Music playback" notification code */
     const val PLAYBACK_NOTIFICATION_CODE = 0xA0A0
     /** "Music loading" notification code */
@@ -90,6 +92,8 @@ object IntegerTable {
     const val MUSIC_MODE_GENRES = 0xA108
     /** MusicMode.PLAYLISTS */
     const val MUSIC_MODE_PLAYLISTS = 0xA107
+    /** MusicMode.FOLDERS */
+    const val MUSIC_MODE_FOLDERS = 0xA12B
     /** Sort.Mode.ByName */
     const val SORT_BY_NAME = 0xA10C
     /** Sort.Mode.ByArtist */
