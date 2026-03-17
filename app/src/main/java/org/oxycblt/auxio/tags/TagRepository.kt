@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * along with this program.  If not, see .
  */
 package org.oxycblt.auxio.tags
 
@@ -24,8 +24,9 @@ import kotlinx.coroutines.flow.Flow
 /**
  * Provides all business logic for the user-defined tags feature.
  *
- * Songs and albums are identified by the string representation of their [org.oxycblt.musikr.Music.UID].
- * The repository does not hold references to music objects to stay free of library-reload cycles.
+ * Songs and albums are identified by the string representation of their
+ * [org.oxycblt.musikr.Music.UID]. The repository does not hold references to music objects
+ * to stay free of library-reload cycles.
  */
 @Singleton
 class TagRepository @Inject constructor(private val dao: TagDao) {
@@ -33,16 +34,17 @@ class TagRepository @Inject constructor(private val dao: TagDao) {
     // ── Read ─────────────────────────────────────────────────────────────────
 
     /** Flow of all tags sorted alphabetically. Emits on every change. */
-    fun getAllTags(): Flow<List<TagEntity>> = dao.getAllTags()
+    fun getAllTags(): Flow> = dao.getAllTags()
 
     /** Flow of tag ids currently assigned to the given music item. */
-    fun getTagIdsForItem(musicUid: String): Flow<List<Long>> = dao.getTagIdsForItem(musicUid)
+    fun getTagIdsForItem(musicUid: String): Flow> = dao.getTagIdsForItem(musicUid)
 
     // ── Write ────────────────────────────────────────────────────────────────
 
     /**
      * Create a new tag with the given [name] and return its generated id.
-     * Returns -1 if a tag with that exact name already exists.
+     *
+     * Returns -1 if the name is blank or a tag with that exact name already exists.
      */
     suspend fun createTag(name: String): Long {
         val trimmed = name.trim()
@@ -56,42 +58,21 @@ class TagRepository @Inject constructor(private val dao: TagDao) {
     }
 
     /**
-     * Assign [tagId] to a song identified by [songUid].
-     * Silently ignores if already assigned.
-     */
-    suspend fun assignTagToSong(tagId: Long, songUid: String) {
-        dao.assignTag(TagAssignment(tagId = tagId, musicUid = songUid, musicType = "song"))
-    }
-
-    /**
-     * Assign [tagId] to an album identified by [albumUid].
-     * Silently ignores if already assigned.
-     */
-    suspend fun assignTagToAlbum(tagId: Long, albumUid: String) {
-        dao.assignTag(TagAssignment(tagId = tagId, musicUid = albumUid, musicType = "album"))
-    }
-
-    /** Remove the assignment of [tagId] from the item with [musicUid]. */
-    suspend fun removeAssignment(tagId: Long, musicUid: String) {
-        dao.removeAssignment(tagId, musicUid)
-    }
-
-    /**
      * Set the complete tag list for a music item in one atomic operation.
      *
      * Computes the diff between [currentTagIds] and [newTagIds], then applies only
-     * additions and removals — never touching unrelated assignments.
+     * additions and removals.
      *
      * @param musicUid UID string of the song or album.
      * @param musicType "song" or "album".
-     * @param currentTagIds The ids currently assigned to this item (from the DB snapshot).
+     * @param currentTagIds The ids currently assigned to this item (DB snapshot).
      * @param newTagIds The ids the user has chosen in the dialog.
      */
     suspend fun syncTagsForItem(
         musicUid: String,
         musicType: String,
-        currentTagIds: List<Long>,
-        newTagIds: List<Long>,
+        currentTagIds: List,
+        newTagIds: List,
     ) {
         val current = currentTagIds.toSet()
         val next = newTagIds.toSet()
@@ -106,9 +87,9 @@ class TagRepository @Inject constructor(private val dao: TagDao) {
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /** Return all tags as a plain list (for dialog population). */
-    suspend fun getAllTagsOnce(): List<TagEntity> = dao.getAllTagsOnce()
+    suspend fun getAllTagsOnce(): List = dao.getAllTagsOnce()
 
     /** Return the tag ids assigned to [musicUid] as a plain list (for dialog population). */
-    suspend fun getTagIdsForItemOnce(musicUid: String): List<Long> =
+    suspend fun getTagIdsForItemOnce(musicUid: String): List =
         dao.getTagIdsForItemOnce(musicUid)
 }

@@ -13,21 +13,18 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * along with this program.  If not, see .
  */
 package org.oxycblt.auxio.tags
 
 import android.app.Dialog
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import android.widget.CheckBox
-import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
@@ -77,35 +74,35 @@ class ManageTagsDialog : DialogFragment() {
         val ctx = requireContext()
 
         // Root layout
-        val root = LinearLayout(ctx).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(48, 32, 48, 24)
-        }
+        val root =
+            LinearLayout(ctx).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(48, 32, 48, 24)
+            }
 
         // "New tag" input row
-        val inputRow = LinearLayout(ctx).apply {
-            orientation = LinearLayout.HORIZONTAL
-        }
-        val tagInput = EditText(ctx).apply {
-            hint = ctx.getString(R.string.hint_new_tag)
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            maxLines = 1
-        }
-        val addBtn = Button(ctx).apply {
-            text = ctx.getString(R.string.lbl_add)
-        }
+        val inputRow = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
+        val tagInput =
+            EditText(ctx).apply {
+                hint = ctx.getString(R.string.hint_new_tag)
+                layoutParams =
+                    LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                maxLines = 1
+            }
+        val addBtn = Button(ctx).apply { text = ctx.getString(R.string.lbl_add) }
         inputRow.addView(tagInput)
         inputRow.addView(addBtn)
         root.addView(inputRow)
 
         // Scrollable tag list
-        val scroll = ScrollView(ctx).apply {
-            layoutParams =
-                LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                )
-        }
+        val scroll =
+            ScrollView(ctx).apply {
+                layoutParams =
+                    LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                    )
+            }
         val tagList = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(0, 16, 0, 0)
@@ -113,34 +110,35 @@ class ManageTagsDialog : DialogFragment() {
         scroll.addView(tagList)
         root.addView(scroll)
 
-        // Snapshot of selected ids before any changes (used to compute diff on save)
-        var snapshotIds: List<Long> = emptyList()
-
-        // Populate tag checkboxes when data arrives
+        // Populate tag checkboxes whenever the tag list or selection changes
         lifecycleScope.launch {
             tagModel.allTags.collect { tags ->
                 tagList.removeAllViews()
                 val selected = tagModel.selectedTagIds.value
-                if (snapshotIds.isEmpty() && tags.isNotEmpty()) {
-                    snapshotIds = selected.toList()
-                }
                 for (tag in tags) {
-                    val row = LinearLayout(ctx).apply {
-                        orientation = LinearLayout.HORIZONTAL
-                        setPadding(0, 8, 0, 8)
-                    }
-                    val check = CheckBox(ctx).apply {
-                        text = tag.name
-                        isChecked = tag.id in selected
-                        layoutParams =
-                            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                        setOnCheckedChangeListener { _, _ -> tagModel.toggleTag(tag.id) }
-                    }
-                    val del = TextView(ctx).apply {
-                        text = "✕"
-                        setPadding(16, 0, 0, 0)
-                        setOnClickListener { tagModel.deleteTag(tag.id) }
-                    }
+                    val row =
+                        LinearLayout(ctx).apply {
+                            orientation = LinearLayout.HORIZONTAL
+                            setPadding(0, 8, 0, 8)
+                        }
+                    val check =
+                        CheckBox(ctx).apply {
+                            text = tag.name
+                            isChecked = tag.id in selected
+                            layoutParams =
+                                LinearLayout.LayoutParams(
+                                    0,
+                                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                                    1f,
+                                )
+                            setOnCheckedChangeListener { _, _ -> tagModel.toggleTag(tag.id) }
+                        }
+                    val del =
+                        TextView(ctx).apply {
+                            text = "✕"
+                            setPadding(16, 0, 0, 0)
+                            setOnClickListener { tagModel.deleteTag(tag.id) }
+                        }
                     row.addView(check)
                     row.addView(del)
                     tagList.addView(row)
@@ -148,13 +146,14 @@ class ManageTagsDialog : DialogFragment() {
             }
         }
 
-        // Also refresh checkboxes when selection changes
+        // Refresh checkbox states when the selection changes (e.g. after toggle)
         lifecycleScope.launch {
             tagModel.selectedTagIds.collect { selected ->
+                val tags = tagModel.allTags.value
                 for (i in 0 until tagList.childCount) {
                     val row = tagList.getChildAt(i) as? LinearLayout ?: continue
                     val check = row.getChildAt(0) as? CheckBox ?: continue
-                    val tag = tagModel.allTags.value.getOrNull(i) ?: continue
+                    val tag = tags.getOrNull(i) ?: continue
                     check.isChecked = tag.id in selected
                 }
             }
@@ -182,25 +181,14 @@ class ManageTagsDialog : DialogFragment() {
             }
         }
 
-        val finalSnapshot = snapshotIds
-
         return AlertDialog.Builder(ctx)
             .setTitle(
                 if (type == "album") ctx.getString(R.string.lbl_manage_tags_album)
                 else ctx.getString(R.string.lbl_manage_tags_song)
             )
             .setView(root)
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                tagModel.save(tagModel.getTagIdsForItemOnce_blocking(uid) ?: finalSnapshot)
-            }
+            .setPositiveButton(android.R.string.ok) { _, _ -> tagModel.save() }
             .setNegativeButton(android.R.string.cancel, null)
             .create()
     }
-}
-
-/** Convenience: get current DB snapshot synchronously from the main thread by going through the ViewModel's cached flow value. */
-private fun TagViewModel.getTagIdsForItemOnce_blocking(uid: String): List<Long>? {
-    // selectedTagIds was already populated by loadForItem — use it as the baseline snapshot.
-    // This is safe because we captured snapshotIds before any user interaction.
-    return null // caller falls back to snapshotIds
 }

@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * along with this program.  If not, see .
  */
 package org.oxycblt.auxio.tags
 
@@ -28,23 +28,23 @@ import kotlinx.coroutines.launch
 /**
  * Manages UI state for the "Manage tags" dialog.
  *
- * The dialog shows all existing tags and lets the user toggle which ones are
- * assigned to the current song or album. The user can also create new tags inline.
+ * The dialog shows all existing tags and lets the user toggle which ones are assigned to
+ * the current song or album. The user can also create new tags inline.
  */
 @HiltViewModel
 class TagViewModel @Inject constructor(private val repo: TagRepository) : ViewModel() {
 
     /** All tags that exist in the database, sorted alphabetically. */
-    private val _allTags = MutableStateFlow<List<TagEntity>>(emptyList())
-    val allTags: StateFlow<List<TagEntity>> = _allTags
+    private val _allTags = MutableStateFlow>(emptyList())
+    val allTags: StateFlow> = _allTags
 
     /** Tag ids currently selected in the dialog (before the user saves). */
-    private val _selectedTagIds = MutableStateFlow<Set<Long>>(emptySet())
-    val selectedTagIds: StateFlow<Set<Long>> = _selectedTagIds
+    private val _selectedTagIds = MutableStateFlow>(emptySet())
+    val selectedTagIds: StateFlow> = _selectedTagIds
 
-    /** Set when the dialog has been saved — the Fragment observes this to dismiss. */
+    /** Set to true when the dialog has been saved — the Fragment observes this to dismiss. */
     private val _saved = MutableStateFlow(false)
-    val saved: StateFlow<Boolean> = _saved
+    val saved: StateFlow = _saved
 
     /** UID of the item being tagged (song or album). */
     private var currentUid: String = ""
@@ -52,13 +52,21 @@ class TagViewModel @Inject constructor(private val repo: TagRepository) : ViewMo
     /** "song" or "album". */
     private var currentType: String = ""
 
-    /** Load all tags and the current assignments for a given item. Call once when opening the dialog. */
+    /** Snapshot of assigned ids taken when the dialog opened (used to compute the diff on save). */
+    private var snapshotIds: List = emptyList()
+
+    /**
+     * Load all tags and the current assignments for a given item.
+     * Call once when opening the dialog.
+     */
     fun loadForItem(musicUid: String, musicType: String) {
         currentUid = musicUid
         currentType = musicType
         viewModelScope.launch {
+            val assigned = repo.getTagIdsForItemOnce(musicUid)
+            snapshotIds = assigned
             _allTags.value = repo.getAllTagsOnce()
-            _selectedTagIds.value = repo.getTagIdsForItemOnce(musicUid).toSet()
+            _selectedTagIds.value = assigned.toSet()
         }
     }
 
@@ -70,7 +78,7 @@ class TagViewModel @Inject constructor(private val repo: TagRepository) : ViewMo
     }
 
     /**
-     * Create a new tag with [name], add it to the in-memory list and pre-select it.
+     * Create a new tag with [name], refresh the tag list and pre-select the new tag.
      * No-ops if the name is blank.
      */
     fun createAndSelectTag(name: String) {
@@ -84,7 +92,7 @@ class TagViewModel @Inject constructor(private val repo: TagRepository) : ViewMo
         }
     }
 
-    /** Delete a tag (and all its assignments across all songs/albums). */
+    /** Delete a tag and all its assignments across all songs/albums. */
     fun deleteTag(tagId: Long) {
         viewModelScope.launch {
             repo.deleteTag(tagId)
@@ -93,23 +101,20 @@ class TagViewModel @Inject constructor(private val repo: TagRepository) : ViewMo
         }
     }
 
-    /**
-     * Persist the current selection to the database.
-     * Computes the diff and applies only additions/removals.
-     */
-    fun save(previousIds: List<Long>) {
+    /** Persist the current selection to the database using the snapshot taken at open time. */
+    fun save() {
         viewModelScope.launch {
             repo.syncTagsForItem(
                 musicUid = currentUid,
                 musicType = currentType,
-                currentTagIds = previousIds,
+                currentTagIds = snapshotIds,
                 newTagIds = _selectedTagIds.value.toList(),
             )
             _saved.value = true
         }
     }
 
-    /** Reset the saved flag after the Fragment has handled it. */
+    /** Reset the saved flag after the Fragment has handled the dismiss. */
     fun onSaveHandled() {
         _saved.value = false
     }

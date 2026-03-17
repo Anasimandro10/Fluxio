@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * along with this program.  If not, see .
  */
 package org.oxycblt.auxio.tags
 
@@ -62,7 +62,7 @@ data class TagEntity(
  * Assignment of a [TagEntity] to a music item identified by its UID string.
  *
  * The [musicUid] is the string representation of [org.oxycblt.musikr.Music.UID].
- * The [musicType] is either "song" or "album" — stored as a plain string for simplicity.
+ * The [musicType] is either "song" or "album".
  *
  * @param id Auto-generated unique identifier.
  * @param tagId Foreign key referencing [TagEntity.id].
@@ -114,9 +114,7 @@ interface TagDao {
     suspend fun assignTag(assignment: TagAssignment)
 
     /** Remove a tag assignment from a music item. */
-    @Query(
-        "DELETE FROM tag_assignments WHERE tagId = :tagId AND musicUid = :musicUid"
-    )
+    @Query("DELETE FROM tag_assignments WHERE tagId = :tagId AND musicUid = :musicUid")
     suspend fun removeAssignment(tagId: Long, musicUid: String)
 
     /** Return the ids of tags assigned to a specific music item. */
@@ -131,7 +129,7 @@ interface TagDao {
     @Query("SELECT musicUid FROM tag_assignments WHERE tagId = :tagId")
     suspend fun getUidsForTag(tagId: Long): List
 
-    /** Remove all assignments for a given music UID (e.g. when the item is no longer found). */
+    /** Remove all assignments for a given music UID. */
     @Query("DELETE FROM tag_assignments WHERE musicUid = :musicUid")
     suspend fun removeAllAssignmentsForItem(musicUid: String)
 }
