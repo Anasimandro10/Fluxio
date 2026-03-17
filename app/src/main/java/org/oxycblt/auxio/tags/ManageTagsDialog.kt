@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see .
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 package org.oxycblt.auxio.tags
 
@@ -103,14 +103,15 @@ class ManageTagsDialog : DialogFragment() {
                         LinearLayout.LayoutParams.WRAP_CONTENT,
                     )
             }
-        val tagList = LinearLayout(ctx).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(0, 16, 0, 0)
-        }
+        val tagList =
+            LinearLayout(ctx).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(0, 16, 0, 0)
+            }
         scroll.addView(tagList)
         root.addView(scroll)
 
-        // Populate tag checkboxes whenever the tag list or selection changes
+        // Populate tag checkboxes whenever the tag list changes
         lifecycleScope.launch {
             tagModel.allTags.collect { tags ->
                 tagList.removeAllViews()

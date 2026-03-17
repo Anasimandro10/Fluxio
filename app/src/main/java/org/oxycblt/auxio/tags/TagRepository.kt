@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see .
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 package org.oxycblt.auxio.tags
 
@@ -25,8 +25,8 @@ import kotlinx.coroutines.flow.Flow
  * Provides all business logic for the user-defined tags feature.
  *
  * Songs and albums are identified by the string representation of their
- * [org.oxycblt.musikr.Music.UID]. The repository does not hold references to music objects
- * to stay free of library-reload cycles.
+ * [org.oxycblt.musikr.Music.UID]. The repository does not hold references to music objects to stay
+ * free of library-reload cycles.
  */
 @Singleton
 class TagRepository @Inject constructor(private val dao: TagDao) {
@@ -34,10 +34,10 @@ class TagRepository @Inject constructor(private val dao: TagDao) {
     // ── Read ─────────────────────────────────────────────────────────────────
 
     /** Flow of all tags sorted alphabetically. Emits on every change. */
-    fun getAllTags(): Flow> = dao.getAllTags()
+    fun getAllTags(): Flow<List<TagEntity>> = dao.getAllTags()
 
     /** Flow of tag ids currently assigned to the given music item. */
-    fun getTagIdsForItem(musicUid: String): Flow> = dao.getTagIdsForItem(musicUid)
+    fun getTagIdsForItem(musicUid: String): Flow<List<Long>> = dao.getTagIdsForItem(musicUid)
 
     // ── Write ────────────────────────────────────────────────────────────────
 
@@ -60,8 +60,8 @@ class TagRepository @Inject constructor(private val dao: TagDao) {
     /**
      * Set the complete tag list for a music item in one atomic operation.
      *
-     * Computes the diff between [currentTagIds] and [newTagIds], then applies only
-     * additions and removals.
+     * Computes the diff between [currentTagIds] and [newTagIds], then applies only additions and
+     * removals.
      *
      * @param musicUid UID string of the song or album.
      * @param musicType "song" or "album".
@@ -71,8 +71,8 @@ class TagRepository @Inject constructor(private val dao: TagDao) {
     suspend fun syncTagsForItem(
         musicUid: String,
         musicType: String,
-        currentTagIds: List,
-        newTagIds: List,
+        currentTagIds: List<Long>,
+        newTagIds: List<Long>,
     ) {
         val current = currentTagIds.toSet()
         val next = newTagIds.toSet()
@@ -87,9 +87,9 @@ class TagRepository @Inject constructor(private val dao: TagDao) {
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /** Return all tags as a plain list (for dialog population). */
-    suspend fun getAllTagsOnce(): List = dao.getAllTagsOnce()
+    suspend fun getAllTagsOnce(): List<TagEntity> = dao.getAllTagsOnce()
 
     /** Return the tag ids assigned to [musicUid] as a plain list (for dialog population). */
-    suspend fun getTagIdsForItemOnce(musicUid: String): List =
+    suspend fun getTagIdsForItemOnce(musicUid: String): List<Long> =
         dao.getTagIdsForItemOnce(musicUid)
 }

@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see .
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 package org.oxycblt.auxio.tags
 
@@ -61,8 +61,8 @@ data class TagEntity(
 /**
  * Assignment of a [TagEntity] to a music item identified by its UID string.
  *
- * The [musicUid] is the string representation of [org.oxycblt.musikr.Music.UID].
- * The [musicType] is either "song" or "album".
+ * The [musicUid] is the string representation of [org.oxycblt.musikr.Music.UID]. The [musicType]
+ * is either "song" or "album".
  *
  * @param id Auto-generated unique identifier.
  * @param tagId Foreign key referencing [TagEntity.id].
@@ -102,10 +102,10 @@ interface TagDao {
     @Query("DELETE FROM tags WHERE id = :tagId") suspend fun deleteTag(tagId: Long)
 
     /** Return all tags ordered alphabetically. */
-    @Query("SELECT * FROM tags ORDER BY name ASC") fun getAllTags(): Flow>
+    @Query("SELECT * FROM tags ORDER BY name ASC") fun getAllTags(): Flow<List<TagEntity>>
 
     /** Return all tags as a one-shot list (for dialogs). */
-    @Query("SELECT * FROM tags ORDER BY name ASC") suspend fun getAllTagsOnce(): List
+    @Query("SELECT * FROM tags ORDER BY name ASC") suspend fun getAllTagsOnce(): List<TagEntity>
 
     // ── Assignments ──────────────────────────────────────────────────────────
 
@@ -119,15 +119,15 @@ interface TagDao {
 
     /** Return the ids of tags assigned to a specific music item. */
     @Query("SELECT tagId FROM tag_assignments WHERE musicUid = :musicUid")
-    fun getTagIdsForItem(musicUid: String): Flow>
+    fun getTagIdsForItem(musicUid: String): Flow<List<Long>>
 
     /** Return the ids of tags assigned to a specific music item (one-shot, for dialogs). */
     @Query("SELECT tagId FROM tag_assignments WHERE musicUid = :musicUid")
-    suspend fun getTagIdsForItemOnce(musicUid: String): List
+    suspend fun getTagIdsForItemOnce(musicUid: String): List<Long>
 
     /** Return all music UIDs assigned to a given tag. */
     @Query("SELECT musicUid FROM tag_assignments WHERE tagId = :tagId")
-    suspend fun getUidsForTag(tagId: Long): List
+    suspend fun getUidsForTag(tagId: Long): List<String>
 
     /** Remove all assignments for a given music UID. */
     @Query("DELETE FROM tag_assignments WHERE musicUid = :musicUid")

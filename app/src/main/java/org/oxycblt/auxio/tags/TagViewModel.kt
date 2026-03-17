@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see .
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 package org.oxycblt.auxio.tags
 
@@ -28,23 +28,23 @@ import kotlinx.coroutines.launch
 /**
  * Manages UI state for the "Manage tags" dialog.
  *
- * The dialog shows all existing tags and lets the user toggle which ones are assigned to
- * the current song or album. The user can also create new tags inline.
+ * The dialog shows all existing tags and lets the user toggle which ones are assigned to the
+ * current song or album. The user can also create new tags inline.
  */
 @HiltViewModel
 class TagViewModel @Inject constructor(private val repo: TagRepository) : ViewModel() {
 
     /** All tags that exist in the database, sorted alphabetically. */
-    private val _allTags = MutableStateFlow>(emptyList())
-    val allTags: StateFlow> = _allTags
+    private val _allTags = MutableStateFlow<List<TagEntity>>(emptyList())
+    val allTags: StateFlow<List<TagEntity>> = _allTags
 
     /** Tag ids currently selected in the dialog (before the user saves). */
-    private val _selectedTagIds = MutableStateFlow>(emptySet())
-    val selectedTagIds: StateFlow> = _selectedTagIds
+    private val _selectedTagIds = MutableStateFlow<Set<Long>>(emptySet())
+    val selectedTagIds: StateFlow<Set<Long>> = _selectedTagIds
 
     /** Set to true when the dialog has been saved — the Fragment observes this to dismiss. */
     private val _saved = MutableStateFlow(false)
-    val saved: StateFlow = _saved
+    val saved: StateFlow<Boolean> = _saved
 
     /** UID of the item being tagged (song or album). */
     private var currentUid: String = ""
@@ -53,11 +53,11 @@ class TagViewModel @Inject constructor(private val repo: TagRepository) : ViewMo
     private var currentType: String = ""
 
     /** Snapshot of assigned ids taken when the dialog opened (used to compute the diff on save). */
-    private var snapshotIds: List = emptyList()
+    private var snapshotIds: List<Long> = emptyList()
 
     /**
-     * Load all tags and the current assignments for a given item.
-     * Call once when opening the dialog.
+     * Load all tags and the current assignments for a given item. Call once when opening the
+     * dialog.
      */
     fun loadForItem(musicUid: String, musicType: String) {
         currentUid = musicUid
@@ -78,8 +78,8 @@ class TagViewModel @Inject constructor(private val repo: TagRepository) : ViewMo
     }
 
     /**
-     * Create a new tag with [name], refresh the tag list and pre-select the new tag.
-     * No-ops if the name is blank.
+     * Create a new tag with [name], refresh the tag list and pre-select the new tag. No-ops if the
+     * name is blank.
      */
     fun createAndSelectTag(name: String) {
         if (name.isBlank()) return
