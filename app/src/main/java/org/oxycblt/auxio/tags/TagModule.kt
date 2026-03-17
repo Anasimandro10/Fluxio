@@ -34,11 +34,7 @@ class TagModule {
     @Singleton
     @Provides
     fun tagDatabase(@ApplicationContext context: Context): TagDatabase =
-        Room.databaseBuilder(
-                context.applicationContext,
-                TagDatabase::class.java,
-                "fluxio_tags.db",
-            )
+        Room.databaseBuilder(context.applicationContext, TagDatabase::class.java, "fluxio_tags.db")
             .fallbackToDestructiveMigration()
             .build()
 
