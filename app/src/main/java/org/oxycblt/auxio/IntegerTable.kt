@@ -56,6 +56,8 @@ object IntegerTable {
     const val VIEW_TYPE_PLAYLIST_SONG = 0xA00E
     /** FolderViewHolder */
     const val VIEW_TYPE_FOLDER = 0xA00F
+    /** TagViewHolder (reserved for future tag list in library) */
+    const val VIEW_TYPE_TAG = 0xA010
     /** "Music playback" notification code */
     const val PLAYBACK_NOTIFICATION_CODE = 0xA0A0
     /** "Music loading" notification code */

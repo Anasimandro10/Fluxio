@@ -36,4 +36,8 @@
         android:id="@+id/action_share"
         android:icon="@drawable/ic_share_24"
         android:title="@string/lbl_share" />
+    <item
+        android:id="@+id/action_manage_tags"
+        android:icon="@drawable/ic_label_24"
+        android:title="@string/action_manage_tags" />
 </menu>

@@ -504,4 +504,13 @@
         <string name="set_lrclib_prefer_synced">Prefer synced lyrics from LRCLIB</string>
     <string name="set_lrclib_prefer_synced_desc">When embedded lyrics have no timestamps, search LRCLIB first for a synced version. If LRCLIB has nothing, the embedded lyrics are used as fallback.</string>
     <string name="lyrics_no_sync_notice">Lyrics without synchronization</string>
+    <!-- Tags feature -->
+    <string name="lbl_tags">Tags</string>
+    <string name="lbl_manage_tags_song">Manage song tags</string>
+    <string name="lbl_manage_tags_album">Manage album tags</string>
+    <string name="lbl_add">Add</string>
+    <string name="hint_new_tag">New tag name…</string>
+    <string name="err_tag_empty">Tag name cannot be empty</string>
+    <string name="action_manage_tags">Manage tags</string>
+    <string name="lng_empty_tags">No tags yet</string>
 </resources>
