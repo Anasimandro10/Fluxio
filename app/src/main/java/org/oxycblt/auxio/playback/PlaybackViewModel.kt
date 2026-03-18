@@ -593,8 +593,8 @@ constructor(
     }
 
     /**
-     * Pause playback after the current song finishes. Used by the sleep timer.
-     * Sets a flag so that ExoPlayer stops when the next media transition fires.
+     * Pause playback after the current song finishes. Used by the sleep timer. Sets a flag so that
+     * ExoPlayer stops when the next media transition fires.
      */
     fun pauseAfterCurrentSong() {
         L.d("Sleep timer: will pause after current song")

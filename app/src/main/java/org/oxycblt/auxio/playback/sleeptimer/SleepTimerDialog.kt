@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback.sleeptimer
 
 import android.os.Bundle
@@ -31,8 +30,8 @@ import org.oxycblt.auxio.ui.ViewBindingMaterialDialogFragment
 /**
  * Dialog that lets the user set or cancel the sleep timer.
  *
- * Shows preset buttons (15 / 30 / 45 / 60 min) and a custom number input.
- * If the timer is already active, the dialog shows a Cancel button instead.
+ * Shows preset buttons (15 / 30 / 45 / 60 min) and a custom number input. If the timer is already
+ * active, the dialog shows a Cancel button instead.
  */
 @AndroidEntryPoint
 class SleepTimerDialog : ViewBindingMaterialDialogFragment<DialogSleepTimerBinding>() {
@@ -46,10 +45,7 @@ class SleepTimerDialog : ViewBindingMaterialDialogFragment<DialogSleepTimerBindi
         builder.setTitle(R.string.lbl_sleep_timer)
     }
 
-    override fun onBindingCreated(
-        binding: DialogSleepTimerBinding,
-        savedInstanceState: Bundle?,
-    ) {
+    override fun onBindingCreated(binding: DialogSleepTimerBinding, savedInstanceState: Bundle?) {
         val isActive = timerModel.remainingMs.value != null
 
         if (isActive) {
