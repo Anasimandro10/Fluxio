@@ -15,90 +15,107 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.oxycblt.auxio.playback.sleeptimer
 
+import android.app.Dialog
 import android.os.Bundle
-import android.view.LayoutInflater
+import android.widget.Button
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import org.oxycblt.auxio.R
-import org.oxycblt.auxio.databinding.DialogSleepTimerBinding
-import org.oxycblt.auxio.ui.ViewBindingMaterialDialogFragment
+import org.oxycblt.auxio.playback.PlaybackViewModel
 
 /**
  * Dialog that lets the user set or cancel the sleep timer.
  *
  * Shows preset buttons (15 / 30 / 45 / 60 min) and a custom number input. If the timer is already
- * active, the dialog shows a Cancel button instead.
+ * active, shows the remaining time updating in real time and a cancel button. Timer logic lives in
+ * [PlaybackViewModel] so it keeps running even when this dialog or the playback panel are not
+ * visible.
  */
 @AndroidEntryPoint
-class SleepTimerDialog : ViewBindingMaterialDialogFragment<DialogSleepTimerBinding>() {
+class SleepTimerDialog : DialogFragment() {
 
-    private val timerModel: SleepTimerViewModel by activityViewModels()
+    private val playbackModel: PlaybackViewModel by activityViewModels()
 
-    override fun onCreateBinding(inflater: LayoutInflater) =
-        DialogSleepTimerBinding.inflate(inflater)
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        val ctx = requireContext()
 
-    override fun onConfigDialog(builder: AlertDialog.Builder) {
-        builder.setTitle(R.string.lbl_sleep_timer)
-    }
+        val view =
+            requireActivity().layoutInflater.inflate(R.layout.dialog_sleep_timer, null, false)
 
-    override fun onBindingCreated(binding: DialogSleepTimerBinding, savedInstanceState: Bundle?) {
-        val isActive = timerModel.remainingMs.value != null
+        val statusText = view.findViewById<TextView>(R.id.timer_status)
+        val presetsGroup = view.findViewById<LinearLayout>(R.id.timer_presets)
+        val preset15 = view.findViewById<MaterialButton>(R.id.timer_preset_15)
+        val preset30 = view.findViewById<MaterialButton>(R.id.timer_preset_30)
+        val preset45 = view.findViewById<MaterialButton>(R.id.timer_preset_45)
+        val preset60 = view.findViewById<MaterialButton>(R.id.timer_preset_60)
+        val customInput = view.findViewById<EditText>(R.id.timer_custom_input)
+        val cancelButton = view.findViewById<Button>(R.id.timer_cancel_button)
+        val startButton = view.findViewById<Button>(R.id.timer_start_button)
 
-        if (isActive) {
-            // Timer is running — show remaining time and a cancel button
-            val remaining = timerModel.remainingMs.value ?: 0L
-            val totalMinutes = (remaining / 60_000L).toInt()
-            val seconds = ((remaining % 60_000L) / 1_000L).toInt()
-            binding.timerStatus.text =
-                requireContext()
-                    .getString(R.string.fmt_sleep_timer_remaining, totalMinutes, seconds)
-            binding.timerPresets.alpha = 0.4f
-            binding.timerPresets.isEnabled = false
-            binding.timerCustomInput.isEnabled = false
+        if (playbackModel.timerRemainingMs.value != null) {
+            // Timer is running — dim presets, disable input, show live countdown
+            presetsGroup.alpha = 0.4f
+            presetsGroup.isEnabled = false
+            customInput.isEnabled = false
+            startButton.isEnabled = false
+            cancelButton.isEnabled = true
 
-            binding.timerCancelButton.isEnabled = true
-            binding.timerCancelButton.setOnClickListener {
-                timerModel.cancelTimer()
+            cancelButton.setOnClickListener {
+                playbackModel.cancelSleepTimer()
                 dismiss()
             }
-            binding.timerStartButton.isEnabled = false
-        } else {
-            binding.timerStatus.text = requireContext().getString(R.string.lbl_sleep_timer_off)
-            binding.timerCancelButton.isEnabled = false
 
-            binding.timerStartButton.setOnClickListener {
-                val minutes = resolveSelectedMinutes(binding)
+            // Update the countdown every second while the dialog is open
+            lifecycleScope.launch {
+                playbackModel.timerRemainingMs.collect { remaining ->
+                    if (!isAdded) return@collect
+                    if (remaining == null) {
+                        dismiss()
+                        return@collect
+                    }
+                    val mins = (remaining / 60_000L).toInt()
+                    val secs = ((remaining % 60_000L) / 1_000L).toInt()
+                    statusText.text =
+                        ctx.getString(R.string.fmt_sleep_timer_remaining, mins, secs)
+                }
+            }
+        } else {
+            // No timer active — show setup UI
+            statusText.text = ctx.getString(R.string.lbl_sleep_timer_off)
+            cancelButton.isEnabled = false
+
+            preset15.setOnClickListener { customInput.setText("15") }
+            preset30.setOnClickListener { customInput.setText("30") }
+            preset45.setOnClickListener { customInput.setText("45") }
+            preset60.setOnClickListener { customInput.setText("60") }
+
+            startButton.setOnClickListener {
+                val minutes = customInput.text?.toString()?.trim()?.toIntOrNull()
                 if (minutes != null && minutes > 0) {
-                    timerModel.startTimer(minutes)
+                    playbackModel.startSleepTimer(minutes)
                     dismiss()
                 } else {
-                    Toast.makeText(
-                            requireContext(),
-                            R.string.err_sleep_timer_invalid,
-                            Toast.LENGTH_SHORT,
-                        )
+                    Toast.makeText(ctx, R.string.err_sleep_timer_invalid, Toast.LENGTH_SHORT)
                         .show()
                 }
             }
         }
 
-        // Preset buttons
-        binding.timerPreset15.setOnClickListener { selectPreset(binding, 15) }
-        binding.timerPreset30.setOnClickListener { selectPreset(binding, 30) }
-        binding.timerPreset45.setOnClickListener { selectPreset(binding, 45) }
-        binding.timerPreset60.setOnClickListener { selectPreset(binding, 60) }
-    }
-
-    private fun selectPreset(binding: DialogSleepTimerBinding, minutes: Int) {
-        binding.timerCustomInput.setText(minutes.toString())
-    }
-
-    private fun resolveSelectedMinutes(binding: DialogSleepTimerBinding): Int? {
-        val text = binding.timerCustomInput.text?.toString()?.trim() ?: return null
-        return text.toIntOrNull()
+        return MaterialAlertDialogBuilder(ctx)
+            .setTitle(R.string.lbl_sleep_timer)
+            .setView(view)
+            .create()
     }
 }
