@@ -48,7 +48,6 @@ import org.oxycblt.auxio.lyrics.LyricsViewModel
 import org.oxycblt.auxio.music.resolve
 import org.oxycblt.auxio.music.resolveNames
 import org.oxycblt.auxio.playback.sleeptimer.SleepTimerDialog
-import org.oxycblt.auxio.playback.sleeptimer.SleepTimerViewModel
 import org.oxycblt.auxio.playback.state.RepeatMode
 import org.oxycblt.auxio.playback.ui.StyledSeekBar
 import org.oxycblt.auxio.playback.ui.stepper.DisplayPortion
@@ -79,7 +78,6 @@ class PlaybackPanelFragment :
     private val detailModel: DetailViewModel by activityViewModels()
     private val listModel: ListViewModel by activityViewModels()
     private val lyricsModel: LyricsViewModel by activityViewModels()
-    private val timerModel: SleepTimerViewModel by activityViewModels()
 
     private var equalizerLauncher: ActivityResultLauncher<Intent>? = null
     private var lastCoverWidth = 0
@@ -163,7 +161,6 @@ class PlaybackPanelFragment :
         collectImmediately(lyricsModel.lines, ::updateLyrics)
         collectImmediately(lyricsModel.isSynced, ::updateIsSynced)
         collectImmediately(lyricsModel.currentLineIndex, ::updateCurrentLine)
-        collectImmediately(timerModel.timerFired, ::onTimerFired)
     }
 
     override fun onStart() {
@@ -289,17 +286,6 @@ class PlaybackPanelFragment :
         if (index >= 0 && index != previousIndex) {
             requireBinding().playbackLyrics?.smoothScrollToPosition(index)
         }
-    }
-
-    /**
-     * When the sleep timer fires, pause playback immediately. The "finish current song first"
-     * behaviour is handled by observing this flag right after the song-transition callback.
-     */
-    private fun onTimerFired(fired: Boolean) {
-        if (!fired) return
-        L.d("Sleep timer fired — pausing after current song")
-        playbackModel.pauseAfterCurrentSong()
-        timerModel.acknowledgeTimerFired()
     }
 
     private fun navigateToCurrentSong() {

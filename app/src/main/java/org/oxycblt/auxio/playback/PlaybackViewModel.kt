@@ -25,6 +25,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.oxycblt.auxio.list.ListSettings
 import org.oxycblt.auxio.playback.state.DeferredPlayback
@@ -61,6 +62,18 @@ constructor(
     private val listSettings: ListSettings,
 ) : ViewModel(), PlaybackStateManager.Listener, PlaybackSettings.Listener {
     private var lastPositionJob: Job? = null
+
+    // --- SLEEP TIMER ---
+
+    private val _timerRemainingMs = MutableStateFlow<Long?>(null)
+
+    /** Remaining milliseconds on the sleep timer, or null if the timer is not active. */
+    val timerRemainingMs: StateFlow<Long?> = _timerRemainingMs.asStateFlow()
+
+    private var timerJob: Job? = null
+
+    private var pendingSleepStop = false
+
 
     private val _song = MutableStateFlow<Song?>(null)
     /** The currently playing song. */
@@ -125,6 +138,7 @@ constructor(
     override fun onCleared() {
         playbackManager.removeListener(this)
         playbackSettings.unregisterListener(this)
+        timerJob?.cancel()
     }
 
     override fun onIndexMoved(index: Int) {
@@ -132,6 +146,7 @@ constructor(
         _song.value = playbackManager.currentSong
         if (pendingSleepStop) {
             pendingSleepStop = false
+            _timerRemainingMs.value = null
             L.d("Sleep timer: pausing after song transition")
             playbackManager.playing(false)
         }
@@ -592,17 +607,41 @@ constructor(
         playbackManager.playing(!playbackManager.progression.isPlaying)
     }
 
-    /**
-     * Pause playback after the current song finishes. Used by the sleep timer. Sets a flag so that
-     * ExoPlayer stops when the next media transition fires.
-     */
-    fun pauseAfterCurrentSong() {
-        L.d("Sleep timer: will pause after current song")
-        pendingSleepStop = true
+    /** Start the sleep timer for the given number of [minutes]. */
+    fun startSleepTimer(minutes: Int) {
+        timerJob?.cancel()
+        val totalMs = minutes * 60_000L
+        _timerRemainingMs.value = totalMs
+        pendingSleepStop = false
+        timerJob =
+            viewModelScope.launch {
+                var remaining = totalMs
+                while (remaining > 0) {
+                    delay(1_000L)
+                    remaining -= 1_000L
+                    _timerRemainingMs.value = remaining.coerceAtLeast(0L)
+                }
+                // Timer reached zero
+                if (playbackManager.progression.isPlaying) {
+                    // Music is active — wait for current song to end before stopping
+                    L.d("Sleep timer fired — will pause after current song ends")
+                    pendingSleepStop = true
+                } else {
+                    // Nothing playing — clear the timer silently
+                    L.d("Sleep timer fired — nothing playing, clearing timer")
+                    _timerRemainingMs.value = null
+                }
+            }
     }
 
-    /** Internal flag set when the sleep timer fires. Consumed on song transition. */
-    @Volatile var pendingSleepStop = false
+    /** Cancel the active sleep timer. */
+    fun cancelSleepTimer() {
+        timerJob?.cancel()
+        timerJob = null
+        _timerRemainingMs.value = null
+        pendingSleepStop = false
+        L.d("Sleep timer cancelled")
+    }
 
     /** Toggle [isShuffled] (ex. from on to off) */
     fun toggleShuffled() {

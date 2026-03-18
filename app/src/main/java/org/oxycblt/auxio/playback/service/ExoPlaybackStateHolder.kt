@@ -496,7 +496,10 @@ class ExoPlaybackStateHolder(
     override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
         super.onMediaItemTransition(mediaItem, reason)
 
-        if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) {
+        if (
+            reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
+                reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT
+        ) {
             playbackManager.ack(this, StateAck.IndexMoved)
         }
     }
