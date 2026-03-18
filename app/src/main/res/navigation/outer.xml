@@ -99,11 +99,6 @@
         android:label="pre_amp_dialog"
         tools:layout="@layout/dialog_pre_amp" />
     <dialog
-        android:id="@+id/sleep_timer_dialog"
-        android:name="org.oxycblt.auxio.playback.sleeptimer.SleepTimerDialog"
-        android:label="sleep_timer_dialog"
-        tools:layout="@layout/dialog_sleep_timer" />
-    <dialog
         android:id="@+id/music_locations_dialog"
         android:name="org.oxycblt.auxio.music.locations.LocationsDialog"
         android:label="music_locations_dialog"

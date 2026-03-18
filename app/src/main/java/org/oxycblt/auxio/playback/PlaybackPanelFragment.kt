@@ -33,7 +33,7 @@ import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.dynamicanimation.animation.SpringForce
 import androidx.fragment.app.activityViewModels
-import androidx.navigation.fragment.findNavController
+import org.oxycblt.auxio.playback.sleeptimer.SleepTimerDialog
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
@@ -203,7 +203,7 @@ class PlaybackPanelFragment :
     override fun onMenuItemClick(item: MenuItem): Boolean {
         if (item.itemId == R.id.action_open_sleep_timer) {
             L.d("Opening sleep timer dialog")
-            findNavController().navigate(R.id.sleep_timer_dialog)
+            SleepTimerDialog().show(childFragmentManager, "sleep_timer")
             return true
         }
         if (item.itemId == R.id.action_open_equalizer) {
