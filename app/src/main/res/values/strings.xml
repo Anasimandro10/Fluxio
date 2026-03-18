@@ -120,6 +120,18 @@
 
     <string name="lbl_playback">Now playing</string>
     <string name="lbl_equalizer">Equalizer</string>
+    <string name="lbl_sleep_timer">Sleep timer</string>
+    <string name="lbl_sleep_timer_off">Timer is off</string>
+    <string name="lbl_sleep_preset_15">15 min</string>
+    <string name="lbl_sleep_preset_30">30 min</string>
+    <string name="lbl_sleep_preset_45">45 min</string>
+    <string name="lbl_sleep_preset_60">60 min</string>
+    <string name="hint_sleep_custom_minutes">Custom (minutes)</string>
+    <string name="lbl_sleep_start_timer">Start</string>
+    <string name="lbl_sleep_cancel_timer">Cancel timer</string>
+    <string name="fmt_sleep_timer_remaining">Active — %1$d min %2$02d s remaining</string>
+    <string name="err_sleep_timer_invalid">Enter a number of minutes</string>
+    <string name="desc_sleep_timer">Sleep timer</string>
     <string name="lbl_play">Play</string>
     <string name="lbl_shuffle">Shuffle</string>
 

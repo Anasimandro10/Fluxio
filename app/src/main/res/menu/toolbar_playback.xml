@@ -2,6 +2,11 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
+        android:id="@+id/action_open_sleep_timer"
+        android:icon="@drawable/ic_time_24"
+        android:title="@string/lbl_sleep_timer"
+        app:showAsAction="always" />
+    <item
         android:id="@+id/action_open_equalizer"
         android:icon="@drawable/ic_config_24"
         android:title="@string/lbl_equalizer"

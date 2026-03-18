@@ -130,6 +130,11 @@ constructor(
     override fun onIndexMoved(index: Int) {
         L.d("Index moved, updating current song")
         _song.value = playbackManager.currentSong
+        if (pendingSleepStop) {
+            pendingSleepStop = false
+            L.d("Sleep timer: pausing after song transition")
+            playbackManager.playing(false)
+        }
     }
 
     override fun onQueueChanged(queue: List<Song>, index: Int, change: QueueChange) {
@@ -586,6 +591,18 @@ constructor(
         L.d("Toggling playing state")
         playbackManager.playing(!playbackManager.progression.isPlaying)
     }
+
+    /**
+     * Pause playback after the current song finishes. Used by the sleep timer.
+     * Sets a flag so that ExoPlayer stops when the next media transition fires.
+     */
+    fun pauseAfterCurrentSong() {
+        L.d("Sleep timer: will pause after current song")
+        pendingSleepStop = true
+    }
+
+    /** Internal flag set when the sleep timer fires. Consumed on song transition. */
+    @Volatile var pendingSleepStop = false
 
     /** Toggle [isShuffled] (ex. from on to off) */
     fun toggleShuffled() {
