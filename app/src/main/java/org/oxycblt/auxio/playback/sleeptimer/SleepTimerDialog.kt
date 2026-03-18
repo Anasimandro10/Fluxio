@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback.sleeptimer
 
 import android.app.Dialog
@@ -87,8 +86,7 @@ class SleepTimerDialog : DialogFragment() {
                     }
                     val mins = (remaining / 60_000L).toInt()
                     val secs = ((remaining % 60_000L) / 1_000L).toInt()
-                    statusText.text =
-                        ctx.getString(R.string.fmt_sleep_timer_remaining, mins, secs)
+                    statusText.text = ctx.getString(R.string.fmt_sleep_timer_remaining, mins, secs)
                 }
             }
         } else {
@@ -107,8 +105,7 @@ class SleepTimerDialog : DialogFragment() {
                     playbackModel.startSleepTimer(minutes)
                     dismiss()
                 } else {
-                    Toast.makeText(ctx, R.string.err_sleep_timer_invalid, Toast.LENGTH_SHORT)
-                        .show()
+                    Toast.makeText(ctx, R.string.err_sleep_timer_invalid, Toast.LENGTH_SHORT).show()
                 }
             }
         }
