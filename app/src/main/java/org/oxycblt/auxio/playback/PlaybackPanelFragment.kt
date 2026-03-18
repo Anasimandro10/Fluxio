@@ -33,7 +33,6 @@ import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.dynamicanimation.animation.SpringForce
 import androidx.fragment.app.activityViewModels
-import org.oxycblt.auxio.playback.sleeptimer.SleepTimerDialog
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
@@ -48,6 +47,7 @@ import org.oxycblt.auxio.lyrics.LrcLine
 import org.oxycblt.auxio.lyrics.LyricsViewModel
 import org.oxycblt.auxio.music.resolve
 import org.oxycblt.auxio.music.resolveNames
+import org.oxycblt.auxio.playback.sleeptimer.SleepTimerDialog
 import org.oxycblt.auxio.playback.sleeptimer.SleepTimerViewModel
 import org.oxycblt.auxio.playback.state.RepeatMode
 import org.oxycblt.auxio.playback.ui.StyledSeekBar
