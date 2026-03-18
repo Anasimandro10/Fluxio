@@ -74,7 +74,6 @@ constructor(
 
     private var pendingSleepStop = false
 
-
     private val _song = MutableStateFlow<Song?>(null)
     /** The currently playing song. */
     val song: StateFlow<Song?>
