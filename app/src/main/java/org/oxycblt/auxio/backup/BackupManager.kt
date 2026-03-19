@@ -62,9 +62,9 @@ constructor(
                     put("version", BACKUP_VERSION)
                     put("app", "Fluxio")
                     put("exportedAt", System.currentTimeMillis())
-                    put("tags", tags.toJson())
-                    put("tag_assignments", assignments.toJson())
-                    put("stats", records.toJson())
+                    put("tags", tags.tagsToJson())
+                    put("tag_assignments", assignments.assignmentsToJson())
+                    put("stats", records.recordsToJson())
                 }
 
             context.contentResolver.openOutputStream(uri)?.use { stream ->
@@ -189,7 +189,7 @@ constructor(
 
     // ── JSON helpers ──────────────────────────────────────────────────────────
 
-    private fun List<TagEntity>.toJson(): JSONArray {
+    private fun List<TagEntity>.tagsToJson(): JSONArray {
         val arr = JSONArray()
         for (tag in this) {
             arr.put(
@@ -203,7 +203,7 @@ constructor(
         return arr
     }
 
-    private fun List<TagAssignment>.toJson(): JSONArray {
+    private fun List<TagAssignment>.assignmentsToJson(): JSONArray {
         val arr = JSONArray()
         for (a in this) {
             arr.put(
@@ -218,7 +218,7 @@ constructor(
         return arr
     }
 
-    private fun List<PlaybackRecord>.toJson(): JSONArray {
+    private fun List<PlaybackRecord>.recordsToJson(): JSONArray {
         val arr = JSONArray()
         for (r in this) {
             arr.put(
