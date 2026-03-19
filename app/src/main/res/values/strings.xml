@@ -525,4 +525,17 @@
     <string name="err_tag_empty">Tag name cannot be empty</string>
     <string name="action_manage_tags">Manage tags</string>
     <string name="lng_empty_tags">No tags yet</string>
+    <!-- Backup & Restore settings -->
+    <string name="set_backup">Backup &amp; Restore</string>
+    <string name="set_backup_desc">Export and import your tags and listening history</string>
+    <string name="set_backup_data_cat">Your data</string>
+    <string name="set_backup_export">Export backup</string>
+    <string name="set_backup_export_desc">Save your tags and listening stats to a JSON file</string>
+    <string name="set_backup_export_size">Estimated size: %s — choose where to save the file</string>
+    <string name="set_backup_import">Restore backup</string>
+    <string name="set_backup_import_desc">Restore tags and stats from a previously exported backup. This replaces all current data.</string>
+    <string name="lng_backup_exported">Backup exported (%d items)</string>
+    <string name="lng_backup_imported">Backup restored (%d items)</string>
+    <string name="err_backup_export_failed">Export failed: %s</string>
+    <string name="err_backup_import_failed">Restore failed: %s</string>
 </resources>

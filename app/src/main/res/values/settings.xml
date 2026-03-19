@@ -190,4 +190,8 @@
     <string name="set_key_lrclib_clear_cache" translatable="false">fluxio_lrclib_clear_cache</string>
     <string name="set_key_lrclib_prefer_synced" translatable="false">fluxio_lrclib_prefer_synced</string>
 
+    <!-- Backup settings keys -->
+    <string name="set_key_backup" translatable="false">fluxio_backup</string>
+    <string name="set_key_backup_export" translatable="false">fluxio_backup_export</string>
+    <string name="set_key_backup_import" translatable="false">fluxio_backup_import</string>
 </resources>

@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.oxycblt.auxio.settings
 
 import android.os.Bundle
@@ -82,6 +83,11 @@ class RootPreferenceFragment : BasePreferenceFragment(R.xml.preferences_root) {
                 L.d("Navigating to lyrics preferences")
                 findNavController()
                     .navigateSafe(RootPreferenceFragmentDirections.lyricsPreferences())
+            }
+            getString(R.string.set_key_backup) -> {
+                L.d("Navigating to backup preferences")
+                findNavController()
+                    .navigateSafe(RootPreferenceFragmentDirections.backupPreferences())
             }
             getString(R.string.set_key_reindex) -> musicModel.refresh()
             getString(R.string.set_key_rescan) -> musicModel.rescan()

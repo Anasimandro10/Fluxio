@@ -40,6 +40,9 @@
         <action
             android:id="@+id/music_locations_settings"
             app:destination="@id/music_locations_dialog" />
+        <action
+            android:id="@+id/backup_preferences"
+            app:destination="@id/backup_preferences_fragment" />
     </fragment>
 
     <fragment
@@ -108,6 +111,12 @@
         android:name="org.oxycblt.auxio.music.interpret.SeparatorsDialog"
         android:label="separators_dialog"
         tools:layout="@layout/dialog_separators" />
+
+
+    <fragment
+        android:id="@+id/backup_preferences_fragment"
+        android:name="org.oxycblt.auxio.settings.categories.BackupPreferenceFragment"
+        android:label="backup_preferences_fragment" />
 
     <fragment
         android:id="@+id/about_fragment"
