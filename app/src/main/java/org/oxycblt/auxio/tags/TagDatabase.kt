@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.tags
 
 import androidx.room.Dao
@@ -35,11 +34,7 @@ import kotlinx.coroutines.flow.Flow
  * - [TagEntity]: the tag definition (id + name).
  * - [TagAssignment]: links a tag to a song or album identified by its UID string.
  */
-@Database(
-    entities = [TagEntity::class, TagAssignment::class],
-    version = 1,
-    exportSchema = false,
-)
+@Database(entities = [TagEntity::class, TagAssignment::class], version = 1, exportSchema = false)
 abstract class TagDatabase : RoomDatabase() {
     abstract fun tagDao(): TagDao
 }
@@ -61,8 +56,8 @@ data class TagEntity(
 /**
  * Assignment of a [TagEntity] to a music item identified by its UID string.
  *
- * The [musicUid] is the string representation of [org.oxycblt.musikr.Music.UID]. The [musicType]
- * is either "song" or "album".
+ * The [musicUid] is the string representation of [org.oxycblt.musikr.Music.UID]. The [musicType] is
+ * either "song" or "album".
  *
  * @param id Auto-generated unique identifier.
  * @param tagId Foreign key referencing [TagEntity.id].

@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.settings.categories
 
 import android.net.Uri
@@ -49,8 +48,9 @@ class BackupPreferenceFragment : BasePreferenceFragment(R.xml.preferences_backup
         super.onCreate(savedInstanceState)
 
         createFileLauncher =
-            registerForActivityResult(ActivityResultContracts.CreateDocument(BackupManager.MIME_TYPE)) {
-                uri ->
+            registerForActivityResult(
+                ActivityResultContracts.CreateDocument(BackupManager.MIME_TYPE)
+            ) { uri ->
                 if (uri != null) doExport(uri)
             }
 

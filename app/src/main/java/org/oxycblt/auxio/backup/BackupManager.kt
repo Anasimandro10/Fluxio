@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.backup
 
 import android.content.Context
@@ -73,7 +72,9 @@ constructor(
             } ?: return BackupResult.Error("Could not open output stream")
 
             val count = tags.size + assignments.size + records.size
-            L.d("Exported backup: ${tags.size} tags, ${assignments.size} assignments, ${records.size} records")
+            L.d(
+                "Exported backup: ${tags.size} tags, ${assignments.size} assignments, ${records.size} records"
+            )
             BackupResult.Success(count)
         } catch (e: Exception) {
             L.e("Export failed: $e")

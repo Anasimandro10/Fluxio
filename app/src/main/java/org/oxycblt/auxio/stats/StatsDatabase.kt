@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.stats
 
 import androidx.room.Dao
@@ -33,11 +32,7 @@ import kotlinx.coroutines.flow.Flow
  *
  * Each row represents one song listened to for 30 seconds or more.
  */
-@Database(
-    entities = [PlaybackRecord::class],
-    version = 1,
-    exportSchema = false,
-)
+@Database(entities = [PlaybackRecord::class], version = 1, exportSchema = false)
 abstract class StatsDatabase : RoomDatabase() {
     abstract fun playbackRecordDao(): PlaybackRecordDao
 }
@@ -72,9 +67,7 @@ interface PlaybackRecordDao {
     @Query("SELECT * FROM playback_records ORDER BY startedAt DESC")
     fun getAllRecords(): Flow<List<PlaybackRecord>>
 
-    /**
-     * Get all records as a one-shot list (for backup export).
-     */
+    /** Get all records as a one-shot list (for backup export). */
     @Query("SELECT * FROM playback_records ORDER BY startedAt DESC")
     suspend fun getAllRecordsOnce(): List<PlaybackRecord>
 
