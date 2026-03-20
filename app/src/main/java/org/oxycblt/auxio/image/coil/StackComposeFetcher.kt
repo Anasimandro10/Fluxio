@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.oxycblt.auxio.image.coil
 
 import android.content.Context
@@ -95,7 +96,12 @@ private constructor(
 
     private fun createStack(streams: List<InputStream>, size: Size): FetchResult? {
         val outputSize = size.stackSize()
-        val bitmaps = streams.mapNotNull { BitmapFactory.decodeStream(it) }
+        // Calculate inSampleSize from outputSize — avoids decoding full-res JPEGs into RAM.
+        // canvas.drawBitmap scales to dest regardless, so visual quality is identical.
+        var inSampleSize = 1
+        while (outputSize * inSampleSize * 2 <= 1024) inSampleSize *= 2
+        val bitmapOptions = BitmapFactory.Options().apply { this.inSampleSize = inSampleSize }
+        val bitmaps = streams.mapNotNull { BitmapFactory.decodeStream(it, null, bitmapOptions) }
         if (bitmaps.size != streams.size) {
             return null
         }
