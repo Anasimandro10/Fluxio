@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Fluxio Project
+ * Copyright (c) 2026 Fluxio Project
  * GalleryComposeFetcher.kt is part of Fluxio.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -13,8 +13,9 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * along with this program.  If not, see .
  */
+
 package org.oxycblt.auxio.image.coil
 
 import android.content.Context
@@ -95,10 +96,12 @@ private constructor(
 
     private fun createCollage(streams: List, size: Size): FetchResult? {
         val outputSize = size.collageSize()
-        // Decode bitmaps at reduced resolution — canvas.drawBitmap scales to dest regardless,
-        // so visual quality is identical while RAM usage drops 4-8x for large covers.
-        val options = BitmapFactory.Options().apply { inSampleSize = outputSize.toSampleSize() }
-        val bitmaps = streams.mapNotNull { BitmapFactory.decodeStream(it, null, options) }
+        // Calculate inSampleSize from outputSize — avoids decoding full-res JPEGs into RAM.
+        // canvas.drawBitmap scales to dest regardless, so visual quality is identical.
+        var inSampleSize = 1
+        while (outputSize * inSampleSize * 2 <= 1024) inSampleSize *= 2
+        val bitmapOptions = BitmapFactory.Options().apply { this.inSampleSize = inSampleSize }
+        val bitmaps = streams.mapNotNull { BitmapFactory.decodeStream(it, null, bitmapOptions) }
         if (bitmaps.size != streams.size) {
             return null
         }
@@ -330,11 +333,4 @@ private constructor(
             return "g:${data.covers.hashCode()}.${options.size.width}.${options.size.height}.$config"
         }
     }
-}
-
-/** Returns the largest power-of-2 sample size such that the decoded bitmap fits within 1024 px. */
-private fun Int.toSampleSize(): Int {
-    var sample = 1
-    while (this * sample * 2 <= 1024) sample *= 2
-    return sample
 }
