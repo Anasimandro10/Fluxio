@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback
 
 import android.os.Bundle
@@ -116,12 +115,9 @@ class PlaybackBarFragment : ViewBindingFragment<FragmentPlaybackBarBinding>() {
 
     private fun updatePlaying(isPlaying: Boolean) {
         requireBinding().playbackPlayPause.isChecked = isPlaying
-        requireBinding().playbackProgressBar.setWaveEnabled(
-            isPlaying,
-            waveWavelength,
-            waveAmplitude,
-            waveSpeed,
-        )
+        requireBinding()
+            .playbackProgressBar
+            .setWaveEnabled(isPlaying, waveWavelength, waveAmplitude, waveSpeed)
     }
 
     private fun updatePosition(positionDs: Long) {
