@@ -60,7 +60,7 @@ import org.oxycblt.musikr.covers.CoverCollection
 data class GalleryCoverCollection(
     val covers: CoverCollection,
     val cornerRadiusRatio: Float,
-    val zOrder: List,
+    val zOrder: List<Int>,
     @ColorInt val backgroundColor: Int,
 )
 
@@ -93,7 +93,7 @@ private constructor(
         )
     }
 
-    private fun createCollage(streams: List, size: Size): FetchResult? {
+    private fun createCollage(streams: List<InputStream>, size: Size): FetchResult? {
         val outputSize = size.collageSize()
         // Calculate inSampleSize from outputSize — avoids decoding full-res JPEGs into RAM.
         // canvas.drawBitmap scales to dest regardless, so visual quality is identical.
@@ -136,10 +136,10 @@ private constructor(
             val gapWidthPx: Float,
             val cornerRadiusPx: Float,
             @ColorInt val backgroundColor: Int,
-            val zOrder: List = listOf(0, 1, 2, 3),
+            val zOrder: List<Int> = listOf(0, 1, 2, 3),
         )
 
-        fun generate(sourceImages: List, config: Config): Bitmap {
+        fun generate(sourceImages: List<Bitmap>, config: Config): Bitmap {
             if (sourceImages.size != 4) {
                 throw IllegalArgumentException("Collage requires exactly 4 images.")
             }
@@ -317,7 +317,7 @@ private constructor(
         }
     }
 
-    class Factory @Inject constructor() : Fetcher.Factory {
+    class Factory @Inject constructor() : Fetcher.Factory<GalleryCoverCollection> {
         override fun create(
             data: GalleryCoverCollection,
             options: Options,
@@ -325,7 +325,7 @@ private constructor(
         ) = GalleryComposeFetcher(options.context, data, options.size)
     }
 
-    class Keyer @Inject constructor() : CoilKeyer {
+    class Keyer @Inject constructor() : CoilKeyer<GalleryCoverCollection> {
         override fun key(data: GalleryCoverCollection, options: Options): String {
             val config =
                 "${data.cornerRadiusRatio}.${data.zOrder.joinToString(".")}.${data.backgroundColor}"
