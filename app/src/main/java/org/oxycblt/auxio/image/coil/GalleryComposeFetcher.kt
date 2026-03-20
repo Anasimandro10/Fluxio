@@ -13,9 +13,8 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see .
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.image.coil
 
 import android.content.Context
@@ -98,9 +97,7 @@ private constructor(
         val outputSize = size.collageSize()
         // Decode bitmaps at reduced resolution — canvas.drawBitmap scales to dest regardless,
         // so visual quality is identical while RAM usage drops 4-8x for large covers.
-        val options = BitmapFactory.Options().apply {
-            inSampleSize = outputSize.toSampleSize()
-        }
+        val options = BitmapFactory.Options().apply { inSampleSize = outputSize.toSampleSize() }
         val bitmaps = streams.mapNotNull { BitmapFactory.decodeStream(it, null, options) }
         if (bitmaps.size != streams.size) {
             return null
