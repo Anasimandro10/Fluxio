@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.oxycblt.auxio.list.recycler
 
 import android.content.Context
@@ -46,6 +47,9 @@ constructor(context: Context, attrs: AttributeSet? = null, @AttrRes defStyleAttr
         // Auxio's non-dialog RecyclerViews never change their size based on adapter contents,
         // so we can enable fixed-size optimizations.
         setHasFixedSize(true)
+        // Keep more views in the view cache so fast scrolling doesn't require re-binding
+        // items that were recently visible.
+        setItemViewCacheSize(8)
     }
 
     final override fun setHasFixedSize(hasFixedSize: Boolean) {

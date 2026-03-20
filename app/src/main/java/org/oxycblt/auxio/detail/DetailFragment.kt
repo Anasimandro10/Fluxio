@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.oxycblt.auxio.detail
 
 import android.os.Bundle
@@ -59,8 +60,6 @@ abstract class DetailFragment<P : MusicParent, C : Music> :
         // semantically correct, but are also too buggy to be sensible.
         enterTransition = MaterialSharedAxis(MaterialSharedAxis.Z, true)
         returnTransition = MaterialSharedAxis(MaterialSharedAxis.Z, false)
-        exitTransition = MaterialSharedAxis(MaterialSharedAxis.Z, true)
-        reenterTransition = MaterialSharedAxis(MaterialSharedAxis.Z, false)
     }
 
     override fun onCreateBinding(inflater: LayoutInflater) = FragmentDetailBinding.inflate(inflater)

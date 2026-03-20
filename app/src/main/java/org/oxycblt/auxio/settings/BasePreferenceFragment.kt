@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.oxycblt.auxio.settings
 
 import android.os.Bundle
@@ -64,8 +65,6 @@ abstract class BasePreferenceFragment(@XmlRes private val screen: Int) :
         super.onCreate(savedInstanceState)
         enterTransition = MaterialSharedAxis(MaterialSharedAxis.X, true)
         returnTransition = MaterialSharedAxis(MaterialSharedAxis.X, false)
-        exitTransition = MaterialSharedAxis(MaterialSharedAxis.X, true)
-        reenterTransition = MaterialSharedAxis(MaterialSharedAxis.X, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
