@@ -15,11 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.oxycblt.auxio.stats
 
 import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
@@ -32,7 +34,11 @@ import kotlinx.coroutines.flow.Flow
  *
  * Each row represents one song listened to for 30 seconds or more.
  */
-@Database(entities = [PlaybackRecord::class], version = 1, exportSchema = false)
+@Database(
+    entities = [PlaybackRecord::class],
+    version = 1,
+    exportSchema = false,
+)
 abstract class StatsDatabase : RoomDatabase() {
     abstract fun playbackRecordDao(): PlaybackRecordDao
 }
@@ -47,7 +53,10 @@ abstract class StatsDatabase : RoomDatabase() {
  * @param startedAt Unix timestamp in milliseconds when playback began
  * @param secondsPlayed real seconds listened (minimum 30 to be saved)
  */
-@Entity(tableName = "playback_records")
+@Entity(
+    tableName = "playback_records",
+    indices = [Index("startedAt")],
+)
 data class PlaybackRecord(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val songTitle: String,

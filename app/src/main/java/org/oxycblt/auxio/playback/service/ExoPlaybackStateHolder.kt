@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.oxycblt.auxio.playback.service
 
 import android.content.Context
@@ -29,6 +30,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.decoder.ffmpeg.FfmpegAudioRenderer
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.RenderersFactory
 import androidx.media3.exoplayer.audio.DefaultAudioSink
@@ -672,9 +674,22 @@ class ExoPlaybackStateHolder(
                 )
             }
 
+            // Use a reduced buffer for local music — the default (15s) is designed for
+            // streaming and wastes RAM. 3-5s is more than enough for local files.
+            val loadControl =
+                DefaultLoadControl.Builder()
+                    .setBufferDurationsMs(
+                        /* minBufferMs = */ 3_000,
+                        /* maxBufferMs = */ 5_000,
+                        /* bufferForPlaybackMs = */ 1_500,
+                        /* bufferForPlaybackAfterRebufferMs = */ 2_000,
+                    )
+                    .build()
+
             val exoPlayer =
                 ExoPlayer.Builder(context, audioRenderer)
                     .setMediaSourceFactory(mediaSourceFactory)
+                    .setLoadControl(loadControl)
                     // Enable automatic WakeLock support
                     .setWakeMode(C.WAKE_MODE_LOCAL)
                     .setAudioAttributes(

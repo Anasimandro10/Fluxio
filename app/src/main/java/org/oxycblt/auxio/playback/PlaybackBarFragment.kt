@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.oxycblt.auxio.playback
 
 import android.os.Bundle
@@ -43,6 +44,11 @@ class PlaybackBarFragment : ViewBindingFragment<FragmentPlaybackBarBinding>() {
     private val playbackModel: PlaybackViewModel by activityViewModels()
     private val detailModel: DetailViewModel by activityViewModels()
 
+    // Cached dimensions — read once in onBindingCreated instead of on every updatePlaying call.
+    private var waveWavelength = 0
+    private var waveAmplitude = 0
+    private var waveSpeed = 0
+
     override fun onCreateBinding(inflater: LayoutInflater) =
         FragmentPlaybackBarBinding.inflate(inflater)
 
@@ -52,6 +58,11 @@ class PlaybackBarFragment : ViewBindingFragment<FragmentPlaybackBarBinding>() {
     ) {
         super.onBindingCreated(binding, savedInstanceState)
         val context = requireContext()
+
+        // Cache wave dimensions once — getDimenPixels reads resources on every call.
+        waveWavelength = context.getDimenPixels(R.dimen.progress_wavelength)
+        waveAmplitude = context.getDimenPixels(R.dimen.progress_amplitude)
+        waveSpeed = context.getDimenPixels(R.dimen.progress_wave_speed)
 
         // --- UI SETUP ---
         binding.root.apply {
@@ -105,12 +116,12 @@ class PlaybackBarFragment : ViewBindingFragment<FragmentPlaybackBarBinding>() {
 
     private fun updatePlaying(isPlaying: Boolean) {
         requireBinding().playbackPlayPause.isChecked = isPlaying
-        requireBinding().playbackProgressBar.apply {
-            val wavelength = context.getDimenPixels(R.dimen.progress_wavelength)
-            val amplitude = context.getDimenPixels(R.dimen.progress_amplitude)
-            val speed = context.getDimenPixels(R.dimen.progress_wave_speed)
-            setWaveEnabled(isPlaying, wavelength, amplitude, speed)
-        }
+        requireBinding().playbackProgressBar.setWaveEnabled(
+            isPlaying,
+            waveWavelength,
+            waveAmplitude,
+            waveSpeed,
+        )
     }
 
     private fun updatePosition(positionDs: Long) {

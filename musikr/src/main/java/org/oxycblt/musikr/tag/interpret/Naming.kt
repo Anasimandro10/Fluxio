@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.oxycblt.musikr.tag.interpret
 
 import android.icu.text.Transliterator
@@ -83,8 +84,6 @@ private data class IntelligentKnownName(override val raw: String, override val s
     override val tokens = parseTokens(sort ?: raw)
 
     private fun parseTokens(name: String): List<Token> {
-        // TODO: This routine is consuming much of the song building runtime, find a way to
-        //  optimize it
         var stripped =
             name
                 // Replace punctuation with spaces to create token boundaries, improving
@@ -92,22 +91,21 @@ private data class IntelligentKnownName(override val raw: String, override val s
                 .replace(punctRegex, " ")
                 .let { if (it.isBlank()) name else it }
                 .run {
-                    // Strip any english articles like "the" or "an" from the start, as music
+                    // Strip english articles "the" and "an" from the start, as music
                     // sorting should ignore such when possible.
+                    // Note: "a " is intentionally excluded — stripping it causes titles
+                    // like "A Great Chaos" to sort under G instead of A.
                     when {
                         length > 4 && startsWith("the ", ignoreCase = true) -> substring(4)
                         length > 3 && startsWith("an ", ignoreCase = true) -> substring(3)
-                        length > 2 && startsWith("a ", ignoreCase = true) -> substring(2)
                         else -> this
                     }
                 }
 
-        // Transliterate to latin if available
-        if (
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-                Transliterator.getAvailableIDs().toList().contains("Any-Latin")
-        ) {
-            stripped = Transliterator.getInstance("Any-Latin;").transliterate(stripped)
+        // Transliterate to latin if available. Cached in companion object to avoid the
+        // overhead of getAvailableIDs() and getInstance() on every single song/album/artist.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && transliteratorAvailable) {
+            stripped = transliterator!!.transliterate(stripped)
         }
 
         // To properly compare numeric components in names, we have to split them up into
@@ -136,5 +134,17 @@ private data class IntelligentKnownName(override val raw: String, override val s
 
     companion object {
         private val TOKEN_REGEX by lazy { Regex("(\\d+)|(\\D+)") }
+
+        // Cache Transliterator availability and instance — getAvailableIDs().toList() and
+        // getInstance() are expensive and were called once per song/album/artist/genre during
+        // library scanning (marked TODO by the original author).
+        private val transliteratorAvailable: Boolean by lazy {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                Transliterator.getAvailableIDs().toList().contains("Any-Latin")
+        }
+
+        private val transliterator: Transliterator? by lazy {
+            if (transliteratorAvailable) Transliterator.getInstance("Any-Latin;") else null
+        }
     }
 }
