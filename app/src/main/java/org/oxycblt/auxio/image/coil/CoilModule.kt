@@ -13,13 +13,13 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * along with this program.  If not, see .
  */
+
 package org.oxycblt.auxio.image.coil
 
 import android.content.Context
 import coil3.ImageLoader
-import coil3.request.CachePolicy
 import coil3.request.transitionFactory
 import dagger.Module
 import dagger.Provides
@@ -57,7 +57,5 @@ class CoilModule {
             }
             // Use our own crossfade with error drawable support
             .transitionFactory(ErrorCrossfadeTransitionFactory())
-            // Not downloading anything, so no disk-caching
-            .diskCachePolicy(CachePolicy.DISABLED)
             .build()
 }
