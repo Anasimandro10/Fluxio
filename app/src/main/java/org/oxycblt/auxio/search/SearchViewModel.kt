@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.oxycblt.auxio.search
 
 import androidx.annotation.IdRes
@@ -22,6 +23,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -103,7 +105,7 @@ constructor(
         // Searching is time-consuming, so do it in the background.
         L.d("Searching music library for $query")
         currentSearchJob =
-            viewModelScope.launch {
+            viewModelScope.launch(Dispatchers.Default) {
                 _searchResults.value = searchImpl(library, query).also { yield() }
             }
     }

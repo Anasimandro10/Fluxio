@@ -15,12 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.oxycblt.auxio.lyrics
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -230,7 +232,7 @@ constructor(
     private fun startTicker() {
         if (tickerJob?.isActive == true) return
         tickerJob =
-            viewModelScope.launch {
+            viewModelScope.launch(Dispatchers.Default) {
                 while (true) {
                     delay(500)
                     val posMs = currentProgression?.calculateElapsedPositionMs() ?: break

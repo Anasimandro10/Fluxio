@@ -15,12 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.oxycblt.auxio.tags
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -62,7 +64,7 @@ class TagViewModel @Inject constructor(private val repo: TagRepository) : ViewMo
     fun loadForItem(musicUid: String, musicType: String) {
         currentUid = musicUid
         currentType = musicType
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val assigned = repo.getTagIdsForItemOnce(musicUid)
             snapshotIds = assigned
             _allTags.value = repo.getAllTagsOnce()
@@ -83,7 +85,7 @@ class TagViewModel @Inject constructor(private val repo: TagRepository) : ViewMo
      */
     fun createAndSelectTag(name: String) {
         if (name.isBlank()) return
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val newId = repo.createTag(name)
             if (newId > 0) {
                 _allTags.value = repo.getAllTagsOnce()
@@ -94,7 +96,7 @@ class TagViewModel @Inject constructor(private val repo: TagRepository) : ViewMo
 
     /** Delete a tag and all its assignments across all songs/albums. */
     fun deleteTag(tagId: Long) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             repo.deleteTag(tagId)
             _allTags.value = repo.getAllTagsOnce()
             _selectedTagIds.value = _selectedTagIds.value - tagId
@@ -103,7 +105,7 @@ class TagViewModel @Inject constructor(private val repo: TagRepository) : ViewMo
 
     /** Persist the current selection to the database using the snapshot taken at open time. */
     fun save() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             repo.syncTagsForItem(
                 musicUid = currentUid,
                 musicType = currentType,
