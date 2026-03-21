@@ -81,7 +81,7 @@ interface PlaybackSettings : Settings<PlaybackSettings.Listener> {
 }
 
 class PlaybackSettingsImpl @Inject constructor(@ApplicationContext context: Context) :
-        Settings.Impl<PlaybackSettings.Listener>(context), PlaybackSettings {
+    Settings.Impl<PlaybackSettings.Listener>(context), PlaybackSettings {
     override val playInListWith: PlaySong
         get() =
             PlaySong.fromIntCode(
