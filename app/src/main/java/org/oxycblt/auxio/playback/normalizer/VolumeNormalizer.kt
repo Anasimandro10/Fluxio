@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback.normalizer
 
 import androidx.media3.common.C
@@ -33,9 +32,9 @@ import org.oxycblt.musikr.Song
 import timber.log.Timber as L
 
 /**
- * An [AudioProcessor] that measures the average loudness of the first few seconds of each track
- * and applies a single fixed gain for the entire song. This makes all songs play at the same
- * perceived volume without any dynamic changes within a track.
+ * An [AudioProcessor] that measures the average loudness of the first few seconds of each track and
+ * applies a single fixed gain for the entire song. This makes all songs play at the same perceived
+ * volume without any dynamic changes within a track.
  *
  * Works independently of ReplayGain: no tags required.
  */
@@ -106,7 +105,7 @@ constructor(
     // --- AUDIO PROCESSOR ---
 
     override fun onConfigure(
-        inputAudioFormat: AudioProcessor.AudioFormat,
+        inputAudioFormat: AudioProcessor.AudioFormat
     ): AudioProcessor.AudioFormat {
         if (inputAudioFormat.encoding == C.ENCODING_PCM_16BIT) {
             return inputAudioFormat
@@ -149,8 +148,8 @@ constructor(
     }
 
     /**
-     * Called after measuring enough samples. Calculates the RMS of what we heard and sets a
-     * fixed gain that will stay constant for the rest of this song.
+     * Called after measuring enough samples. Calculates the RMS of what we heard and sets a fixed
+     * gain that will stay constant for the rest of this song.
      */
     private fun lockGain() {
         if (sampleCount == 0L) return
