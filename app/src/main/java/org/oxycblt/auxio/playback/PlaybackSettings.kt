@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * along with this program.  If not, see .
  */
 package org.oxycblt.auxio.playback
 
@@ -23,6 +23,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import org.oxycblt.auxio.IntegerTable
 import org.oxycblt.auxio.R
+import org.oxycblt.auxio.playback.normalizer.NormalizationTarget
 import org.oxycblt.auxio.playback.replaygain.ReplayGainMode
 import org.oxycblt.auxio.playback.replaygain.ReplayGainPreAmp
 import org.oxycblt.auxio.settings.Settings
@@ -33,7 +34,7 @@ import timber.log.Timber as L
  *
  * @author Alexander Capehart (OxygenCobalt)
  */
-interface PlaybackSettings : Settings<PlaybackSettings.Listener> {
+interface PlaybackSettings : Settings {
     /** The action to display on the playback bar. */
     val barAction: ActionMode
     /** Whether to start playback when a headset is plugged in. */
@@ -45,8 +46,8 @@ interface PlaybackSettings : Settings<PlaybackSettings.Listener> {
     /** How to play a song from a general list of songs, specified by [PlaySong] */
     val playInListWith: PlaySong
     /**
-     * How to play a song from a parent item, specified by [PlaySong]. Null if to delegate to the UI
-     * context.
+     * How to play a song from a parent item, specified by [PlaySong]. Null if to delegate to the
+     * UI context.
      */
     val inParentPlaybackMode: PlaySong?
     /** Whether to keep shuffle on when playing a new Song. */
@@ -59,6 +60,10 @@ interface PlaybackSettings : Settings<PlaybackSettings.Listener> {
     val rememberPause: Boolean
     /** Whether to always exit when task is removed, even if playing. */
     val exitOnTaskRemoval: Boolean
+    /** Whether automatic volume normalization is enabled. */
+    val normalizationEnabled: Boolean
+    /** The target loudness level for automatic volume normalization. */
+    val normalizationTarget: NormalizationTarget
 
     interface Listener {
         /** Called when one of the ReplayGain configurations have changed. */
@@ -69,11 +74,14 @@ interface PlaybackSettings : Settings<PlaybackSettings.Listener> {
 
         /** Called when [pauseOnRepeat] has changed. */
         fun onPauseOnRepeatChanged() {}
+
+        /** Called when normalization settings have changed. */
+        fun onNormalizationSettingsChanged() {}
     }
 }
 
 class PlaybackSettingsImpl @Inject constructor(@ApplicationContext context: Context) :
-    Settings.Impl<PlaybackSettings.Listener>(context), PlaybackSettings {
+    Settings.Impl(context), PlaybackSettings {
     override val playInListWith: PlaySong
         get() =
             PlaySong.fromIntCode(
@@ -136,8 +144,23 @@ class PlaybackSettingsImpl @Inject constructor(@ApplicationContext context: Cont
     override val exitOnTaskRemoval: Boolean
         get() = sharedPreferences.getBoolean(getString(R.string.set_key_task_exit), false)
 
+    override val normalizationEnabled: Boolean
+        get() =
+            sharedPreferences.getBoolean(
+                getString(R.string.set_key_normalization_enabled),
+                false,
+            )
+
+    override val normalizationTarget: NormalizationTarget
+        get() =
+            NormalizationTarget.fromIntCode(
+                sharedPreferences.getInt(
+                    getString(R.string.set_key_normalization_target),
+                    Int.MIN_VALUE,
+                )
+            ) ?: NormalizationTarget.LUFS_14
+
     override fun migrate() {
-        // MusicMode was converted to PlaySong in 3.2.0
         fun Int.migrateMusicMode() =
             when (this) {
                 IntegerTable.MUSIC_MODE_SONGS -> PlaySong.FromAll
@@ -149,12 +172,10 @@ class PlaybackSettingsImpl @Inject constructor(@ApplicationContext context: Cont
 
         if (sharedPreferences.contains(OLD_KEY_LIB_MUSIC_PLAYBACK_MODE)) {
             L.d("Migrating $OLD_KEY_LIB_MUSIC_PLAYBACK_MODE")
-
             val mode =
                 sharedPreferences
                     .getInt(OLD_KEY_LIB_MUSIC_PLAYBACK_MODE, Int.MIN_VALUE)
                     .migrateMusicMode()
-
             sharedPreferences.edit {
                 putInt(
                     getString(R.string.set_key_play_in_list_with),
@@ -167,12 +188,10 @@ class PlaybackSettingsImpl @Inject constructor(@ApplicationContext context: Cont
 
         if (sharedPreferences.contains(OLD_KEY_DETAIL_MUSIC_PLAYBACK_MODE)) {
             L.d("Migrating $OLD_KEY_DETAIL_MUSIC_PLAYBACK_MODE")
-
             val mode =
                 sharedPreferences
                     .getInt(OLD_KEY_DETAIL_MUSIC_PLAYBACK_MODE, Int.MIN_VALUE)
                     .migrateMusicMode()
-
             sharedPreferences.edit {
                 putInt(
                     getString(R.string.set_key_play_in_parent_with),
@@ -199,6 +218,11 @@ class PlaybackSettingsImpl @Inject constructor(@ApplicationContext context: Cont
             getString(R.string.set_key_repeat_pause) -> {
                 L.d("Dispatching pause on repeat change")
                 listener.onPauseOnRepeatChanged()
+            }
+            getString(R.string.set_key_normalization_enabled),
+            getString(R.string.set_key_normalization_target) -> {
+                L.d("Dispatching normalization setting change")
+                listener.onNormalizationSettingsChanged()
             }
         }
     }

@@ -2,6 +2,7 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     app:title="@string/set_audio">
+
     <PreferenceCategory android:title="@string/set_playback">
 
         <SwitchPreferenceCompat
@@ -44,4 +45,22 @@
             app:title="@string/set_pre_amp" />
 
     </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/set_normalization">
+
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:key="@string/set_key_normalization_enabled"
+            app:summary="@string/set_normalization_enabled_desc"
+            app:title="@string/set_normalization_enabled" />
+
+        <org.oxycblt.auxio.settings.ui.IntListPreference
+            app:defaultValue="@integer/normalization_target_14"
+            app:entries="@array/entries_normalization_target"
+            app:entryValues="@array/values_normalization_target"
+            app:key="@string/set_key_normalization_target"
+            app:title="@string/set_normalization_target" />
+
+    </PreferenceCategory>
+
 </PreferenceScreen>

@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * along with this program.  If not, see .
  */
 package org.oxycblt.auxio
 
@@ -76,14 +76,6 @@ object IntegerTable {
     const val REPEAT_MODE_ALL = 0xA101
     /** RepeatMode.TRACK */
     const val REPEAT_MODE_TRACK = 0xA102
-    //    /** PlaybackMode.IN_GENRE (No longer used but still reserved) */
-    //    const val PLAYBACK_MODE_IN_GENRE = 0xA103
-    //    /** PlaybackMode.IN_ARTIST (No longer used but still reserved) */
-    //    const val PLAYBACK_MODE_IN_ARTIST = 0xA104
-    //    /** PlaybackMode.IN_ALBUM (No longer used but still reserved) */
-    //    const val PLAYBACK_MODE_IN_ALBUM = 0xA105
-    //    /** PlaybackMode.ALL_SONGS (No longer used but still reserved) */
-    //    const val PLAYBACK_MODE_ALL_SONGS = 0xA106
     /** MusicMode.SONGS */
     const val MUSIC_MODE_SONGS = 0xA10B
     /** MusicMode.ALBUMS */
@@ -114,7 +106,7 @@ object IntegerTable {
     const val SORT_BY_TRACK = 0xA117
     /** Sort.Mode.ByDateAdded */
     const val SORT_BY_DATE_ADDED = 0xA118
-    /** ReplayGainMode.Off (No longer used but still reserved) */
+    /** ReplayGainMode.Off */
     const val REPLAY_GAIN_MODE_OFF = 0xA110
     /** ReplayGainMode.Track */
     const val REPLAY_GAIN_MODE_TRACK = 0xA111
@@ -154,8 +146,14 @@ object IntegerTable {
     const val LOCATION_MODE_SAF = 0xA127
     /** LocationMode.MediaStore */
     const val LOCATION_MODE_MEDIA_STORE = 0xA128
-    /** LocationMode.FileSystem */
+    /** FilterMode.Include */
     const val FILTER_MODE_INCLUDE = 0xA129
-    /** LocationMode.FileSystem */
+    /** FilterMode.Exclude */
     const val FILTER_MODE_EXCLUDE = 0xA12A
+    /** NormalizationTarget.-14 LUFS */
+    const val NORMALIZATION_TARGET_14 = 0xA12C
+    /** NormalizationTarget.-16 LUFS */
+    const val NORMALIZATION_TARGET_16 = 0xA12D
+    /** NormalizationTarget.-18 LUFS */
+    const val NORMALIZATION_TARGET_18 = 0xA12E
 }
