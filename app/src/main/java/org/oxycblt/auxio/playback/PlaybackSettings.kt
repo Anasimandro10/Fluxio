@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see .
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 package org.oxycblt.auxio.playback
 
@@ -46,8 +46,8 @@ interface PlaybackSettings : Settings {
     /** How to play a song from a general list of songs, specified by [PlaySong] */
     val playInListWith: PlaySong
     /**
-     * How to play a song from a parent item, specified by [PlaySong]. Null if to delegate to the
-     * UI context.
+     * How to play a song from a parent item, specified by [PlaySong]. Null if to delegate to the UI
+     * context.
      */
     val inParentPlaybackMode: PlaySong?
     /** Whether to keep shuffle on when playing a new Song. */
@@ -146,10 +146,7 @@ class PlaybackSettingsImpl @Inject constructor(@ApplicationContext context: Cont
 
     override val normalizationEnabled: Boolean
         get() =
-            sharedPreferences.getBoolean(
-                getString(R.string.set_key_normalization_enabled),
-                false,
-            )
+            sharedPreferences.getBoolean(getString(R.string.set_key_normalization_enabled), false)
 
     override val normalizationTarget: NormalizationTarget
         get() =

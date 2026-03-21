@@ -13,9 +13,8 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see .
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback.normalizer
 
 import androidx.media3.common.C
@@ -29,19 +28,16 @@ import org.oxycblt.auxio.playback.PlaybackSettings
 import timber.log.Timber as L
 
 /**
- * An [AudioProcessor] that analyzes the audio signal in real time and applies a gain adjustment
- * to bring each track closer to a user-defined target loudness level. A transparent soft limiter
- * is always active to prevent clipping when positive gain is applied.
+ * An [AudioProcessor] that analyzes the audio signal in real time and applies a gain adjustment to
+ * bring each track closer to a user-defined target loudness level. A transparent soft limiter is
+ * always active to prevent clipping when positive gain is applied.
  *
  * This processor works independently of ReplayGain: it analyzes the raw PCM signal rather than
  * reading tags. It must be attached to a [PlaybackSettings] instance via [attach] to receive
  * settings change notifications.
  */
-class VolumeNormalizer
-@Inject
-constructor(
-    private val playbackSettings: PlaybackSettings,
-) : BaseAudioProcessor(), PlaybackSettings.Listener {
+class VolumeNormalizer @Inject constructor(private val playbackSettings: PlaybackSettings) :
+    BaseAudioProcessor(), PlaybackSettings.Listener {
 
     // Changing needsReset to true triggers resetAnalysis() and flush() on the audio stream.
     // Same pattern used by ReplayGainAudioProcessor's 'volume' setter.
@@ -81,7 +77,7 @@ constructor(
     }
 
     override fun onConfigure(
-        inputAudioFormat: AudioProcessor.AudioFormat,
+        inputAudioFormat: AudioProcessor.AudioFormat
     ): AudioProcessor.AudioFormat {
         if (inputAudioFormat.encoding == C.ENCODING_PCM_16BIT) {
             return inputAudioFormat

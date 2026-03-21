@@ -49,8 +49,8 @@ import kotlinx.coroutines.yield
 import org.oxycblt.auxio.image.ImageSettings
 import org.oxycblt.auxio.music.MusicRepository
 import org.oxycblt.auxio.playback.PlaybackSettings
-import org.oxycblt.auxio.playback.persist.PersistenceRepository
 import org.oxycblt.auxio.playback.normalizer.VolumeNormalizer
+import org.oxycblt.auxio.playback.persist.PersistenceRepository
 import org.oxycblt.auxio.playback.replaygain.ReplayGainAudioProcessor
 import org.oxycblt.auxio.playback.state.DeferredPlayback
 import org.oxycblt.auxio.playback.state.PlaybackCommand
@@ -96,7 +96,7 @@ class ExoPlaybackStateHolder(
         playbackManager.registerStateHolder(this)
         musicRepository.addUpdateListener(this)
         player.addListener(this)
-                replayGainProcessor.attach()
+        replayGainProcessor.attach()
         volumeNormalizer.attach()
         playbackSettings.registerListener(this)
         imageSettings.registerListener(this)
@@ -107,7 +107,7 @@ class ExoPlaybackStateHolder(
         playbackManager.unregisterStateHolder(this)
         musicRepository.removeUpdateListener(this)
         player.removeListener(this)
-               replayGainProcessor.release()
+        replayGainProcessor.release()
         volumeNormalizer.release()
         imageSettings.unregisterListener(this)
         playbackSettings.unregisterListener(this)
@@ -665,7 +665,12 @@ class ExoPlaybackStateHolder(
             // battery/apk size/cache size]
             val audioRenderer = RenderersFactory { handler, _, audioListener, _, _ ->
                 arrayOf(
-                    FfmpegAudioRenderer(handler, audioListener, replayGainProcessor, volumeNormalizer),
+                    FfmpegAudioRenderer(
+                        handler,
+                        audioListener,
+                        replayGainProcessor,
+                        volumeNormalizer,
+                    ),
                     MediaCodecAudioRenderer(
                         context,
                         MediaCodecSelector.DEFAULT,
