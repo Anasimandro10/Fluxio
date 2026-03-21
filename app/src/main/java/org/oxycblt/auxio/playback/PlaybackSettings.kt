@@ -34,7 +34,7 @@ import timber.log.Timber as L
  *
  * @author Alexander Capehart (OxygenCobalt)
  */
-interface PlaybackSettings : Settings<PlaybackSettings.Listener> { PlaybackSettings : Settings {
+interface PlaybackSettings : Settings<PlaybackSettings.Listener> {
     /** The action to display on the playback bar. */
     val barAction: ActionMode
     /** Whether to start playback when a headset is plugged in. */
@@ -81,7 +81,7 @@ interface PlaybackSettings : Settings<PlaybackSettings.Listener> { PlaybackSetti
 }
 
 class PlaybackSettingsImpl @Inject constructor(@ApplicationContext context: Context) :
-    Settings.Impl<PlaybackSettings.Listener>(context), PlaybackSettings {
+        Settings.Impl<PlaybackSettings.Listener>(context), PlaybackSettings {
     override val playInListWith: PlaySong
         get() =
             PlaySong.fromIntCode(
