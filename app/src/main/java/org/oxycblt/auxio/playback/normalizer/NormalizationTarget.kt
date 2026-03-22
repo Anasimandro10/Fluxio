@@ -15,30 +15,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.oxycblt.auxio.playback.normalizer
 
 import org.oxycblt.auxio.IntegerTable
 
 /**
- * The target loudness level for automatic volume normalization.
+ * Target loudness level for automatic volume normalization.
  *
- * Values are approximate LUFS equivalents matched to PCM 16-bit RMS analysis targets.
+ * Values follow the ITU-R BS.1770-4 standard (K-weighted RMS). [targetRmsDb] is the target in
+ * dBFS; [targetRmsLinear] is its pre-computed 16-bit PCM equivalent used by [VolumeNormalizer]
+ * to avoid repeated pow() calls in the audio thread.
+ *
+ * Approximate LUFS equivalences:
+ *   LUFS_14 ≈ -14 LUFS — Spotify / YouTube Music / Apple Music streaming standard
+ *   LUFS_16 ≈ -16 LUFS — balanced; recommended for mixed listening environments
+ *   LUFS_18 ≈ -18 LUFS — conservative; minimal alteration of original dynamics
  */
-enum class NormalizationTarget {
-    /** -14 LUFS — matches streaming services (Spotify, YouTube Music, Apple Music). */
-    LUFS_14,
-    /** -16 LUFS — balanced, slightly less modification than the streaming standard. */
-    LUFS_16,
-    /** -18 LUFS — conservative, minimal alteration of the original dynamics. */
-    LUFS_18;
+enum class NormalizationTarget(
+    /** Target K-weighted RMS in dBFS (negative, e.g. -13.31). */
+    val targetRmsDb: Float,
+) {
+    LUFS_14(targetRmsDb = -13.31f),
+    LUFS_16(targetRmsDb = -15.31f),
+    LUFS_18(targetRmsDb = -17.31f);
+
+    /**
+     * Target RMS in linear 16-bit PCM units. Pre-computed to avoid repeated Math.pow() calls
+     * in the audio thread.
+     */
+    val targetRmsLinear: Double = Math.pow(10.0, targetRmsDb / 20.0) * 32768.0
 
     companion object {
-        /**
-         * Convert a [NormalizationTarget] integer representation into an instance.
-         *
-         * @param intCode An integer representation of a [NormalizationTarget]
-         * @return The corresponding [NormalizationTarget], or null if invalid.
-         */
         fun fromIntCode(intCode: Int) =
             when (intCode) {
                 IntegerTable.NORMALIZATION_TARGET_14 -> LUFS_14

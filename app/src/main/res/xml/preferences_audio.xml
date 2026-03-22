@@ -60,6 +60,11 @@
             app:entryValues="@array/values_normalization_target"
             app:key="@string/set_key_normalization_target"
             app:title="@string/set_normalization_target" />
+                <Preference
+            app:iconSpaceReserved="false"
+            app:key="@string/set_key_clear_normalization_cache"
+            app:summary="@string/set_clear_normalization_cache_desc"
+            app:title="@string/set_clear_normalization_cache" />
 
     </PreferenceCategory>
 

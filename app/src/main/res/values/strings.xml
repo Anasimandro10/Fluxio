@@ -546,4 +546,8 @@
     <string name="set_normalization_target_14">-14 LUFS — Streaming standard (Spotify, YouTube, Apple Music)</string>
     <string name="set_normalization_target_16">-16 LUFS — Balanced (less modification than streaming standard)</string>
     <string name="set_normalization_target_18">-18 LUFS — Conservative (minimal alteration of original dynamics)</string>
+    <!-- Normalization cache -->
+    <string name="set_clear_normalization_cache">Clear normalization cache</string>
+    <string name="set_clear_normalization_cache_desc">Re-analyze all songs on next playback</string>
+    <string name="set_clear_normalization_cache_done">Normalization cache cleared</string>
 </resources>
