@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback.normalizer
 
 import androidx.media3.common.C
@@ -46,19 +45,19 @@ import timber.log.Timber as L
 /**
  * An [AudioProcessor] implementing ITU-R BS.1770-4 loudness normalization.
  *
- * Measures the K-weighted RMS of the first [MEASUREMENT_SECONDS] seconds of each song and
- * applies a single fixed gain for the rest of the track. The measurement is cached in Room
- * so subsequent plays use the stored value from the first sample. Automatically bypasses
- * when ReplayGain is active and the song has RG tags.
+ * Measures the K-weighted RMS of the first [MEASUREMENT_SECONDS] seconds of each song and applies a
+ * single fixed gain for the rest of the track. The measurement is cached in Room so subsequent
+ * plays use the stored value from the first sample. Automatically bypasses when ReplayGain is
+ * active and the song has RG tags.
  *
  * ## No flush() calls
- * Uses exponential interpolation ([SMOOTHING_COEFF]) sample-by-sample — transitions are
- * inaudible (~150 ms). flush() is never called for gain changes.
+ * Uses exponential interpolation ([SMOOTHING_COEFF]) sample-by-sample — transitions are inaudible
+ * (~150 ms). flush() is never called for gain changes.
  *
  * ## Thread model
  * **Audio thread** (exclusive): [sumSquares], [totalSamples], [windowSamples], [minSamples],
- * [currentGain], [targetGain], [gainLocked], [measuringUid], [filterState], [kwStage1],
- * [kwStage2], [channelCount], [sampleRate], [currentSampleIndex].
+ * [currentGain], [targetGain], [gainLocked], [measuringUid], [filterState], [kwStage1], [kwStage2],
+ * [channelCount], [sampleRate], [currentSampleIndex].
  *
  * **Main thread** (exclusive): [memCache]. All writes via withContext(Dispatchers.Main).
  *
@@ -227,7 +226,7 @@ constructor(
     // ─── BaseAudioProcessor ───────────────────────────────────────────────────
 
     override fun onConfigure(
-        inputAudioFormat: AudioProcessor.AudioFormat,
+        inputAudioFormat: AudioProcessor.AudioFormat
     ): AudioProcessor.AudioFormat {
         if (inputAudioFormat.encoding != C.ENCODING_PCM_16BIT) {
             throw AudioProcessor.UnhandledAudioFormatException(inputAudioFormat)
@@ -420,11 +419,9 @@ constructor(
 
         val KW_STAGE1_44100 =
             floatArrayOf(1.53512486f, -2.69169619f, 1.19839281f, -1.69065929f, 0.73248077f)
-        val KW_STAGE2_44100 =
-            floatArrayOf(1.0f, -2.0f, 1.0f, -1.99004745f, 0.99007225f)
+        val KW_STAGE2_44100 = floatArrayOf(1.0f, -2.0f, 1.0f, -1.99004745f, 0.99007225f)
         val KW_STAGE1_48000 =
             floatArrayOf(1.53084123f, -2.65097995f, 1.16907868f, -1.66365511f, 0.71259543f)
-        val KW_STAGE2_48000 =
-            floatArrayOf(1.0f, -2.0f, 1.0f, -1.99219848f, 0.99225010f)
+        val KW_STAGE2_48000 = floatArrayOf(1.0f, -2.0f, 1.0f, -1.99219848f, 0.99225010f)
     }
 }

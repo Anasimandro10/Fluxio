@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback.normalizer
 
 import android.content.Context
@@ -34,14 +33,8 @@ object NormalizationModule {
 
     @Provides
     @Singleton
-    fun provideNormalizationDatabase(
-        @ApplicationContext context: Context,
-    ): NormalizationDatabase =
-        Room.databaseBuilder(
-                context,
-                NormalizationDatabase::class.java,
-                "fluxio_normalization.db",
-            )
+    fun provideNormalizationDatabase(@ApplicationContext context: Context): NormalizationDatabase =
+        Room.databaseBuilder(context, NormalizationDatabase::class.java, "fluxio_normalization.db")
             .fallbackToDestructiveMigration()
             .build()
 
