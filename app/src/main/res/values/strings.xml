@@ -550,4 +550,10 @@
     <string name="set_clear_normalization_cache">Clear normalization cache</string>
     <string name="set_clear_normalization_cache_desc">Re-analyze all songs on next playback</string>
     <string name="set_clear_normalization_cache_done">Normalization cache cleared</string>
+        <!-- Bulk library analysis -->
+    <string name="set_analyze_library">Analyze entire library</string>
+    <string name="set_analyze_library_desc">Measure all songs once for perfect volume from the first play. Tap again to cancel.</string>
+    <string name="set_analyze_library_progress">%1$d / %2$d analyzed…</string>
+    <string name="set_analyze_library_progress_eta">%1$d / %2$d · %3$d:%4$02d remaining</string>
+    <string name="set_analyze_library_no_songs">No songs in library</string>
 </resources>

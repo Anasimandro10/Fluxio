@@ -65,6 +65,11 @@
             app:key="@string/set_key_clear_normalization_cache"
             app:summary="@string/set_clear_normalization_cache_desc"
             app:title="@string/set_clear_normalization_cache" />
+                    <Preference
+            app:iconSpaceReserved="false"
+            app:key="@string/set_key_analyze_library"
+            app:summary="@string/set_analyze_library_desc"
+            app:title="@string/set_analyze_library" />
 
     </PreferenceCategory>
 

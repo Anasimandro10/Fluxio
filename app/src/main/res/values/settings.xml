@@ -198,6 +198,7 @@
     <string name="set_key_normalization_enabled" translatable="false">fluxio_normalization_enabled</string>
     <string name="set_key_normalization_target" translatable="false">fluxio_normalization_target</string>
         <string name="set_key_clear_normalization_cache" translatable="false">fluxio_clear_normalization_cache</string>
+            <string name="set_key_analyze_library" translatable="false">fluxio_analyze_library</string>
 
     <string-array name="entries_normalization_target">
         <item>@string/set_normalization_target_14</item>

@@ -15,14 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.oxycblt.auxio.settings.categories
 
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.preference.Preference
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import org.oxycblt.auxio.R
+import org.oxycblt.auxio.music.MusicRepository
+import org.oxycblt.auxio.playback.normalizer.NormalizationScanner
 import org.oxycblt.auxio.playback.normalizer.VolumeNormalizer
 import org.oxycblt.auxio.settings.BasePreferenceFragment
 import org.oxycblt.auxio.settings.ui.WrappedDialogPreference
@@ -34,6 +40,43 @@ import timber.log.Timber as L
 class AudioPreferenceFragment : BasePreferenceFragment(R.xml.preferences_audio) {
 
     @Inject lateinit var volumeNormalizer: VolumeNormalizer
+    @Inject lateinit var normalizationScanner: NormalizationScanner
+    @Inject lateinit var musicRepository: MusicRepository
+
+    override fun onStart() {
+        super.onStart()
+        // Observe scan progress and update the button summary in real time
+        normalizationScanner.scanProgress
+            .onEach { progress ->
+                val pref =
+                    findPreference<Preference>(getString(R.string.set_key_analyze_library))
+                        ?: return@onEach
+                if (progress == null) {
+                    pref.summary = getString(R.string.set_analyze_library_desc)
+                } else {
+                    val eta = progress.estimatedSecondsRemaining
+                    pref.summary =
+                        if (eta != null && eta > 0) {
+                            val min = eta / 60
+                            val sec = eta % 60
+                            getString(
+                                R.string.set_analyze_library_progress_eta,
+                                progress.analyzed,
+                                progress.total,
+                                min,
+                                sec,
+                            )
+                        } else {
+                            getString(
+                                R.string.set_analyze_library_progress,
+                                progress.analyzed,
+                                progress.total,
+                            )
+                        }
+                }
+            }
+            .launchIn(lifecycleScope)
+    }
 
     override fun onOpenDialogPreference(preference: WrappedDialogPreference) {
         if (preference.key == getString(R.string.set_key_pre_amp)) {
@@ -54,6 +97,24 @@ class AudioPreferenceFragment : BasePreferenceFragment(R.xml.preferences_audio) 
                             Snackbar.LENGTH_SHORT,
                         )
                         .show()
+                }
+                true
+            }
+            getString(R.string.set_key_analyze_library) -> {
+                val songs = musicRepository.library?.songs
+                if (songs.isNullOrEmpty()) {
+                    view?.let {
+                        Snackbar.make(
+                                it,
+                                getString(R.string.set_analyze_library_no_songs),
+                                Snackbar.LENGTH_SHORT,
+                            )
+                            .show()
+                    }
+                } else if (normalizationScanner.scanProgress.value != null) {
+                    normalizationScanner.cancelBulkScan()
+                } else {
+                    normalizationScanner.startBulkScan(songs)
                 }
                 true
             }
