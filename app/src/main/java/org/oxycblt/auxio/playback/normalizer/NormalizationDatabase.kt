@@ -54,6 +54,7 @@ interface NormalizationDao {
 
     /** Deletes all cached measurements. Called when the user taps "Clear normalization cache". */
     @Query("DELETE FROM normalization_gains") suspend fun deleteAll()
+        @Query("SELECT songUid FROM normalization_gains WHERE songUid IN (:uids)") suspend fun getUidsIn(uids: List<String>): List<String>
 }
 
 /** Room database that persists [NormalizationRecord] entries across app restarts. */

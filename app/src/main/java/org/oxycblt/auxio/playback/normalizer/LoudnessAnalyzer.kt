@@ -31,8 +31,7 @@ import kotlin.math.log10
 import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.math.tan
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.isActive
+import kotlinx.coroutines.ensureActive
 import org.oxycblt.musikr.Song
 import timber.log.Timber as L
 
@@ -42,7 +41,7 @@ class LoudnessAnalyzer @Inject constructor(@ApplicationContext private val conte
     /**
      * Decodes [song] completely and returns the K-weighted RMS in dBFS. Returns null on format
      * errors, decode failures, or near-silence (< -50 dBFS). Must be called from Dispatchers.IO.
-     * Respects coroutine cancellation.
+     * Respects coroutine cancellation via [ensureActive].
      */
     suspend fun analyze(song: Song): Float? = decodeAndMeasure(song.uri)
 
@@ -93,11 +92,16 @@ class LoudnessAnalyzer @Inject constructor(@ApplicationContext private val conte
             var totalSamples = 0L
             var inputDone = false
             val bufferInfo = MediaCodec.BufferInfo()
-            // Chunk array for bulk ShortBuffer reads — 4-6x faster than per-sample
-            val chunk = ShortArray(8192)
+            // Large chunk = one pass per MediaCodec buffer. 32768 shorts = 64 KB, matches
+            // KEY_MAX_INPUT_SIZE above. Reduces loop overhead by 4x vs the previous 8192 size.
+            val chunk = ShortArray(32768)
 
             try {
-                while (currentCoroutineContext().isActive) {
+                while (true) {
+                    // Check cancellation once per buffer, not per sample — ensureActive() is
+                    // the idiomatic Kotlin coroutines way and has zero overhead when active.
+                    ensureActive()
+
                     // Feed compressed data
                     if (!inputDone) {
                         val inputIdx = codec.dequeueInputBuffer(10_000L)
@@ -128,24 +132,19 @@ class LoudnessAnalyzer @Inject constructor(@ApplicationContext private val conte
                             if (outputBuf != null && bufferInfo.size > 0) {
                                 val shorts =
                                     outputBuf.order(ByteOrder.nativeOrder()).asShortBuffer()
-                                var sampleIndex = 0L
-                                // Bulk read — much faster than shorts.get() per sample
+                                // ch alternates 0..channelCount-1 without any division or modulo.
+                                // For stereo: ch flips 0→1→0→1. For mono: always 0.
+                                // This eliminates the % operator from the hot path entirely.
+                                var ch = 0
                                 while (shorts.hasRemaining()) {
                                     val count = minOf(shorts.remaining(), chunk.size)
                                     shorts.get(chunk, 0, count)
                                     for (j in 0 until count) {
-                                        val ch = (sampleIndex % channelCount).toInt()
                                         val f =
-                                            applyKWeighting(
-                                                chunk[j].toFloat(),
-                                                ch,
-                                                filterState,
-                                                kw1,
-                                                kw2,
-                                            )
+                                            applyKWeighting(chunk[j].toFloat(), ch, filterState, kw1, kw2)
                                         sumSquares += f * f
                                         totalSamples++
-                                        sampleIndex++
+                                        if (++ch == channelCount) ch = 0
                                     }
                                 }
                             }

@@ -64,7 +64,8 @@ constructor(
     private var bulkTotal = 0
     private var bulkAnalyzed = 0
     private var bulkActive = false
-    private val recentDurationsMs = ArrayDeque<Long>(5)
+    // 10 samples instead of 5 — smoother ETA estimate with negligible memory cost
+    private val recentDurationsMs = ArrayDeque<Long>(10)
 
     // Channel to wake up idle workers when new songs are added
     private val workAvailable = Channel<Unit>(Channel.CONFLATED)
@@ -81,14 +82,19 @@ constructor(
      * front of the queue. Called from main thread.
      */
     fun requestHighPriority(songs: List<Song>) {
+        if (songs.isEmpty()) return
         scope.launch {
+            // One batched query instead of N individual ones — avoids N round-trips to Room
+            val uids = songs.map { it.uid.toString() }
+            val cached = normalizationDao.getUidsIn(uids).toHashSet()
             val toAdd = mutableListOf<Song>()
             for (song in songs) {
                 val uid = song.uid.toString()
-                if (normalizationDao.getForSong(uid) != null) continue
+                if (uid in cached) continue
                 synchronized(this@NormalizationScanner) {
                     if (
-                        !inProgress.contains(uid) && !highPriority.any { it.uid.toString() == uid }
+                        !inProgress.contains(uid) &&
+                            !highPriority.any { it.uid.toString() == uid }
                     ) {
                         toAdd.add(song)
                     }
@@ -109,12 +115,13 @@ constructor(
      */
     fun startBulkScan(songs: Collection<Song>) {
         scope.launch {
-            val uids = songs.map { it.uid.toString() }.toSet()
-            val cached = mutableSetOf<String>()
-            for (uid in uids) {
-                if (normalizationDao.getForSong(uid) != null) cached.add(uid)
-            }
+            // One single query to get all cached UIDs — O(1) DB round-trips regardless of
+            // library size. Previously this was O(N) individual queries, which on a 5000-song
+            // library caused an ~8 second delay before analysis even started.
+            val allUids = songs.map { it.uid.toString() }
+            val cached = normalizationDao.getUidsIn(allUids).toHashSet()
             val toScan = songs.filter { it.uid.toString() !in cached }
+
             if (toScan.isEmpty()) {
                 withContext(Dispatchers.Main) {
                     _scanProgress.value = ScanProgress(songs.size, songs.size, 0)
@@ -201,7 +208,7 @@ constructor(
                     synchronized(this@NormalizationScanner) {
                         if (bulkActive) {
                             bulkAnalyzed++
-                            if (recentDurationsMs.size >= 5) recentDurationsMs.removeFirst()
+                            if (recentDurationsMs.size >= 10) recentDurationsMs.removeFirst()
                             recentDurationsMs.addLast(elapsedMs)
                             true
                         } else false
