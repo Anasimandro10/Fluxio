@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.oxycblt.auxio.playback.normalizer
 
 import javax.inject.Inject
@@ -28,6 +29,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -42,49 +44,49 @@ constructor(
     private val loudnessAnalyzer: LoudnessAnalyzer,
     private val normalizationDao: NormalizationDao,
 ) {
-    /** Called on the main thread when a song finishes analyzing. Set by [VolumeNormalizer]. */
     var onSongAnalyzed: ((uid: String, rmsDb: Float) -> Unit)? = null
 
-    // Never cancelled — @Singleton for the app's lifetime
+    // Never cancelled — @Singleton
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    // Priority queues — guarded by synchronized(this)
-    private val highPriority = ArrayDeque<Song>()
+    // ── Queues ────────────────────────────────────────────────────────────────
+    // highPriority: LinkedHashSet for O(1) contains() + FIFO order
+    // lowPriority:  ArrayDeque — append/remove front only, no membership checks
+    private val highPriority = LinkedHashSet<Song>()
     private val lowPriority = ArrayDeque<Song>()
-    private val inProgress = mutableSetOf<String>()
+    private val inProgress = HashSet<String>()
 
-    // Worker management
+    // ── Worker management ─────────────────────────────────────────────────────
     private val workerJobs = mutableListOf<Job>()
     private var currentWorkerCount = 0
     private var isPlaying = false
 
-    // Bulk scan tracking
+    // ── Bulk scan state ───────────────────────────────────────────────────────
     private val _scanProgress = MutableStateFlow<ScanProgress?>(null)
     val scanProgress: StateFlow<ScanProgress?> = _scanProgress.asStateFlow()
     private var bulkTotal = 0
     private var bulkAnalyzed = 0
     private var bulkActive = false
-    // 10 samples instead of 5 — smoother ETA estimate with negligible memory cost
     private val recentDurationsMs = ArrayDeque<Long>(10)
 
-    // Channel to wake up idle workers when new songs are added
+    // ── Pending batch insert ──────────────────────────────────────────────────
+    // Accumulates results and flushes every BATCH_SIZE records — reduces DB
+    // transactions from N to N/BATCH_SIZE (10x fewer writes).
+    private val pendingRecords = mutableListOf<NormalizationRecord>()
+
     private val workAvailable = Channel<Unit>(Channel.CONFLATED)
 
-    /** Notify whether music is currently playing. Adjusts worker count. */
+    // ─── Public API ───────────────────────────────────────────────────────────
+
     fun setPlaying(playing: Boolean) {
         if (isPlaying == playing) return
         isPlaying = playing
         adjustWorkers()
     }
 
-    /**
-     * Request high-priority analysis for [songs] (current + next 3 in queue). These jump to the
-     * front of the queue. Called from main thread.
-     */
     fun requestHighPriority(songs: List<Song>) {
         if (songs.isEmpty()) return
         scope.launch {
-            // One batched query instead of N individual ones — avoids N round-trips to Room
             val uids = songs.map { it.uid.toString() }
             val cached = normalizationDao.getUidsIn(uids).toHashSet()
             val toAdd = mutableListOf<Song>()
@@ -92,31 +94,19 @@ constructor(
                 val uid = song.uid.toString()
                 if (uid in cached) continue
                 synchronized(this@NormalizationScanner) {
-                    if (
-                        !inProgress.contains(uid) && !highPriority.any { it.uid.toString() == uid }
-                    ) {
-                        toAdd.add(song)
-                    }
+                    if (uid !in inProgress && song !in highPriority) toAdd.add(song)
                 }
             }
             if (toAdd.isNotEmpty()) {
-                synchronized(this@NormalizationScanner) {
-                    for (song in toAdd.reversed()) highPriority.addFirst(song)
-                }
+                synchronized(this@NormalizationScanner) { highPriority.addAll(toAdd) }
+                adjustWorkers()
                 workAvailable.trySend(Unit)
             }
         }
     }
 
-    /**
-     * Start bulk analysis of [songs] that don't have a cached result yet. Called from main thread
-     * when user taps "Analyze entire library".
-     */
     fun startBulkScan(songs: Collection<Song>) {
         scope.launch {
-            // One single query to get all cached UIDs — O(1) DB round-trips regardless of
-            // library size. Previously this was O(N) individual queries, which on a 5000-song
-            // library caused an ~8 second delay before analysis even started.
             val allUids = songs.map { it.uid.toString() }
             val cached = normalizationDao.getUidsIn(allUids).toHashSet()
             val toScan = songs.filter { it.uid.toString() !in cached }
@@ -147,26 +137,35 @@ constructor(
         }
     }
 
-    /** Cancels any ongoing bulk scan. High-priority analysis is not affected. */
     fun cancelBulkScan() {
         synchronized(this@NormalizationScanner) {
             lowPriority.clear()
             bulkActive = false
         }
+        flushPendingRecords()
         scope.launch { withContext(Dispatchers.Main) { _scanProgress.value = null } }
         L.d("NormalizationScanner: bulk scan cancelled")
+    }
+
+    /**
+     * Suspends until the bulk scan completes (progress becomes null).
+     * Called by [NormalizationWorker] to keep the WorkManager worker alive until done.
+     */
+    suspend fun awaitBulkScanComplete() {
+        scanProgress.first { it == null }
     }
 
     // ─── Worker management ────────────────────────────────────────────────────
 
     private fun workerCount(): Int {
         val cores = Runtime.getRuntime().availableProcessors()
-        val base =
-            when {
-                cores <= 4 -> 1
-                cores <= 7 -> 2
-                else -> 3
-            }
+        // Reserve at least 2 cores for system + playback.
+        // UFS storage throughput caps at ~3-4 parallel readers on typical hardware.
+        val base = when {
+            cores <= 4 -> 1   // low-end: 1 worker to avoid thermal throttling
+            cores <= 7 -> 2   // mid-range
+            else -> 4          // high-end (8+ cores): 4 workers — I/O bound, not CPU bound
+        }
         return if (isPlaying) maxOf(1, base - 1) else base
     }
 
@@ -174,7 +173,9 @@ constructor(
         val desired = workerCount()
         if (desired == currentWorkerCount) return
         if (desired > currentWorkerCount) {
-            repeat(desired - currentWorkerCount) { workerJobs.add(scope.launch { workerLoop() }) }
+            repeat(desired - currentWorkerCount) {
+                workerJobs.add(scope.launch { workerLoop() })
+            }
         } else {
             val toRemove = currentWorkerCount - desired
             repeat(toRemove) { workerJobs.removeLastOrNull()?.cancel() }
@@ -184,13 +185,10 @@ constructor(
 
     private suspend fun workerLoop() {
         while (currentCoroutineContext().isActive) {
-            val song =
-                nextSong()
-                    ?: run {
-                        workAvailable.receive()
-                        return@run null
-                    }
-                    ?: continue
+            val song = nextSong() ?: run {
+                workAvailable.receive()
+                return@run null
+            } ?: continue
 
             val uid = song.uid.toString()
             val startMs = System.currentTimeMillis()
@@ -200,30 +198,56 @@ constructor(
             synchronized(this@NormalizationScanner) { inProgress.remove(uid) }
 
             if (rmsDb != null) {
-                normalizationDao.put(NormalizationRecord(uid, rmsDb, System.currentTimeMillis()))
                 L.d("NormalizationScanner: analyzed uid=$uid rmsDb=$rmsDb (${elapsedMs}ms)")
 
-                val wasBulk =
-                    synchronized(this@NormalizationScanner) {
-                        if (bulkActive) {
-                            bulkAnalyzed++
-                            if (recentDurationsMs.size >= 10) recentDurationsMs.removeFirst()
-                            recentDurationsMs.addLast(elapsedMs)
-                            true
-                        } else false
-                    }
+                val record = NormalizationRecord(uid, rmsDb, System.currentTimeMillis())
 
-                if (wasBulk) updateBulkProgress()
+                val wasBulk = synchronized(this@NormalizationScanner) {
+                    if (bulkActive) {
+                        // Batch insert: accumulate records, flush every BATCH_SIZE
+                        pendingRecords.add(record)
+                        bulkAnalyzed++
+                        if (recentDurationsMs.size >= 10) recentDurationsMs.removeFirst()
+                        recentDurationsMs.addLast(elapsedMs)
+                        pendingRecords.size >= BATCH_SIZE
+                    } else {
+                        // High-priority songs: write immediately (user needs them now)
+                        false
+                    }
+                }
+
+                if (wasBulk) {
+                    flushPendingRecords()
+                    updateBulkProgress()
+                } else if (!synchronized(this@NormalizationScanner) { bulkActive }) {
+                    // Not in bulk scan — write single record immediately
+                    normalizationDao.put(record)
+                    updateBulkProgress()
+                }
 
                 withContext(Dispatchers.Main) { onSongAnalyzed?.invoke(uid, rmsDb) }
             }
         }
     }
 
+    private fun flushPendingRecords() {
+        val toFlush = synchronized(this@NormalizationScanner) {
+            if (pendingRecords.isEmpty()) return
+            val copy = pendingRecords.toList()
+            pendingRecords.clear()
+            copy
+        }
+        scope.launch {
+            normalizationDao.putAll(toFlush)
+            L.d("NormalizationScanner: flushed ${toFlush.size} records to DB")
+        }
+    }
+
     private fun nextSong(): Song? {
         synchronized(this) {
             if (highPriority.isNotEmpty()) {
-                val song = highPriority.removeFirst()
+                val song = highPriority.iterator().next()
+                highPriority.remove(song)
                 inProgress.add(song.uid.toString())
                 return song
             }
@@ -237,21 +261,34 @@ constructor(
     }
 
     private suspend fun updateBulkProgress() {
-        val (analyzed, total, eta) =
-            synchronized(this) {
-                val avgMs =
-                    if (recentDurationsMs.isNotEmpty()) recentDurationsMs.average().toLong() else 0L
-                val remaining = maxOf(0, bulkTotal - bulkAnalyzed)
-                val etaSec =
-                    if (avgMs > 0) ((remaining * avgMs) / (1000L * workerCount())).toInt() else null
-                Triple(bulkAnalyzed, bulkTotal, etaSec)
-            }
+        val (analyzed, total, eta) = synchronized(this) {
+            val avgMs =
+                if (recentDurationsMs.isNotEmpty()) recentDurationsMs.average().toLong() else 0L
+            val remaining = maxOf(0, bulkTotal - bulkAnalyzed)
+            val etaSec =
+                if (avgMs > 0) ((remaining * avgMs) / (1000L * workerCount())).toInt() else null
+            Triple(bulkAnalyzed, bulkTotal, etaSec)
+        }
         withContext(Dispatchers.Main) {
             _scanProgress.value =
-                if (analyzed >= total) null else ScanProgress(analyzed, total, eta)
+                if (analyzed >= total) {
+                    flushPendingRecords()  // flush any remaining records when scan completes
+                    null
+                } else {
+                    ScanProgress(analyzed, total, eta)
+                }
         }
+    }
+
+    private companion object {
+        // Number of analysis results to accumulate before a single DB transaction.
+        // Reduces DB writes from N to N/10 during bulk scans.
+        const val BATCH_SIZE = 10
     }
 }
 
-/** Progress state for the bulk library scan. */
-data class ScanProgress(val analyzed: Int, val total: Int, val estimatedSecondsRemaining: Int?)
+data class ScanProgress(
+    val analyzed: Int,
+    val total: Int,
+    val estimatedSecondsRemaining: Int?,
+)
