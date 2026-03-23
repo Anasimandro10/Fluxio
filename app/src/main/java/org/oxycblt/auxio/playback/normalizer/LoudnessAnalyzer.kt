@@ -31,8 +31,8 @@ import kotlin.math.log10
 import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.math.tan
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.coroutineContext // ← Importante: agregar esto
+import kotlinx.coroutines.ensureActive
 import org.oxycblt.musikr.Song
 import timber.log.Timber as L
 
