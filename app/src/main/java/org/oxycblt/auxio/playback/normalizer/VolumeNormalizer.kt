@@ -49,8 +49,15 @@ import timber.log.Timber as L
  * ## Thread model
  * Audio thread (exclusive): [currentGain], [targetGain].
  *
- * @Volatile (main → audio): [pendingTargetGain]. Main thread (exclusive): [memCache],
- *   [currentSongUid].
+ * @Volatile (main → audio): [pendingTargetGain], [pendingSnapGain]. Main thread (exclusive):
+ *   [memCache], [currentSongUid].
+ *
+ * ## First-sample correctness
+ * When a song starts and we already know the correct gain (cache hit), [pendingSnapGain] is set
+ * instead of [pendingTargetGain]. The audio thread applies it instantly — no interpolation —
+ * so the very first buffer plays at the correct volume. Smooth interpolation ([pendingTargetGain])
+ * is only used when the scanner finishes *while* the song is already playing, because in that
+ * case an abrupt jump would be audible.
  */
 @Singleton
 class VolumeNormalizer
@@ -69,7 +76,16 @@ constructor(
 
     // ─── Main → Audio thread ──────────────────────────────────────────────────
 
+    /** Smooth transition gain — set when scanner finishes mid-song. */
     @Volatile private var pendingTargetGain = NO_PENDING
+
+    /**
+     * Instant (no interpolation) gain — set on song change when gain is already known.
+     * Fixes the "first second at wrong volume" bug: without this, currentGain would
+     * interpolate from the previous song's gain value, taking several seconds to reach
+     * the correct level even though we knew it immediately.
+     */
+    @Volatile private var pendingSnapGain = NO_PENDING
 
     // ─── Main thread only ─────────────────────────────────────────────────────
 
@@ -89,12 +105,13 @@ constructor(
         playbackSettings.registerListener(this)
         playbackManager.addListener(this)
 
-        // NormalizationScanner calls this on the main thread when a song finishes analyzing
+        // Called on main thread when scanner finishes a song that is currently playing.
+        // Uses smooth transition (pendingTargetGain) because audio is already in progress.
         scanner.onSongAnalyzed = { uid, rmsDb ->
             memCache[uid] = rmsDb
             if (currentSongUid == uid) {
                 pendingTargetGain = computeGainFromRmsDb(rmsDb)
-                L.d("VolumeNormalizer: applied gain mid-song uid=$uid")
+                L.d("VolumeNormalizer: smooth gain applied mid-song uid=$uid")
             }
         }
     }
@@ -137,7 +154,8 @@ constructor(
 
         if (song == null) {
             currentSongUid = null
-            pendingTargetGain = 1.0f
+            // Snap to 1.0 instantly — no song playing
+            pendingSnapGain = 1.0f
             return
         }
 
@@ -146,7 +164,8 @@ constructor(
 
         if (!playbackSettings.normalizationEnabled || (hasRgTags && rgActive)) {
             currentSongUid = null
-            pendingTargetGain = 1.0f
+            // Snap to 1.0 instantly — normalization off or RG takes over
+            pendingSnapGain = 1.0f
             return
         }
 
@@ -159,16 +178,16 @@ constructor(
             for (i in 1..3) queue.getOrNull(idx + i)?.let { add(it) }
         }
 
-        // Memory cache hit — instant, no coroutine needed
+        // Memory cache hit — snap instantly so first sample plays at correct volume
         val cached = memCache[uid]
         if (cached != null) {
-            pendingTargetGain = computeGainFromRmsDb(cached)
+            pendingSnapGain = computeGainFromRmsDb(cached)
             scanner.requestHighPriority(nextSongs)
             return
         }
 
-        // Start unmodified — scanner will notify us when analysis is done
-        pendingTargetGain = 1.0f
+        // No cache — start at 1.0 (unmodified) while scanner works
+        pendingSnapGain = 1.0f
 
         scope.launch {
             val record = normalizationDao.getForSong(uid)
@@ -176,7 +195,9 @@ constructor(
                 if (currentSongUid != uid) return@withContext
                 if (record != null) {
                     memCache[uid] = record.measuredRmsDb
-                    pendingTargetGain = computeGainFromRmsDb(record.measuredRmsDb)
+                    // DB hit: snap instantly — song just started, first buffers haven't played yet
+                    // (DB query is fast, typically <5ms, so we're still at the very beginning)
+                    pendingSnapGain = computeGainFromRmsDb(record.measuredRmsDb)
                     scanner.requestHighPriority(nextSongs)
                 } else {
                     // Not in DB — request high-priority analysis for this song + next
@@ -208,10 +229,20 @@ constructor(
         val limit = inputBuffer.limit()
         val output = replaceOutputBuffer(limit - pos)
 
+        // Apply snap gain first (instant, no interpolation) — song change with known gain
+        val snap = pendingSnapGain
+        if (snap != NO_PENDING) {
+            pendingSnapGain = NO_PENDING
+            currentGain = snap
+            targetGain = snap
+        }
+
+        // Apply smooth transition gain — scanner finished mid-song
         val pending = pendingTargetGain
         if (pending != NO_PENDING) {
             pendingTargetGain = NO_PENDING
             targetGain = pending
+            // currentGain keeps interpolating toward targetGain below
         }
 
         var i = pos

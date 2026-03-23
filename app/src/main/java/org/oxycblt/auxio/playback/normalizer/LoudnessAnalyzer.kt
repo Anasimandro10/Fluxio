@@ -31,7 +31,8 @@ import kotlin.math.log10
 import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.math.tan
-import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.isActive
 import org.oxycblt.musikr.Song
 import timber.log.Timber as L
 
@@ -41,7 +42,7 @@ class LoudnessAnalyzer @Inject constructor(@ApplicationContext private val conte
     /**
      * Decodes [song] completely and returns the K-weighted RMS in dBFS. Returns null on format
      * errors, decode failures, or near-silence (< -50 dBFS). Must be called from Dispatchers.IO.
-     * Respects coroutine cancellation via [ensureActive].
+     * Cancellation is checked once per buffer via currentCoroutineContext().isActive.
      */
     suspend fun analyze(song: Song): Float? = decodeAndMeasure(song.uri)
 
@@ -97,11 +98,9 @@ class LoudnessAnalyzer @Inject constructor(@ApplicationContext private val conte
             val chunk = ShortArray(32768)
 
             try {
-                while (true) {
-                    // Check cancellation once per buffer, not per sample — ensureActive() is
-                    // the idiomatic Kotlin coroutines way and has zero overhead when active.
-                    ensureActive()
-
+                // currentCoroutineContext().isActive is the correct cancellation check for a
+                // plain suspend fun. ensureActive() only works inside CoroutineScope extensions.
+                while (currentCoroutineContext().isActive) {
                     // Feed compressed data
                     if (!inputDone) {
                         val inputIdx = codec.dequeueInputBuffer(10_000L)
