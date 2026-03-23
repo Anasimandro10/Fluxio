@@ -54,10 +54,10 @@ import timber.log.Timber as L
  *
  * ## First-sample correctness
  * When a song starts and we already know the correct gain (cache hit), [pendingSnapGain] is set
- * instead of [pendingTargetGain]. The audio thread applies it instantly — no interpolation —
- * so the very first buffer plays at the correct volume. Smooth interpolation ([pendingTargetGain])
- * is only used when the scanner finishes *while* the song is already playing, because in that
- * case an abrupt jump would be audible.
+ * instead of [pendingTargetGain]. The audio thread applies it instantly — no interpolation — so the
+ * very first buffer plays at the correct volume. Smooth interpolation ([pendingTargetGain]) is only
+ * used when the scanner finishes *while* the song is already playing, because in that case an
+ * abrupt jump would be audible.
  */
 @Singleton
 class VolumeNormalizer
@@ -80,10 +80,10 @@ constructor(
     @Volatile private var pendingTargetGain = NO_PENDING
 
     /**
-     * Instant (no interpolation) gain — set on song change when gain is already known.
-     * Fixes the "first second at wrong volume" bug: without this, currentGain would
-     * interpolate from the previous song's gain value, taking several seconds to reach
-     * the correct level even though we knew it immediately.
+     * Instant (no interpolation) gain — set on song change when gain is already known. Fixes the
+     * "first second at wrong volume" bug: without this, currentGain would interpolate from the
+     * previous song's gain value, taking several seconds to reach the correct level even though we
+     * knew it immediately.
      */
     @Volatile private var pendingSnapGain = NO_PENDING
 
