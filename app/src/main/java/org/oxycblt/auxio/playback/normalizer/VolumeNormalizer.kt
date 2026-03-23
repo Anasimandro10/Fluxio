@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback.normalizer
 
 import androidx.media3.common.C
@@ -42,16 +41,16 @@ import timber.log.Timber as L
 /**
  * Applies ITU-R BS.1770-4 loudness normalization to the audio stream.
  *
- * Gain values come from [NormalizationScanner], which analyzes files offline using
- * MediaExtractor + MediaCodec. The first time a song plays without a cached measurement,
- * gain = 1.0 (unmodified). When the scanner finishes, it notifies this processor and
- * the gain is applied with a smooth transition. On subsequent plays the gain is applied
- * from the first sample.
+ * Gain values come from [NormalizationScanner], which analyzes files offline using MediaExtractor +
+ * MediaCodec. The first time a song plays without a cached measurement, gain = 1.0 (unmodified).
+ * When the scanner finishes, it notifies this processor and the gain is applied with a smooth
+ * transition. On subsequent plays the gain is applied from the first sample.
  *
  * ## Thread model
  * Audio thread (exclusive): [currentGain], [targetGain].
- * @Volatile (main → audio): [pendingTargetGain].
- * Main thread (exclusive): [memCache], [currentSongUid].
+ *
+ * @Volatile (main → audio): [pendingTargetGain]. Main thread (exclusive): [memCache],
+ *   [currentSongUid].
  */
 @Singleton
 class VolumeNormalizer
@@ -196,7 +195,7 @@ constructor(
     // ─── BaseAudioProcessor ───────────────────────────────────────────────────
 
     override fun onConfigure(
-        inputAudioFormat: AudioProcessor.AudioFormat,
+        inputAudioFormat: AudioProcessor.AudioFormat
     ): AudioProcessor.AudioFormat {
         if (inputAudioFormat.encoding != C.ENCODING_PCM_16BIT) {
             throw AudioProcessor.UnhandledAudioFormatException(inputAudioFormat)

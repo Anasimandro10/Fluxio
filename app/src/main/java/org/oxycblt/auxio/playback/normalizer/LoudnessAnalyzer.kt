@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback.normalizer
 
 import android.content.Context
@@ -38,15 +37,11 @@ import timber.log.Timber as L
 
 /** Decodes an audio file completely and measures its ITU-R BS.1770-4 K-weighted loudness. */
 @Singleton
-class LoudnessAnalyzer
-@Inject
-constructor(
-    @ApplicationContext private val context: Context,
-) {
+class LoudnessAnalyzer @Inject constructor(@ApplicationContext private val context: Context) {
     /**
-     * Decodes [song] completely and returns the K-weighted RMS in dBFS.
-     * Returns null on format errors, decode failures, or near-silence (< -50 dBFS).
-     * Must be called from Dispatchers.IO. Respects coroutine cancellation.
+     * Decodes [song] completely and returns the K-weighted RMS in dBFS. Returns null on format
+     * errors, decode failures, or near-silence (< -50 dBFS). Must be called from Dispatchers.IO.
+     * Respects coroutine cancellation.
      */
     suspend fun analyze(song: Song): Float? = decodeAndMeasure(song.uri)
 
@@ -61,9 +56,10 @@ constructor(
 
             val trackIndex =
                 (0 until extractor.trackCount).firstOrNull { i ->
-                    extractor.getTrackFormat(i).getString(MediaFormat.KEY_MIME)?.startsWith(
-                        "audio/"
-                    ) == true
+                    extractor
+                        .getTrackFormat(i)
+                        .getString(MediaFormat.KEY_MIME)
+                        ?.startsWith("audio/") == true
                 } ?: return null
 
             extractor.selectTrack(trackIndex)

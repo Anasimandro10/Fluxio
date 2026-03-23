@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback.normalizer
 
 import javax.inject.Inject
@@ -77,8 +76,8 @@ constructor(
     }
 
     /**
-     * Request high-priority analysis for [songs] (current + next 3 in queue).
-     * These jump to the front of the queue. Called from main thread.
+     * Request high-priority analysis for [songs] (current + next 3 in queue). These jump to the
+     * front of the queue. Called from main thread.
      */
     fun requestHighPriority(songs: List<Song>) {
         scope.launch {
@@ -88,8 +87,7 @@ constructor(
                 if (normalizationDao.getForSong(uid) != null) continue
                 synchronized(this@NormalizationScanner) {
                     if (
-                        !inProgress.contains(uid) &&
-                            !highPriority.any { it.uid.toString() == uid }
+                        !inProgress.contains(uid) && !highPriority.any { it.uid.toString() == uid }
                     ) {
                         toAdd.add(song)
                     }
@@ -105,8 +103,8 @@ constructor(
     }
 
     /**
-     * Start bulk analysis of [songs] that don't have a cached result yet.
-     * Called from main thread when user taps "Analyze entire library".
+     * Start bulk analysis of [songs] that don't have a cached result yet. Called from main thread
+     * when user taps "Analyze entire library".
      */
     fun startBulkScan(songs: Collection<Song>) {
         scope.launch {
@@ -169,9 +167,7 @@ constructor(
         val desired = workerCount()
         if (desired == currentWorkerCount) return
         if (desired > currentWorkerCount) {
-            repeat(desired - currentWorkerCount) {
-                workerJobs.add(scope.launch { workerLoop() })
-            }
+            repeat(desired - currentWorkerCount) { workerJobs.add(scope.launch { workerLoop() }) }
         } else {
             val toRemove = currentWorkerCount - desired
             repeat(toRemove) { workerJobs.removeLastOrNull()?.cancel() }
@@ -197,9 +193,7 @@ constructor(
             synchronized(this@NormalizationScanner) { inProgress.remove(uid) }
 
             if (rmsDb != null) {
-                normalizationDao.put(
-                    NormalizationRecord(uid, rmsDb, System.currentTimeMillis())
-                )
+                normalizationDao.put(NormalizationRecord(uid, rmsDb, System.currentTimeMillis()))
                 L.d("NormalizationScanner: analyzed uid=$uid rmsDb=$rmsDb (${elapsedMs}ms)")
 
                 val wasBulk =
@@ -239,12 +233,10 @@ constructor(
         val (analyzed, total, eta) =
             synchronized(this) {
                 val avgMs =
-                    if (recentDurationsMs.isNotEmpty()) recentDurationsMs.average().toLong()
-                    else 0L
+                    if (recentDurationsMs.isNotEmpty()) recentDurationsMs.average().toLong() else 0L
                 val remaining = maxOf(0, bulkTotal - bulkAnalyzed)
                 val etaSec =
-                    if (avgMs > 0) ((remaining * avgMs) / (1000L * workerCount())).toInt()
-                    else null
+                    if (avgMs > 0) ((remaining * avgMs) / (1000L * workerCount())).toInt() else null
                 Triple(bulkAnalyzed, bulkTotal, etaSec)
             }
         withContext(Dispatchers.Main) {
@@ -255,8 +247,4 @@ constructor(
 }
 
 /** Progress state for the bulk library scan. */
-data class ScanProgress(
-    val analyzed: Int,
-    val total: Int,
-    val estimatedSecondsRemaining: Int?,
-)
+data class ScanProgress(val analyzed: Int, val total: Int, val estimatedSecondsRemaining: Int?)
