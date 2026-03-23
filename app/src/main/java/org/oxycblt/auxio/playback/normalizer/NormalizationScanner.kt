@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback.normalizer
 
 import javax.inject.Inject
@@ -148,8 +147,8 @@ constructor(
     }
 
     /**
-     * Suspends until the bulk scan completes (progress becomes null).
-     * Called by [NormalizationWorker] to keep the WorkManager worker alive until done.
+     * Suspends until the bulk scan completes (progress becomes null). Called by
+     * [NormalizationWorker] to keep the WorkManager worker alive until done.
      */
     suspend fun awaitBulkScanComplete() {
         scanProgress.first { it == null }
@@ -161,11 +160,12 @@ constructor(
         val cores = Runtime.getRuntime().availableProcessors()
         // Reserve at least 2 cores for system + playback.
         // UFS storage throughput caps at ~3-4 parallel readers on typical hardware.
-        val base = when {
-            cores <= 4 -> 1   // low-end: 1 worker to avoid thermal throttling
-            cores <= 7 -> 2   // mid-range
-            else -> 4          // high-end (8+ cores): 4 workers — I/O bound, not CPU bound
-        }
+        val base =
+            when {
+                cores <= 4 -> 1 // low-end: 1 worker to avoid thermal throttling
+                cores <= 7 -> 2 // mid-range
+                else -> 4 // high-end (8+ cores): 4 workers — I/O bound, not CPU bound
+            }
         return if (isPlaying) maxOf(1, base - 1) else base
     }
 
@@ -173,9 +173,7 @@ constructor(
         val desired = workerCount()
         if (desired == currentWorkerCount) return
         if (desired > currentWorkerCount) {
-            repeat(desired - currentWorkerCount) {
-                workerJobs.add(scope.launch { workerLoop() })
-            }
+            repeat(desired - currentWorkerCount) { workerJobs.add(scope.launch { workerLoop() }) }
         } else {
             val toRemove = currentWorkerCount - desired
             repeat(toRemove) { workerJobs.removeLastOrNull()?.cancel() }
@@ -185,10 +183,13 @@ constructor(
 
     private suspend fun workerLoop() {
         while (currentCoroutineContext().isActive) {
-            val song = nextSong() ?: run {
-                workAvailable.receive()
-                return@run null
-            } ?: continue
+            val song =
+                nextSong()
+                    ?: run {
+                        workAvailable.receive()
+                        return@run null
+                    }
+                    ?: continue
 
             val uid = song.uid.toString()
             val startMs = System.currentTimeMillis()
@@ -202,19 +203,20 @@ constructor(
 
                 val record = NormalizationRecord(uid, rmsDb, System.currentTimeMillis())
 
-                val wasBulk = synchronized(this@NormalizationScanner) {
-                    if (bulkActive) {
-                        // Batch insert: accumulate records, flush every BATCH_SIZE
-                        pendingRecords.add(record)
-                        bulkAnalyzed++
-                        if (recentDurationsMs.size >= 10) recentDurationsMs.removeFirst()
-                        recentDurationsMs.addLast(elapsedMs)
-                        pendingRecords.size >= BATCH_SIZE
-                    } else {
-                        // High-priority songs: write immediately (user needs them now)
-                        false
+                val wasBulk =
+                    synchronized(this@NormalizationScanner) {
+                        if (bulkActive) {
+                            // Batch insert: accumulate records, flush every BATCH_SIZE
+                            pendingRecords.add(record)
+                            bulkAnalyzed++
+                            if (recentDurationsMs.size >= 10) recentDurationsMs.removeFirst()
+                            recentDurationsMs.addLast(elapsedMs)
+                            pendingRecords.size >= BATCH_SIZE
+                        } else {
+                            // High-priority songs: write immediately (user needs them now)
+                            false
+                        }
                     }
-                }
 
                 if (wasBulk) {
                     flushPendingRecords()
@@ -231,12 +233,13 @@ constructor(
     }
 
     private fun flushPendingRecords() {
-        val toFlush = synchronized(this@NormalizationScanner) {
-            if (pendingRecords.isEmpty()) return
-            val copy = pendingRecords.toList()
-            pendingRecords.clear()
-            copy
-        }
+        val toFlush =
+            synchronized(this@NormalizationScanner) {
+                if (pendingRecords.isEmpty()) return
+                val copy = pendingRecords.toList()
+                pendingRecords.clear()
+                copy
+            }
         scope.launch {
             normalizationDao.putAll(toFlush)
             L.d("NormalizationScanner: flushed ${toFlush.size} records to DB")
@@ -261,18 +264,19 @@ constructor(
     }
 
     private suspend fun updateBulkProgress() {
-        val (analyzed, total, eta) = synchronized(this) {
-            val avgMs =
-                if (recentDurationsMs.isNotEmpty()) recentDurationsMs.average().toLong() else 0L
-            val remaining = maxOf(0, bulkTotal - bulkAnalyzed)
-            val etaSec =
-                if (avgMs > 0) ((remaining * avgMs) / (1000L * workerCount())).toInt() else null
-            Triple(bulkAnalyzed, bulkTotal, etaSec)
-        }
+        val (analyzed, total, eta) =
+            synchronized(this) {
+                val avgMs =
+                    if (recentDurationsMs.isNotEmpty()) recentDurationsMs.average().toLong() else 0L
+                val remaining = maxOf(0, bulkTotal - bulkAnalyzed)
+                val etaSec =
+                    if (avgMs > 0) ((remaining * avgMs) / (1000L * workerCount())).toInt() else null
+                Triple(bulkAnalyzed, bulkTotal, etaSec)
+            }
         withContext(Dispatchers.Main) {
             _scanProgress.value =
                 if (analyzed >= total) {
-                    flushPendingRecords()  // flush any remaining records when scan completes
+                    flushPendingRecords() // flush any remaining records when scan completes
                     null
                 } else {
                     ScanProgress(analyzed, total, eta)
@@ -287,8 +291,4 @@ constructor(
     }
 }
 
-data class ScanProgress(
-    val analyzed: Int,
-    val total: Int,
-    val estimatedSecondsRemaining: Int?,
-)
+data class ScanProgress(val analyzed: Int, val total: Int, val estimatedSecondsRemaining: Int?)

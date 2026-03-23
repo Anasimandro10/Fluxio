@@ -15,40 +15,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback.normalizer
 
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
-import dagger.hilt.android.EntryPointAccessors
-import dagger.hilt.components.SingletonComponent
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
 import org.oxycblt.auxio.music.MusicRepository
 import timber.log.Timber as L
 
 /**
  * WorkManager worker that runs the bulk loudness analysis in the background.
  *
- * Survives app closure: even if the user swipes the app away, WorkManager keeps this
- * running as a foreground service (Android 12+) or background task (older versions).
- * If killed (low battery, reboot), the DB already contains results for analyzed songs,
- * so the next execution resumes automatically from where it left off.
+ * Survives app closure: even if the user swipes the app away, WorkManager keeps this running as a
+ * foreground service (Android 12+) or background task (older versions). If killed (low battery,
+ * reboot), the DB already contains results for analyzed songs, so the next execution resumes
+ * automatically from where it left off.
  *
- * Uses [EntryPoint] to access Hilt singletons from a non-Hilt context (WorkManager
- * creates workers outside of Hilt's normal injection flow).
+ * Uses [EntryPoint] to access Hilt singletons from a non-Hilt context (WorkManager creates workers
+ * outside of Hilt's normal injection flow).
  */
-class NormalizationWorker(
-    private val context: Context,
-    params: WorkerParameters,
-) : CoroutineWorker(context, params) {
+class NormalizationWorker(private val context: Context, params: WorkerParameters) :
+    CoroutineWorker(context, params) {
 
     @EntryPoint
     @InstallIn(SingletonComponent::class)
     interface NormalizationWorkerEntryPoint {
         fun normalizationScanner(): NormalizationScanner
+
         fun musicRepository(): MusicRepository
     }
 
@@ -94,11 +92,12 @@ private fun scanner_foreground_info(context: Context): ForegroundInfo {
     val notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-        val channel = android.app.NotificationChannel(
-            channelId,
-            "Library analysis",
-            android.app.NotificationManager.IMPORTANCE_LOW,
-        )
+        val channel =
+            android.app.NotificationChannel(
+                channelId,
+                "Library analysis",
+                android.app.NotificationManager.IMPORTANCE_LOW,
+            )
         channel.setShowBadge(false)
         notificationManager.createNotificationChannel(channel)
     }

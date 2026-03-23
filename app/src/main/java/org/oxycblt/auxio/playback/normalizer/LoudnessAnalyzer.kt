@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback.normalizer
 
 import android.content.Context
@@ -28,7 +27,6 @@ import java.nio.ByteOrder
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.PI
-import kotlin.math.abs
 import kotlin.math.log10
 import kotlin.math.pow
 import kotlin.math.sqrt
@@ -43,27 +41,26 @@ import timber.log.Timber as L
  *
  * ## Adaptive early termination
  *
- * Instead of a fixed analysis cap, this analyzer uses RMS variance tracking to decide
- * when the measurement has converged to a stable value:
- *
+ * Instead of a fixed analysis cap, this analyzer uses RMS variance tracking to decide when the
+ * measurement has converged to a stable value:
  * - The running K-weighted RMS is sampled into 10-second windows.
- * - When the last [CONVERGENCE_WINDOW_COUNT] windows (default 3 = 30 seconds) have less
- *   than [CONVERGENCE_THRESHOLD_DB] dB of peak-to-peak variation, the measurement has
- *   converged and analysis stops early.
+ * - When the last [CONVERGENCE_WINDOW_COUNT] windows (default 3 = 30 seconds) have less than
+ *   [CONVERGENCE_THRESHOLD_DB] dB of peak-to-peak variation, the measurement has converged and
+ *   analysis stops early.
  * - For typical pop/rock/electronic music: converges in 30–60 seconds.
- * - For dynamic music (classical, jazz, progressive rock): high window variance keeps
- *   the analysis running up to the [MAX_ANALYSIS_SECONDS] cap (3 minutes) for maximum
- *   accuracy — exactly the content that needs it most.
+ * - For dynamic music (classical, jazz, progressive rock): high window variance keeps the analysis
+ *   running up to the [MAX_ANALYSIS_SECONDS] cap (3 minutes) for maximum accuracy — exactly the
+ *   content that needs it most.
  *
- * This simultaneously improves both precision (dynamic songs get full treatment) and
- * speed (simple songs finish 4–6x faster than the fixed-cap approach).
+ * This simultaneously improves both precision (dynamic songs get full treatment) and speed (simple
+ * songs finish 4–6x faster than the fixed-cap approach).
  */
 @Singleton
 class LoudnessAnalyzer @Inject constructor(@ApplicationContext private val context: Context) {
 
     /**
-     * Decodes [song] and returns the K-weighted RMS in dBFS, or null on failure.
-     * Must be called from Dispatchers.IO. Respects coroutine cancellation.
+     * Decodes [song] and returns the K-weighted RMS in dBFS, or null on failure. Must be called
+     * from Dispatchers.IO. Respects coroutine cancellation.
      */
     suspend fun analyze(song: Song): Float? = decodeAndMeasure(song.uri)
 
@@ -78,7 +75,9 @@ class LoudnessAnalyzer @Inject constructor(@ApplicationContext private val conte
 
             val trackIndex =
                 (0 until extractor.trackCount).firstOrNull { i ->
-                    extractor.getTrackFormat(i).getString(MediaFormat.KEY_MIME)
+                    extractor
+                        .getTrackFormat(i)
+                        .getString(MediaFormat.KEY_MIME)
                         ?.startsWith("audio/") == true
                 } ?: return null
 
@@ -112,11 +111,11 @@ class LoudnessAnalyzer @Inject constructor(@ApplicationContext private val conte
 
             // ── Accumulators ──────────────────────────────────────────────────
 
-            var globalSumSq = 0.0   // cumulative K-weighted energy across all samples
-            var globalSamples = 0L  // cumulative sample count
+            var globalSumSq = 0.0 // cumulative K-weighted energy across all samples
+            var globalSamples = 0L // cumulative sample count
 
-            var windowSumSq = 0.0   // K-weighted energy in the current 10s window
-            var windowSamples = 0L  // sample count in the current 10s window
+            var windowSumSq = 0.0 // K-weighted energy in the current 10s window
+            var windowSamples = 0L // sample count in the current 10s window
 
             // Circular buffer of last CONVERGENCE_WINDOW_COUNT window RMS values (in dBFS).
             // We track dBFS directly (not linear RMS) because dB is perceptually linear —
@@ -138,13 +137,15 @@ class LoudnessAnalyzer @Inject constructor(@ApplicationContext private val conte
                             val size = extractor.readSampleData(inputBuf, 0)
                             if (size < 0) {
                                 codec.queueInputBuffer(
-                                    inputIdx, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM,
+                                    inputIdx,
+                                    0,
+                                    0,
+                                    0,
+                                    MediaCodec.BUFFER_FLAG_END_OF_STREAM,
                                 )
                                 inputDone = true
                             } else {
-                                codec.queueInputBuffer(
-                                    inputIdx, 0, size, extractor.sampleTime, 0,
-                                )
+                                codec.queueInputBuffer(inputIdx, 0, size, extractor.sampleTime, 0)
                                 extractor.advance()
                             }
                         }
@@ -162,9 +163,14 @@ class LoudnessAnalyzer @Inject constructor(@ApplicationContext private val conte
                                     val count = minOf(shorts.remaining(), chunk.size)
                                     shorts.get(chunk, 0, count)
                                     for (j in 0 until count) {
-                                        val f = applyKWeighting(
-                                            chunk[j].toFloat(), ch, filterState, kw1, kw2,
-                                        )
+                                        val f =
+                                            applyKWeighting(
+                                                chunk[j].toFloat(),
+                                                ch,
+                                                filterState,
+                                                kw1,
+                                                kw2,
+                                            )
                                         val fSq = f * f
                                         globalSumSq += fSq
                                         globalSamples++
@@ -181,8 +187,10 @@ class LoudnessAnalyzer @Inject constructor(@ApplicationContext private val conte
                                                 else Float.NaN
 
                                             windowRmsDb[windowIndex] = windowDb
-                                            windowIndex = (windowIndex + 1) % CONVERGENCE_WINDOW_COUNT
-                                            if (windowsFilled < CONVERGENCE_WINDOW_COUNT) windowsFilled++
+                                            windowIndex =
+                                                (windowIndex + 1) % CONVERGENCE_WINDOW_COUNT
+                                            if (windowsFilled < CONVERGENCE_WINDOW_COUNT)
+                                                windowsFilled++
 
                                             windowSumSq = 0.0
                                             windowSamples = 0L
@@ -214,10 +222,13 @@ class LoudnessAnalyzer @Inject constructor(@ApplicationContext private val conte
                             codec.releaseOutputBuffer(outputIdx, false)
 
                             if (globalSamples >= maxSamples) break
-                            if (bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) break
+                            if (bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0)
+                                break
                             if (inputDone && windowSamples == 0L) break
                         }
-                        outputIdx == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> { /* ignore */ }
+                        outputIdx == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
+                            /* ignore */
+                        }
                     }
                 }
             } finally {
@@ -227,7 +238,7 @@ class LoudnessAnalyzer @Inject constructor(@ApplicationContext private val conte
 
             if (globalSamples == 0L) return null
             val rms = sqrt(globalSumSq / globalSamples.toDouble())
-            if (rms < 100.0) return null  // silence guard: < -50 dBFS
+            if (rms < 100.0) return null // silence guard: < -50 dBFS
 
             (20.0 * log10(rms / 32768.0)).toFloat()
         } catch (e: Exception) {
@@ -250,7 +261,10 @@ class LoudnessAnalyzer @Inject constructor(@ApplicationContext private val conte
 
     private fun applyBiquad(x: Float, s: FloatArray, c: FloatArray): Float {
         val y = c[0] * x + c[1] * s[0] + c[2] * s[1] - c[3] * s[2] - c[4] * s[3]
-        s[1] = s[0]; s[0] = x; s[3] = s[2]; s[2] = y
+        s[1] = s[0]
+        s[0] = x
+        s[3] = s[2]
+        s[2] = y
         return y
     }
 
@@ -258,23 +272,34 @@ class LoudnessAnalyzer @Inject constructor(@ApplicationContext private val conte
         if (sr == 44100) return Pair(KW_STAGE1_44100, KW_STAGE2_44100)
         if (sr == 48000) return Pair(KW_STAGE1_48000, KW_STAGE2_48000)
         val fs = sr.toDouble()
-        val fc1 = 1681.974450955533; val g1 = 3.999843853973347; val q1 = 0.7071752369554196
-        val vh1 = 10.0.pow(g1 / 20.0); val vb1 = 10.0.pow(g1 / 40.0)
+        val fc1 = 1681.974450955533
+        val g1 = 3.999843853973347
+        val q1 = 0.7071752369554196
+        val vh1 = 10.0.pow(g1 / 20.0)
+        val vb1 = 10.0.pow(g1 / 40.0)
         val k1 = tan(PI * fc1 / fs)
-        val d1 = vh1 + vb1 * k1 / q1 + k1 * k1; val d1a = 1.0 + k1 / q1 + k1 * k1
-        val s1 = floatArrayOf(
-            ((vh1 + vb1 * k1 / q1 + k1 * k1) / d1).toFloat(),
-            (2.0 * (k1 * k1 - vh1) / d1).toFloat(),
-            ((vh1 - vb1 * k1 / q1 + k1 * k1) / d1).toFloat(),
-            (2.0 * (k1 * k1 - 1.0) / d1a).toFloat(),
-            ((1.0 - k1 / q1 + k1 * k1) / d1a).toFloat(),
-        )
-        val fc2 = 38.13547087602444; val q2 = 0.5003270373238773
-        val k2 = tan(PI * fc2 / fs); val d2 = k2 * k2 + k2 / q2 + 1.0
-        val s2 = floatArrayOf(
-            (1.0 / d2).toFloat(), (-2.0 / d2).toFloat(), (1.0 / d2).toFloat(),
-            (2.0 * (k2 * k2 - 1.0) / d2).toFloat(), ((k2 * k2 - k2 / q2 + 1.0) / d2).toFloat(),
-        )
+        val d1 = vh1 + vb1 * k1 / q1 + k1 * k1
+        val d1a = 1.0 + k1 / q1 + k1 * k1
+        val s1 =
+            floatArrayOf(
+                ((vh1 + vb1 * k1 / q1 + k1 * k1) / d1).toFloat(),
+                (2.0 * (k1 * k1 - vh1) / d1).toFloat(),
+                ((vh1 - vb1 * k1 / q1 + k1 * k1) / d1).toFloat(),
+                (2.0 * (k1 * k1 - 1.0) / d1a).toFloat(),
+                ((1.0 - k1 / q1 + k1 * k1) / d1a).toFloat(),
+            )
+        val fc2 = 38.13547087602444
+        val q2 = 0.5003270373238773
+        val k2 = tan(PI * fc2 / fs)
+        val d2 = k2 * k2 + k2 / q2 + 1.0
+        val s2 =
+            floatArrayOf(
+                (1.0 / d2).toFloat(),
+                (-2.0 / d2).toFloat(),
+                (1.0 / d2).toFloat(),
+                (2.0 * (k2 * k2 - 1.0) / d2).toFloat(),
+                ((k2 * k2 - k2 / q2 + 1.0) / d2).toFloat(),
+            )
         return Pair(s1, s2)
     }
 
@@ -283,7 +308,7 @@ class LoudnessAnalyzer @Inject constructor(@ApplicationContext private val conte
 
     private companion object {
         // Hard cap: never analyze more than this many seconds of audio.
-        const val MAX_ANALYSIS_SECONDS = 180  // 3 minutes
+        const val MAX_ANALYSIS_SECONDS = 180 // 3 minutes
 
         // Number of 10-second windows to use for convergence detection.
         // 3 windows = 30 seconds of history required before checking convergence.
