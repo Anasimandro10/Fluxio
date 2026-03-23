@@ -31,6 +31,7 @@ import kotlin.math.log10
 import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.math.tan
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
 import org.oxycblt.musikr.Song
 import timber.log.Timber as L
@@ -96,7 +97,7 @@ class LoudnessAnalyzer @Inject constructor(@ApplicationContext private val conte
             val chunk = ShortArray(8192)
 
             try {
-                while (isActive) {
+                while (currentCoroutineContext().isActive) {
                     // Feed compressed data
                     if (!inputDone) {
                         val inputIdx = codec.dequeueInputBuffer(10_000L)
