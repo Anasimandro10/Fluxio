@@ -93,8 +93,7 @@ constructor(
                 if (uid in cached) continue
                 synchronized(this@NormalizationScanner) {
                     if (
-                        !inProgress.contains(uid) &&
-                            !highPriority.any { it.uid.toString() == uid }
+                        !inProgress.contains(uid) && !highPriority.any { it.uid.toString() == uid }
                     ) {
                         toAdd.add(song)
                     }

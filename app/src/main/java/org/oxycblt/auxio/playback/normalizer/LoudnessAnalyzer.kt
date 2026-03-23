@@ -141,7 +141,13 @@ class LoudnessAnalyzer @Inject constructor(@ApplicationContext private val conte
                                     shorts.get(chunk, 0, count)
                                     for (j in 0 until count) {
                                         val f =
-                                            applyKWeighting(chunk[j].toFloat(), ch, filterState, kw1, kw2)
+                                            applyKWeighting(
+                                                chunk[j].toFloat(),
+                                                ch,
+                                                filterState,
+                                                kw1,
+                                                kw2,
+                                            )
                                         sumSquares += f * f
                                         totalSamples++
                                         if (++ch == channelCount) ch = 0
