@@ -96,7 +96,7 @@ class LoudnessAnalyzer @Inject constructor(@ApplicationContext private val conte
             val chunk = ShortArray(8192)
 
             try {
-                while (kotlinx.coroutines.coroutineContext.isActive) {
+                while (isActive) {
                     // Feed compressed data
                     if (!inputDone) {
                         val inputIdx = codec.dequeueInputBuffer(10_000L)
