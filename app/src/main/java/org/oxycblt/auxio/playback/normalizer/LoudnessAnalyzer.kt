@@ -32,6 +32,7 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.math.tan
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.coroutineContext // ← Importante: agregar esto
 import org.oxycblt.musikr.Song
 import timber.log.Timber as L
 
@@ -100,7 +101,7 @@ class LoudnessAnalyzer @Inject constructor(@ApplicationContext private val conte
                 while (true) {
                     // Check cancellation once per buffer, not per sample — ensureActive() is
                     // the idiomatic Kotlin coroutines way and has zero overhead when active.
-                    ensureActive()
+                    coroutineContext.ensureActive() // ← Cambiado aquí
 
                     // Feed compressed data
                     if (!inputDone) {
