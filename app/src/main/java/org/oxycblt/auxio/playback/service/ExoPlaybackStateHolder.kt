@@ -49,7 +49,6 @@ import kotlinx.coroutines.yield
 import org.oxycblt.auxio.image.ImageSettings
 import org.oxycblt.auxio.music.MusicRepository
 import org.oxycblt.auxio.playback.PlaybackSettings
-import org.oxycblt.auxio.playback.normalizer.VolumeNormalizer
 import org.oxycblt.auxio.playback.persist.PersistenceRepository
 import org.oxycblt.auxio.playback.replaygain.ReplayGainAudioProcessor
 import org.oxycblt.auxio.playback.state.DeferredPlayback
@@ -74,7 +73,6 @@ class ExoPlaybackStateHolder(
     private val playbackSettings: PlaybackSettings,
     private val commandFactory: PlaybackCommand.Factory,
     private val replayGainProcessor: ReplayGainAudioProcessor,
-    private val volumeNormalizer: VolumeNormalizer,
     private val musicRepository: MusicRepository,
     private val imageSettings: ImageSettings,
 ) :
@@ -97,7 +95,6 @@ class ExoPlaybackStateHolder(
         musicRepository.addUpdateListener(this)
         player.addListener(this)
         replayGainProcessor.attach()
-        volumeNormalizer.attach()
         playbackSettings.registerListener(this)
         imageSettings.registerListener(this)
     }
@@ -108,7 +105,6 @@ class ExoPlaybackStateHolder(
         musicRepository.removeUpdateListener(this)
         player.removeListener(this)
         replayGainProcessor.release()
-        volumeNormalizer.release()
         imageSettings.unregisterListener(this)
         playbackSettings.unregisterListener(this)
         player.release()
@@ -656,7 +652,6 @@ class ExoPlaybackStateHolder(
         private val commandFactory: PlaybackCommand.Factory,
         private val mediaSourceFactory: MediaSource.Factory,
         private val replayGainProcessor: ReplayGainAudioProcessor,
-        private val volumeNormalizer: VolumeNormalizer,
         private val musicRepository: MusicRepository,
         private val imageSettings: ImageSettings,
     ) {
@@ -669,7 +664,6 @@ class ExoPlaybackStateHolder(
                         handler,
                         audioListener,
                         replayGainProcessor,
-                        volumeNormalizer,
                     ),
                     MediaCodecAudioRenderer(
                         context,
@@ -677,8 +671,7 @@ class ExoPlaybackStateHolder(
                         handler,
                         audioListener,
                         DefaultAudioSink.Builder(context)
-                            .setAudioProcessors(arrayOf(replayGainProcessor, volumeNormalizer))
-                            .build(),
+                            .setAudioProcessors(arrayOf(replayGainProcessor))                            .build(),
                     ),
                 )
             }
@@ -719,7 +712,6 @@ class ExoPlaybackStateHolder(
                 playbackSettings,
                 commandFactory,
                 replayGainProcessor,
-                volumeNormalizer,
                 musicRepository,
                 imageSettings,
             )

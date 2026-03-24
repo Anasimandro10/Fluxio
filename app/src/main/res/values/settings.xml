@@ -194,25 +194,5 @@
     <string name="set_key_backup" translatable="false">fluxio_backup</string>
     <string name="set_key_backup_export" translatable="false">fluxio_backup_export</string>
     <string name="set_key_backup_import" translatable="false">fluxio_backup_import</string>
-    <!-- Normalization settings -->
-    <string name="set_key_normalization_enabled" translatable="false">fluxio_normalization_enabled</string>
-    <string name="set_key_normalization_target" translatable="false">fluxio_normalization_target</string>
-        <string name="set_key_clear_normalization_cache" translatable="false">fluxio_clear_normalization_cache</string>
-            <string name="set_key_analyze_library" translatable="false">fluxio_analyze_library</string>
 
-    <string-array name="entries_normalization_target">
-        <item>@string/set_normalization_target_14</item>
-        <item>@string/set_normalization_target_16</item>
-        <item>@string/set_normalization_target_18</item>
-    </string-array>
-
-    <integer-array name="values_normalization_target">
-        <item>@integer/normalization_target_14</item>
-        <item>@integer/normalization_target_16</item>
-        <item>@integer/normalization_target_18</item>
-    </integer-array>
-
-    <integer name="normalization_target_14">0xA12C</integer>
-    <integer name="normalization_target_16">0xA12D</integer>
-    <integer name="normalization_target_18">0xA12E</integer>
 </resources>

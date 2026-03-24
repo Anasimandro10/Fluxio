@@ -23,7 +23,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import org.oxycblt.auxio.IntegerTable
 import org.oxycblt.auxio.R
-import org.oxycblt.auxio.playback.normalizer.NormalizationTarget
 import org.oxycblt.auxio.playback.replaygain.ReplayGainMode
 import org.oxycblt.auxio.playback.replaygain.ReplayGainPreAmp
 import org.oxycblt.auxio.settings.Settings
@@ -60,10 +59,7 @@ interface PlaybackSettings : Settings<PlaybackSettings.Listener> {
     val rememberPause: Boolean
     /** Whether to always exit when task is removed, even if playing. */
     val exitOnTaskRemoval: Boolean
-    /** Whether automatic volume normalization is enabled. */
-    val normalizationEnabled: Boolean
-    /** The target loudness level for automatic volume normalization. */
-    val normalizationTarget: NormalizationTarget
+
 
     interface Listener {
         /** Called when one of the ReplayGain configurations have changed. */
@@ -75,8 +71,6 @@ interface PlaybackSettings : Settings<PlaybackSettings.Listener> {
         /** Called when [pauseOnRepeat] has changed. */
         fun onPauseOnRepeatChanged() {}
 
-        /** Called when normalization settings have changed. */
-        fun onNormalizationSettingsChanged() {}
     }
 }
 
@@ -144,18 +138,7 @@ class PlaybackSettingsImpl @Inject constructor(@ApplicationContext context: Cont
     override val exitOnTaskRemoval: Boolean
         get() = sharedPreferences.getBoolean(getString(R.string.set_key_task_exit), false)
 
-    override val normalizationEnabled: Boolean
-        get() =
-            sharedPreferences.getBoolean(getString(R.string.set_key_normalization_enabled), false)
 
-    override val normalizationTarget: NormalizationTarget
-        get() =
-            NormalizationTarget.fromIntCode(
-                sharedPreferences.getInt(
-                    getString(R.string.set_key_normalization_target),
-                    Int.MIN_VALUE,
-                )
-            ) ?: NormalizationTarget.LUFS_14
 
     override fun migrate() {
         fun Int.migrateMusicMode() =
@@ -215,11 +198,6 @@ class PlaybackSettingsImpl @Inject constructor(@ApplicationContext context: Cont
             getString(R.string.set_key_repeat_pause) -> {
                 L.d("Dispatching pause on repeat change")
                 listener.onPauseOnRepeatChanged()
-            }
-            getString(R.string.set_key_normalization_enabled),
-            getString(R.string.set_key_normalization_target) -> {
-                L.d("Dispatching normalization setting change")
-                listener.onNormalizationSettingsChanged()
             }
         }
     }
