@@ -60,7 +60,6 @@ interface PlaybackSettings : Settings<PlaybackSettings.Listener> {
     /** Whether to always exit when task is removed, even if playing. */
     val exitOnTaskRemoval: Boolean
 
-
     interface Listener {
         /** Called when one of the ReplayGain configurations have changed. */
         fun onReplayGainSettingsChanged() {}
@@ -70,7 +69,6 @@ interface PlaybackSettings : Settings<PlaybackSettings.Listener> {
 
         /** Called when [pauseOnRepeat] has changed. */
         fun onPauseOnRepeatChanged() {}
-
     }
 }
 
@@ -137,8 +135,6 @@ class PlaybackSettingsImpl @Inject constructor(@ApplicationContext context: Cont
 
     override val exitOnTaskRemoval: Boolean
         get() = sharedPreferences.getBoolean(getString(R.string.set_key_task_exit), false)
-
-
 
     override fun migrate() {
         fun Int.migrateMusicMode() =

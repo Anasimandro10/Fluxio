@@ -150,8 +150,8 @@ object IntegerTable {
     const val FILTER_MODE_INCLUDE = 0xA129
     /** FilterMode.Exclude */
     const val FILTER_MODE_EXCLUDE = 0xA12A
+
     /** NormalizationTarget.-14 LUFS */
     /** NormalizationTarget.-16 LUFS */
     /** NormalizationTarget.-18 LUFS */
-
 }

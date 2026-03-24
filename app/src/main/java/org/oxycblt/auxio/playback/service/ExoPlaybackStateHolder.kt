@@ -660,18 +660,15 @@ class ExoPlaybackStateHolder(
             // battery/apk size/cache size]
             val audioRenderer = RenderersFactory { handler, _, audioListener, _, _ ->
                 arrayOf(
-                    FfmpegAudioRenderer(
-                        handler,
-                        audioListener,
-                        replayGainProcessor,
-                    ),
+                    FfmpegAudioRenderer(handler, audioListener, replayGainProcessor),
                     MediaCodecAudioRenderer(
                         context,
                         MediaCodecSelector.DEFAULT,
                         handler,
                         audioListener,
                         DefaultAudioSink.Builder(context)
-                            .setAudioProcessors(arrayOf(replayGainProcessor))                            .build(),
+                            .setAudioProcessors(arrayOf(replayGainProcessor))
+                            .build(),
                     ),
                 )
             }
