@@ -299,7 +299,7 @@ private constructor(
     /** Whether the player is actively playing audio or set to play audio in the future. */
     val isPlaying: Boolean,
     /** Whether the player is actively playing audio in this moment. */
-    private val isAdvancing: Boolean,
+    val isAdvancing: Boolean,
     /** The position when this instance was created, in milliseconds. */
     private val initPositionMs: Long,
     /** The time this instance was created, as a unix epoch timestamp. */

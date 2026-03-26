@@ -31,22 +31,30 @@ import timber.log.Timber as L
 abstract class PlayingIndicatorAdapter<T, VH : RecyclerView.ViewHolder>(
     diffCallback: DiffUtil.ItemCallback<T>
 ) : FlexibleListAdapter<T, VH>(diffCallback) {
-    // There are actually two states for this adapter:
-    // - The currently playing item, which is usually marked as "selected" and becomes accented.
-    // - Whether playback is ongoing, which corresponds to whether the item's ImageGroup is
-    // marked as "playing" or not.
     private var currentItem: T? = null
     private var isPlaying = false
 
+    /**
+     * Position index map: item -> adapter position.
+     * Replaces O(n) indexOfFirst searches with O(1) lookups on every song change.
+     */
+    private val positionMap = HashMap<T, Int>()
+
+    override fun onCurrentListChanged(previousList: List<T>, currentList: List<T>) {
+        super.onCurrentListChanged(previousList, currentList)
+        // Rebuild the position map whenever the list changes.
+        positionMap.clear()
+        for (i in currentList.indices) {
+            positionMap[currentList[i]] = i
+        }
+    }
+
     override fun onBindViewHolder(holder: VH, position: Int, payloads: List<Any>) {
-        // Only try to update the playing indicator if the ViewHolder supports it
         if (holder is ViewHolder) {
             holder.updatePlayingIndicator(getItem(position) == currentItem, isPlaying)
         }
 
         if (payloads.isEmpty()) {
-            // Not updating any indicator-specific attributes, so delegate to the concrete
-            // adapter (actually bind the item)
             onBindViewHolder(holder, position)
         }
     }
@@ -65,9 +73,9 @@ abstract class PlayingIndicatorAdapter<T, VH : RecyclerView.ViewHolder>(
             val oldItem = currentItem
             currentItem = item
 
-            // Remove the playing indicator from the old item
+            // Remove the playing indicator from the old item — O(1) lookup.
             if (oldItem != null) {
-                val pos = currentList.indexOfFirst { it == oldItem }
+                val pos = positionMap[oldItem] ?: -1
                 if (pos > -1) {
                     notifyItemChanged(pos, PAYLOAD_PLAYING_INDICATOR_CHANGED)
                 } else {
@@ -75,9 +83,9 @@ abstract class PlayingIndicatorAdapter<T, VH : RecyclerView.ViewHolder>(
                 }
             }
 
-            // Enable the playing indicator on the new item
+            // Enable the playing indicator on the new item — O(1) lookup.
             if (item != null) {
-                val pos = currentList.indexOfFirst { it == item }
+                val pos = positionMap[item] ?: -1
                 if (pos > -1) {
                     notifyItemChanged(pos, PAYLOAD_PLAYING_INDICATOR_CHANGED)
                 } else {
@@ -91,11 +99,8 @@ abstract class PlayingIndicatorAdapter<T, VH : RecyclerView.ViewHolder>(
         if (this.isPlaying != isPlaying) {
             this.isPlaying = isPlaying
 
-            // We may have already called notifyItemChanged before when checking
-            // if the item was being played, so in that case we don't need to
-            // update again here.
             if (!updatedItem && item != null) {
-                val pos = currentList.indexOfFirst { it == item }
+                val pos = positionMap[item] ?: -1
                 if (pos > -1) {
                     notifyItemChanged(pos, PAYLOAD_PLAYING_INDICATOR_CHANGED)
                 } else {
@@ -111,8 +116,7 @@ abstract class PlayingIndicatorAdapter<T, VH : RecyclerView.ViewHolder>(
          * Update the playing indicator within this [RecyclerView.ViewHolder].
          *
          * @param isActive True if this item is playing, false otherwise.
-         * @param isPlaying True if playback is ongoing, false if paused. If this is true,
-         *   [isActive] will also be true.
+         * @param isPlaying True if playback is ongoing, false if paused.
          */
         abstract fun updatePlayingIndicator(isActive: Boolean, isPlaying: Boolean)
     }

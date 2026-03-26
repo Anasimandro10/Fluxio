@@ -678,10 +678,10 @@ class ExoPlaybackStateHolder(
             val loadControl =
                 DefaultLoadControl.Builder()
                     .setBufferDurationsMs(
-                        /* minBufferMs = */ 3_000,
-                        /* maxBufferMs = */ 5_000,
-                        /* bufferForPlaybackMs = */ 1_500,
-                        /* bufferForPlaybackAfterRebufferMs = */ 2_000,
+                        /* minBufferMs = */ 5_000,
+                        /* maxBufferMs = */ 10_000,
+                        /* bufferForPlaybackMs = */ 2_000,
+                        /* bufferForPlaybackAfterRebufferMs = */ 3_000,
                     )
                     .build()
 
@@ -716,6 +716,6 @@ class ExoPlaybackStateHolder(
     }
 
     private companion object {
-        const val SAVE_BUFFER = 5000L
+        const val SAVE_BUFFER = 2500L
     }
 }

@@ -36,6 +36,9 @@ import org.oxycblt.musikr.Song
 /**
  * Listens to playback and saves a [PlaybackRecord] when a song has been played for 30 seconds or
  * more. Attach it to [PlaybackStateManager] once at app startup.
+ *
+ * All mutable state lives on the Main dispatcher — the same thread where PlaybackStateManager
+ * fires its callbacks — eliminating any race condition between the tick job and the commit reads.
  */
 @Singleton
 class StatsTracker
@@ -43,7 +46,10 @@ class StatsTracker
 constructor(@ApplicationContext private val context: Context, private val dao: PlaybackRecordDao) :
     PlaybackStateManager.Listener {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    // Main dispatcher: same thread as PlaybackStateManager callbacks.
+    // This removes the race condition where secondsListened++ ran on IO
+    // while commitIfEligible read it on Main.
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     /** The song currently being tracked. */
     private var trackedSong: Song? = null
@@ -119,6 +125,7 @@ constructor(@ApplicationContext private val context: Context, private val dao: P
                 startedAt = trackingStartMs,
                 secondsPlayed = secondsListened,
             )
+        // Room handles its own IO dispatcher internally for suspend inserts.
         scope.launch { dao.insert(record) }
     }
 

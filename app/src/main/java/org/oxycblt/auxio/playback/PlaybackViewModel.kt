@@ -188,6 +188,13 @@ constructor(
         lastPositionJob =
             viewModelScope.launch(Dispatchers.Default) {
                 while (true) {
+                    // When not advancing (paused/buffering), calculateElapsedPositionMs()
+                    // returns a fixed value every time — updating the UI at 10fps wastes CPU
+                    // with no visible effect. Sleep longer and skip the StateFlow write.
+                    if (!progression.isAdvancing) {
+                        delay(500)
+                        continue
+                    }
                     _positionDs.value = progression.calculateElapsedPositionMs().msToDs()
                     // Wait a deci-second for the next position tick.
                     delay(100)

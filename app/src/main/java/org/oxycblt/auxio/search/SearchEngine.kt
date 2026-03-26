@@ -66,6 +66,14 @@ interface SearchEngine {
 
 class SearchEngineImpl @Inject constructor(@ApplicationContext private val context: Context) :
     SearchEngine {
+
+    /**
+     * Cache of pre-normalized names keyed by Music identity hash.
+     * Normalizer.normalize() is expensive; caching avoids re-running it on every keystroke.
+     * The cache is intentionally kept across queries — it is only useful if it persists.
+     */
+    private val normalizedNameCache = HashMap<Int, String>()
+
     override suspend fun search(items: SearchEngine.Items, query: String): SearchEngine.Items {
         L.d("Launching search for $query")
         return SearchEngine.Items(
@@ -83,8 +91,7 @@ class SearchEngineImpl @Inject constructor(@ApplicationContext private val conte
     /**
      * Search a given [Music] list.
      *
-     * @param query The query to search for. The routine will compare this query to the names of
-     *   each object in the list and
+     * @param query The query to search for.
      * @param fallback Additional comparison code to run if the item does not match the query
      *   initially. This can be used to compare against additional attributes to improve search
      *   result quality.
@@ -94,18 +101,15 @@ class SearchEngineImpl @Inject constructor(@ApplicationContext private val conte
         fallback: (String, T) -> Boolean = { _, _ -> false },
     ) =
         filter {
-                // See if the plain resolved name matches the query. This works for most
-                // situations.
                 val name = it.name
 
+                // See if the plain resolved name matches the query.
                 val resolvedName = name.resolve(context)
                 if (resolvedName.contains(query, ignoreCase = true)) {
                     return@filter true
                 }
 
-                // See if the sort name matches. This can sometimes be helpful as certain
-                // libraries
-                // will tag sort names to have a alphabetized version of the title.
+                // See if the sort name matches.
                 if (name is Name.Known) {
                     val sortName = name.sort
                     if (sortName != null && sortName.contains(query, ignoreCase = true)) {
@@ -113,15 +117,16 @@ class SearchEngineImpl @Inject constructor(@ApplicationContext private val conte
                     }
                 }
 
-                // As a last-ditch effort, see if the normalized name matches. This will replace
-                // any non-alphabetical characters with their alphabetical representations,
-                // which
-                // could make it match the query.
+                // As a last-ditch effort, check the normalized name. Normalizer.normalize()
+                // is expensive — use a cache keyed by identity hash to avoid re-running it
+                // on every keystroke for the same library items.
                 val normalizedName =
-                    NORMALIZE_POST_PROCESSING_REGEX.replace(
-                        Normalizer.normalize(resolvedName, Normalizer.Form.NFKD),
-                        "",
-                    )
+                    normalizedNameCache.getOrPut(System.identityHashCode(it)) {
+                        NORMALIZE_POST_PROCESSING_REGEX.replace(
+                            Normalizer.normalize(resolvedName, Normalizer.Form.NFKD),
+                            "",
+                        )
+                    }
                 if (normalizedName.contains(query, ignoreCase = true)) {
                     return@filter true
                 }
@@ -132,7 +137,7 @@ class SearchEngineImpl @Inject constructor(@ApplicationContext private val conte
 
     private companion object {
         /**
-         * Converts the output of [Normalizer] to remove any junk characters added by it's
+         * Converts the output of [Normalizer] to remove any junk characters added by its
          * replacements, alongside punctuation.
          */
         val NORMALIZE_POST_PROCESSING_REGEX by lazy {

@@ -22,6 +22,7 @@ import org.oxycblt.auxio.home.folders.Folder
 import org.oxycblt.auxio.home.tabs.Tab
 import org.oxycblt.auxio.list.ListSettings
 import org.oxycblt.auxio.list.adapter.UpdateInstructions
+import org.oxycblt.auxio.list.sort.Sort
 import org.oxycblt.auxio.music.MusicRepository
 import org.oxycblt.auxio.music.MusicType
 import org.oxycblt.musikr.Album
@@ -82,6 +83,13 @@ private class HomeGeneratorImpl(
     private val listSettings: ListSettings,
     private val musicRepository: MusicRepository,
 ) : HomeGenerator, HomeSettings.Listener, ListSettings.Listener, MusicRepository.UpdateListener {
+
+    /**
+     * Cached folder list. Recomputed only when the library or sort direction changes.
+     * Previously folders() called groupBy+sortedWith on every single RecyclerView render.
+     */
+    private var cachedFolders: List<Folder>? = null
+
     override fun attach() {
         homeSettings.registerListener(this)
         listSettings.registerListener(this)
@@ -124,6 +132,8 @@ private class HomeGeneratorImpl(
 
     override fun onFolderSortChanged() {
         super.onFolderSortChanged()
+        // Invalidate the folder cache when sort direction changes.
+        cachedFolders = null
         invalidator.invalidateMusic(MusicType.FOLDERS, UpdateInstructions.Replace(0))
     }
 
@@ -133,6 +143,8 @@ private class HomeGeneratorImpl(
         val library = musicRepository.library
         if (changes.deviceLibrary && library != null) {
             L.d("Refreshing library")
+            // Invalidate the folder cache when the library changes.
+            cachedFolders = null
             invalidator.invalidateMusic(MusicType.SONGS, UpdateInstructions.Diff)
             invalidator.invalidateMusic(MusicType.ALBUMS, UpdateInstructions.Diff)
             invalidator.invalidateMusic(MusicType.ARTISTS, UpdateInstructions.Diff)
@@ -178,24 +190,25 @@ private class HomeGeneratorImpl(
             ?: emptyList()
 
     override fun folders(): List<Folder> {
+        // Return the cached result when available — avoids groupBy+sort on every render call.
+        cachedFolders?.let { return it }
+
         val library = musicRepository.library ?: return emptyList()
-        // Group songs by their parent directory path
-        val grouped =
-            library.songs.groupBy { song ->
-                // Use the directory of the song's path as the folder key
-                song.path.directory
+
+        val comparator: Comparator<Folder> =
+            when (listSettings.folderSort.direction) {
+                Sort.Direction.ASCENDING -> compareBy { it.name.lowercase() }
+                Sort.Direction.DESCENDING -> compareByDescending { it.name.lowercase() }
             }
-        // Build Folder objects and sort by name ascending
-        return grouped
-            .map { (dirPath, songs) -> Folder(dirPath, songs) }
-            .sortedWith(
-                when (listSettings.folderSort.direction) {
-                    org.oxycblt.auxio.list.sort.Sort.Direction.ASCENDING ->
-                        compareBy { it.name.lowercase() }
-                    org.oxycblt.auxio.list.sort.Sort.Direction.DESCENDING ->
-                        compareByDescending { it.name.lowercase() }
-                }
-            )
+
+        val result =
+            library.songs
+                .groupBy { song -> song.path.directory }
+                .map { (dirPath, songs) -> Folder(dirPath, songs) }
+                .sortedWith(comparator)
+
+        cachedFolders = result
+        return result
     }
 
     override fun tabs() = homeSettings.homeTabs.filterIsInstance<Tab.Visible>().map { it.type }

@@ -19,6 +19,7 @@ package org.oxycblt.auxio.image.coil
 
 import android.content.Context
 import coil3.ImageLoader
+import coil3.memory.MemoryCache
 import coil3.request.transitionFactory
 import dagger.Module
 import dagger.Provides
@@ -54,7 +55,15 @@ class CoilModule {
                 add(stackKeyer)
                 add(stackFetcherFactory)
             }
-            // Use our own crossfade with error drawable support
+            // Use our own crossfade with error drawable support.
             .transitionFactory(ErrorCrossfadeTransitionFactory())
+            // Explicit memory cache at 25% of available RAM.
+            // Coil defaults to 20% but explicit config avoids silent regressions
+            // and ensures album art survives orientation changes without re-decoding.
+            .memoryCache {
+                MemoryCache.Builder()
+                    .maxSizePercent(context, 0.25)
+                    .build()
+            }
             .build()
 }

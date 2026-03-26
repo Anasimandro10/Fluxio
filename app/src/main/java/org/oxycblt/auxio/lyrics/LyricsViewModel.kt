@@ -233,9 +233,21 @@ constructor(
         tickerJob =
             viewModelScope.launch(Dispatchers.Default) {
                 while (true) {
-                    delay(500)
                     val posMs = currentProgression?.calculateElapsedPositionMs() ?: break
                     updateCurrentLine(posMs)
+                    // Calculate delay until the next lyric line instead of always sleeping
+                    // 500ms. This way we only wake up when there is actually something to do.
+                    val lines = _lines.value
+                    val nextLineMs = lines.firstOrNull { it.startMs > posMs }?.startMs
+                    val delayMs =
+                        if (nextLineMs != null) {
+                            // Wake 80ms early for smooth highlighting.
+                            (nextLineMs - posMs - 80L).coerceIn(50L, 2000L)
+                        } else {
+                            // No next line — check every 2 seconds.
+                            2000L
+                        }
+                    delay(delayMs)
                 }
             }
     }
