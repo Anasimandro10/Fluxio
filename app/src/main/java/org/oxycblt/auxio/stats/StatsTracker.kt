@@ -37,8 +37,8 @@ import org.oxycblt.musikr.Song
  * Listens to playback and saves a [PlaybackRecord] when a song has been played for 30 seconds or
  * more. Attach it to [PlaybackStateManager] once at app startup.
  *
- * All mutable state lives on the Main dispatcher — the same thread where PlaybackStateManager
- * fires its callbacks — eliminating any race condition between the tick job and the commit reads.
+ * All mutable state lives on the Main dispatcher — the same thread where PlaybackStateManager fires
+ * its callbacks — eliminating any race condition between the tick job and the commit reads.
  */
 @Singleton
 class StatsTracker

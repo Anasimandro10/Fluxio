@@ -68,9 +68,9 @@ class SearchEngineImpl @Inject constructor(@ApplicationContext private val conte
     SearchEngine {
 
     /**
-     * Cache of pre-normalized names keyed by Music identity hash.
-     * Normalizer.normalize() is expensive; caching avoids re-running it on every keystroke.
-     * The cache is intentionally kept across queries — it is only useful if it persists.
+     * Cache of pre-normalized names keyed by Music identity hash. Normalizer.normalize() is
+     * expensive; caching avoids re-running it on every keystroke. The cache is intentionally kept
+     * across queries — it is only useful if it persists.
      */
     private val normalizedNameCache = HashMap<Int, String>()
 

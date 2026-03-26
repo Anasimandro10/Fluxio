@@ -60,10 +60,6 @@ class CoilModule {
             // Explicit memory cache at 25% of available RAM.
             // Coil defaults to 20% but explicit config avoids silent regressions
             // and ensures album art survives orientation changes without re-decoding.
-            .memoryCache {
-                MemoryCache.Builder()
-                    .maxSizePercent(context, 0.25)
-                    .build()
-            }
+            .memoryCache { MemoryCache.Builder().maxSizePercent(context, 0.25).build() }
             .build()
 }

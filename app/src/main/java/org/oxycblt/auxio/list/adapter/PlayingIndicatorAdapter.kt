@@ -35,8 +35,8 @@ abstract class PlayingIndicatorAdapter<T, VH : RecyclerView.ViewHolder>(
     private var isPlaying = false
 
     /**
-     * Position index map: item -> adapter position.
-     * Replaces O(n) indexOfFirst searches with O(1) lookups on every song change.
+     * Position index map: item -> adapter position. Replaces O(n) indexOfFirst searches with O(1)
+     * lookups on every song change.
      */
     private val positionMap = HashMap<T, Int>()
 

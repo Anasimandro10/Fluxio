@@ -85,8 +85,8 @@ private class HomeGeneratorImpl(
 ) : HomeGenerator, HomeSettings.Listener, ListSettings.Listener, MusicRepository.UpdateListener {
 
     /**
-     * Cached folder list. Recomputed only when the library or sort direction changes.
-     * Previously folders() called groupBy+sortedWith on every single RecyclerView render.
+     * Cached folder list. Recomputed only when the library or sort direction changes. Previously
+     * folders() called groupBy+sortedWith on every single RecyclerView render.
      */
     private var cachedFolders: List<Folder>? = null
 
@@ -191,7 +191,9 @@ private class HomeGeneratorImpl(
 
     override fun folders(): List<Folder> {
         // Return the cached result when available — avoids groupBy+sort on every render call.
-        cachedFolders?.let { return it }
+        cachedFolders?.let {
+            return it
+        }
 
         val library = musicRepository.library ?: return emptyList()
 
