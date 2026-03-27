@@ -53,7 +53,7 @@ abstract class FlexibleListAdapter<T, VH : RecyclerView.ViewHolder>(
      * @param instructions The [UpdateInstructions] to visually update the list with.
      * @param callback Called when the update is completed. May be done asynchronously.
      */
-    fun update(
+    open fun update(
         newList: List<T>,
         instructions: UpdateInstructions?,
         callback: (() -> Unit)? = null,
