@@ -35,18 +35,27 @@ abstract class PlayingIndicatorAdapter<T, VH : RecyclerView.ViewHolder>(
     private var isPlaying = false
 
     /**
-     * Position index map: item -> adapter position. Replaces O(n) indexOfFirst searches with O(1)
-     * lookups on every song change.
+     * Position index map: item -> adapter position.
+     * Replaces O(n) indexOfFirst searches with O(1) lookups on every song change.
+     * Rebuilt every time the list is updated via [update].
      */
-    private val positionMap = HashMap<T, Int>()
+    protected val positionMap = HashMap<T, Int>()
 
-    override fun onCurrentListChanged(previousList: List<T>, currentList: List<T>) {
-        super.onCurrentListChanged(previousList, currentList)
-        // Rebuild the position map whenever the list changes.
+    /**
+     * Override [update] to keep [positionMap] in sync with the list.
+     * FlexibleListAdapter does not have onCurrentListChanged, so we intercept here.
+     */
+    override fun update(
+        newList: List<T>,
+        instructions: UpdateInstructions?,
+        callback: (() -> Unit)?,
+    ) {
+        // Rebuild the position map from the new list before notifying RecyclerView.
         positionMap.clear()
-        for (i in currentList.indices) {
-            positionMap[currentList[i]] = i
+        for (i in newList.indices) {
+            positionMap[newList[i]] = i
         }
+        super.update(newList, instructions, callback)
     }
 
     override fun onBindViewHolder(holder: VH, position: Int, payloads: List<Any>) {

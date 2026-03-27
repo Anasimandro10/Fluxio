@@ -20,7 +20,6 @@ package org.oxycblt.auxio.list.adapter
 import android.view.View
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import org.oxycblt.musikr.Music
 import timber.log.Timber as L
 
 /**
@@ -51,24 +50,19 @@ abstract class SelectionIndicatorAdapter<T, VH : RecyclerView.ViewHolder>(
         val oldSelectedItems = selectedItems
         val newSelectedItems = items.toSet()
         if (newSelectedItems == oldSelectedItems) {
-            // Nothing to do.
             return
         }
-        L.d("Updating selection [old=${oldSelectedItems.size} new=${newSelectedItems.size}")
+        L.d("Updating selection [old=${oldSelectedItems.size} new=${newSelectedItems.size}]")
 
         selectedItems = newSelectedItems
-        for (i in currentList.indices) {
-            // TODO: Perhaps add an optimization that allows me to avoid the O(n) iteration
-            //  assuming all list items are unique?
-            val item = currentList[i]
-            if (item !is Music) {
-                // Not applicable.
-                continue
-            }
 
-            // Only update items that were added or removed from the list.
-            if (oldSelectedItems.contains(item) xor newSelectedItems.contains(item)) {
-                notifyItemChanged(i, PAYLOAD_SELECTION_INDICATOR_CHANGED)
+        // Compute the symmetric difference: only items that changed selection state.
+        // Use positionMap (O(1) lookup) instead of iterating the whole list O(n).
+        val changed = (oldSelectedItems - newSelectedItems) + (newSelectedItems - oldSelectedItems)
+        for (item in changed) {
+            val pos = positionMap[item] ?: -1
+            if (pos > -1) {
+                notifyItemChanged(pos, PAYLOAD_SELECTION_INDICATOR_CHANGED)
             }
         }
     }
