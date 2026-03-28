@@ -699,28 +699,6 @@ class ExoPlaybackStateHolder(
                             .build(),
                         true,
                     )
-                    // Audio offload: routes decoding to device DSP instead of CPU.
-                    // Reduces battery drain 20-40% during playback.
-                    // Must be disabled in step 21+ when EQ/DSP effects are active.
-                    .setAudioOffloadPreferences(
-                        androidx.media3.exoplayer.audio.AudioOffloadPreferences.Builder()
-                            .setAudioOffloadMode(
-                                androidx.media3.exoplayer.audio.AudioOffloadPreferences
-                                    .AUDIO_OFFLOAD_MODE_ENABLED
-                            )
-                            .setIsGaplessSupportRequired(false)
-                            .setIsSpeedChangeSupportRequired(false)
-                            .build()
-                    )
-                    .build()
-                    .setAudioAttributes(
-                        // Signal that we are a music player.
-                        AudioAttributes.Builder()
-                            .setUsage(C.USAGE_MEDIA)
-                            .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
-                            .build(),
-                        true,
-                    )
                     .build()
 
             return ExoPlaybackStateHolder(
