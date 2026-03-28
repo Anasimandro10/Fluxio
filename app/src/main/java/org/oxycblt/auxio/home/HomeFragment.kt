@@ -140,7 +140,9 @@ class HomeFragment :
 
             setOnApplyWindowInsetsListener { _, insets -> insets }
 
-            offscreenPageLimit = Tab.MAX_SEQUENCE_IDX + 1
+                        // Keep only 1 adjacent tab in memory. ViewModels persist across destruction
+            // so lists restore instantly when the user swipes back.
+            offscreenPageLimit = 1
 
             val recycler = VP_RECYCLER_FIELD.get(this@apply)
             val slop = RV_TOUCH_SLOP_FIELD.get(recycler) as Int

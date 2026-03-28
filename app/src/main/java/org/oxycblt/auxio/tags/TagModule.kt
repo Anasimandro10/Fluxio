@@ -19,6 +19,7 @@ package org.oxycblt.auxio.tags
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.RoomDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -36,6 +37,9 @@ class TagModule {
     fun tagDatabase(@ApplicationContext context: Context): TagDatabase =
         Room.databaseBuilder(context.applicationContext, TagDatabase::class.java, "fluxio_tags.db")
             .fallbackToDestructiveMigration()
+            // WAL allows concurrent reads during writes — avoids blocking the UI
+            // when StatsTracker or backup operations write simultaneously.
+            .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
             .build()
 
     @Provides fun tagDao(database: TagDatabase): TagDao = database.tagDao()

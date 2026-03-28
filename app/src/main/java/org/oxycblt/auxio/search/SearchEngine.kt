@@ -72,7 +72,16 @@ class SearchEngineImpl @Inject constructor(@ApplicationContext private val conte
      * expensive; caching avoids re-running it on every keystroke. The cache is intentionally kept
      * across queries — it is only useful if it persists.
      */
-    private val normalizedNameCache = HashMap<Int, String>()
+        /**
+     * Cache of pre-normalized names keyed by Music identity hash. Normalizer.normalize() is
+     * expensive; caching avoids re-running it on every keystroke. Capped at 600 entries to
+     * prevent unbounded growth with large libraries — oldest entries evicted automatically.
+     */
+    private val normalizedNameCache =
+        object : LinkedHashMap<Int, String>(128, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, String>?) =
+                size > 600
+        }
 
     override suspend fun search(items: SearchEngine.Items, query: String): SearchEngine.Items {
         L.d("Launching search for $query")

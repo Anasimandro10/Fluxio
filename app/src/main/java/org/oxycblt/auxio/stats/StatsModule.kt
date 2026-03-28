@@ -19,6 +19,7 @@ package org.oxycblt.auxio.stats
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.RoomDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -40,6 +41,8 @@ class StatsModule {
                 "fluxio_stats.db",
             )
             .fallbackToDestructiveMigration()
+            // WAL: non-blocking reads during the frequent 1-per-song writes from StatsTracker.
+            .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
             .build()
 
     @Provides
