@@ -19,7 +19,6 @@ package org.oxycblt.auxio.image.coil
 
 import android.content.Context
 import coil3.ImageLoader
-import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
 import coil3.request.transitionFactory
 import dagger.Module
@@ -28,7 +27,6 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
-import okio.Path.Companion.toOkioPath
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -60,15 +58,8 @@ class CoilModule {
             // Use our own crossfade with error drawable support.
             .transitionFactory(ErrorCrossfadeTransitionFactory())
             // Explicit memory cache at 25% of available RAM.
+            // Coil defaults to 20% but explicit config avoids silent regressions
+            // and ensures album art survives orientation changes without re-decoding.
             .memoryCache { MemoryCache.Builder().maxSizePercent(context, 0.25).build() }
-            // Disk cache: persists decoded album art across cold starts.
-            // Cover art doesn't change without a library rescan (which invalidates covers),
-            // so stale cache is not a concern. 50 MB covers ~500-1000 albums.
-            .diskCache {
-                DiskCache.Builder()
-                    .directory(context.cacheDir.resolve("coil_image_cache").toOkioPath())
-                    .maxSizeBytes(50L * 1024 * 1024) // 50 MB
-                    .build()
-            }
             .build()
 }

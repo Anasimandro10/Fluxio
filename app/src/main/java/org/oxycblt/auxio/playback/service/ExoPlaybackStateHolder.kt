@@ -691,7 +691,6 @@ class ExoPlaybackStateHolder(
                     .setLoadControl(loadControl)
                     // Enable automatic WakeLock support
                     .setWakeMode(C.WAKE_MODE_LOCAL)
-                    .setWakeMode(C.WAKE_MODE_LOCAL)
                     .setAudioAttributes(
                         // Signal that we are a music player.
                         AudioAttributes.Builder()
