@@ -17,9 +17,9 @@
  */
 package org.oxycblt.auxio.lyrics
 
-import androidx.room.RoomDatabase
 import android.content.Context
 import androidx.room.Room
+import androidx.room.RoomDatabase
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -43,7 +43,7 @@ abstract class LyricsModule {
         fun provideLrclibDatabase(@ApplicationContext context: Context): LrclibDatabase =
             Room.databaseBuilder(context, LrclibDatabase::class.java, "lrclib_cache.db")
                 .fallbackToDestructiveMigration()
-                 .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
+                .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
                 .build()
 
         @Provides

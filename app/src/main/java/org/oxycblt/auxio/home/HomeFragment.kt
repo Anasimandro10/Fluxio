@@ -52,7 +52,6 @@ import org.oxycblt.auxio.home.list.GenreListFragment
 import org.oxycblt.auxio.home.list.PlaylistListFragment
 import org.oxycblt.auxio.home.list.SongListFragment
 import org.oxycblt.auxio.home.tabs.NamedTabStrategy
-import org.oxycblt.auxio.home.tabs.Tab
 import org.oxycblt.auxio.list.ListViewModel
 import org.oxycblt.auxio.list.SelectionFragment
 import org.oxycblt.auxio.list.menu.Menu
@@ -140,7 +139,7 @@ class HomeFragment :
 
             setOnApplyWindowInsetsListener { _, insets -> insets }
 
-                        // Keep only 1 adjacent tab in memory. ViewModels persist across destruction
+            // Keep only 1 adjacent tab in memory. ViewModels persist across destruction
             // so lists restore instantly when the user swipes back.
             offscreenPageLimit = 1
 
