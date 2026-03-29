@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback.equalizer
 
 import android.os.Bundle
@@ -43,22 +42,13 @@ import org.oxycblt.auxio.databinding.FragmentEqualizerBinding
 class EqualizerFragment : Fragment() {
 
     private var _binding: FragmentEqualizerBinding? = null
-    private val binding get() = _binding!!
+    private val binding
+        get() = _binding!!
+
     private val viewModel: EqualizerViewModel by viewModels()
 
     private val bandLabels =
-        listOf(
-            "31Hz",
-            "63Hz",
-            "125Hz",
-            "250Hz",
-            "500Hz",
-            "1kHz",
-            "2kHz",
-            "4kHz",
-            "8kHz",
-            "16kHz",
-        )
+        listOf("31Hz", "63Hz", "125Hz", "250Hz", "500Hz", "1kHz", "2kHz", "4kHz", "8kHz", "16kHz")
     private val seekBars = mutableListOf<SeekBar>()
     private val valueLabels = mutableListOf<TextView>()
     private var ignoreSpinner = false
@@ -76,9 +66,7 @@ class EqualizerFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         buildBandRows()
         setupPresetSpinner()
-        binding.eqSwitch.setOnCheckedChangeListener { _, checked ->
-            viewModel.setEnabled(checked)
-        }
+        binding.eqSwitch.setOnCheckedChangeListener { _, checked -> viewModel.setEnabled(checked) }
         collectState()
     }
 
@@ -113,11 +101,7 @@ class EqualizerFragment : Fragment() {
                     max = 240 // center=120, 1 step=0.1 dB, range -12 to +12 dB
                     progress = 120
                     layoutParams =
-                        LinearLayout.LayoutParams(
-                            0,
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                            1f,
-                        )
+                        LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                 }
             val value =
                 TextView(requireContext()).apply {
@@ -130,11 +114,7 @@ class EqualizerFragment : Fragment() {
 
             bar.setOnSeekBarChangeListener(
                 object : SeekBar.OnSeekBarChangeListener {
-                    override fun onProgressChanged(
-                        sb: SeekBar?,
-                        progress: Int,
-                        fromUser: Boolean,
-                    ) {
+                    override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
                         if (fromUser) {
                             val db = (progress - 120) / 10f
                             value.text = String.format(Locale.US, "%.1f", db)
@@ -159,8 +139,7 @@ class EqualizerFragment : Fragment() {
 
     private fun setupPresetSpinner() {
         val names = EqualizerSettings.PRESET_NAMES + listOf(getString(R.string.lbl_eq_custom))
-        val adapter =
-            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, names)
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, names)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.eqPresetSpinner.adapter = adapter
         binding.eqPresetSpinner.onItemSelectedListener =
@@ -186,11 +165,9 @@ class EqualizerFragment : Fragment() {
                 launch {
                     viewModel.bands.collect { bands ->
                         for (i in bands.indices) {
-                            val progress =
-                                ((bands[i] * 10f) + 120).toInt().coerceIn(0, 240)
+                            val progress = ((bands[i] * 10f) + 120).toInt().coerceIn(0, 240)
                             seekBars[i].progress = progress
-                            valueLabels[i].text =
-                                String.format(Locale.US, "%.1f", bands[i])
+                            valueLabels[i].text = String.format(Locale.US, "%.1f", bands[i])
                         }
                     }
                 }
