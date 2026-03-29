@@ -51,6 +51,7 @@ import org.oxycblt.auxio.music.MusicRepository
 import org.oxycblt.auxio.playback.PlaybackSettings
 import org.oxycblt.auxio.playback.persist.PersistenceRepository
 import org.oxycblt.auxio.playback.replaygain.ReplayGainAudioProcessor
+import org.oxycblt.auxio.playback.equalizer.EqualizerAudioProcessor
 import org.oxycblt.auxio.playback.state.DeferredPlayback
 import org.oxycblt.auxio.playback.state.PlaybackCommand
 import org.oxycblt.auxio.playback.state.PlaybackStateHolder
@@ -73,6 +74,7 @@ class ExoPlaybackStateHolder(
     private val playbackSettings: PlaybackSettings,
     private val commandFactory: PlaybackCommand.Factory,
     private val replayGainProcessor: ReplayGainAudioProcessor,
+    private val equalizerProcessor: EqualizerAudioProcessor,
     private val musicRepository: MusicRepository,
     private val imageSettings: ImageSettings,
 ) :
@@ -652,6 +654,7 @@ class ExoPlaybackStateHolder(
         private val commandFactory: PlaybackCommand.Factory,
         private val mediaSourceFactory: MediaSource.Factory,
         private val replayGainProcessor: ReplayGainAudioProcessor,
+        private val equalizerProcessor: EqualizerAudioProcessor,
         private val musicRepository: MusicRepository,
         private val imageSettings: ImageSettings,
     ) {
@@ -660,14 +663,14 @@ class ExoPlaybackStateHolder(
             // battery/apk size/cache size]
             val audioRenderer = RenderersFactory { handler, _, audioListener, _, _ ->
                 arrayOf(
-                    FfmpegAudioRenderer(handler, audioListener, replayGainProcessor),
+                    FfmpegAudioRenderer(handler, audioListener, replayGainProcessor, equalizerProcessor),
                     MediaCodecAudioRenderer(
                         context,
                         MediaCodecSelector.DEFAULT,
                         handler,
                         audioListener,
                         DefaultAudioSink.Builder(context)
-                            .setAudioProcessors(arrayOf(replayGainProcessor))
+                            .setAudioProcessors(arrayOf(replayGainProcessor, equalizerProcessor))
                             .build(),
                     ),
                 )
