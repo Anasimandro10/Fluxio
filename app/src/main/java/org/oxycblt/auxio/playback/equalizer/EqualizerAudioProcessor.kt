@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback.equalizer
 
 import androidx.media3.common.C
@@ -33,7 +32,8 @@ import kotlin.math.sin
  * A 10-band parametric equalizer implemented as an [AudioProcessor] using biquad peaking EQ
  * filters. All band gains start at 0 dB (flat response) and the EQ starts disabled.
  *
- * Only processes PCM_FLOAT audio; other formats are bypassed via [AudioProcessor.AudioFormat.NOT_SET].
+ * Only processes PCM_FLOAT audio; other formats are bypassed via
+ * [AudioProcessor.AudioFormat.NOT_SET].
  */
 @Singleton
 class EqualizerAudioProcessor @Inject constructor() : BaseAudioProcessor() {
@@ -61,7 +61,7 @@ class EqualizerAudioProcessor @Inject constructor() : BaseAudioProcessor() {
 
     @Throws(AudioProcessor.UnhandledAudioFormatException::class)
     override fun onConfigure(
-        inputAudioFormat: AudioProcessor.AudioFormat,
+        inputAudioFormat: AudioProcessor.AudioFormat
     ): AudioProcessor.AudioFormat {
         if (inputAudioFormat.encoding != C.ENCODING_PCM_FLOAT) {
             return AudioProcessor.AudioFormat.NOT_SET
