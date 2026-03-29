@@ -17,7 +17,9 @@
  */
 package org.oxycblt.auxio.settings.categories
 
+import android.os.Bundle
 import androidx.navigation.fragment.findNavController
+import androidx.preference.Preference
 import dagger.hilt.android.AndroidEntryPoint
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.settings.BasePreferenceFragment
@@ -28,6 +30,18 @@ import timber.log.Timber as L
 /** Audio settings interface. */
 @AndroidEntryPoint
 class AudioPreferenceFragment : BasePreferenceFragment(R.xml.preferences_audio) {
+
+    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+        // Ejecutamos la lógica original de la clase padre
+        super.onCreatePreferences(savedInstanceState, rootKey)
+
+        // Buscamos la preferencia del ecualizador y le asignamos la navegación (Paso 7)
+        findPreference<Preference>(getString(R.string.set_key_equalizer))
+            ?.setOnPreferenceClickListener {
+                findNavController().navigate(R.id.equalizer_fragment)
+                true
+            }
+    }
 
     override fun onOpenDialogPreference(preference: WrappedDialogPreference) {
         if (preference.key == getString(R.string.set_key_pre_amp)) {

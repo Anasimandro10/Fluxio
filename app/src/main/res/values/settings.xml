@@ -194,5 +194,6 @@
     <string name="set_key_backup" translatable="false">fluxio_backup</string>
     <string name="set_key_backup_export" translatable="false">fluxio_backup_export</string>
     <string name="set_key_backup_import" translatable="false">fluxio_backup_import</string>
+    <string name="set_key_equalizer" translatable="false">set_key_equalizer</string>
 
 </resources>

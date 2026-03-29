@@ -44,6 +44,10 @@
             android:id="@+id/backup_preferences"
             app:destination="@id/backup_preferences_fragment" />
     </fragment>
+        <fragment
+        android:id="@+id/equalizer_fragment"
+        android:name="org.oxycblt.auxio.playback.equalizer.EqualizerFragment"
+        android:label="@string/lbl_equalizer" />
 
     <fragment
         android:id="@+id/ui_preferences_fragment"

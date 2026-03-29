@@ -2,6 +2,10 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     app:title="@string/set_audio">
+        <Preference
+        android:key="@string/set_key_equalizer"
+        android:title="@string/lbl_equalizer"
+        android:summary="@string/desc_equalizer" />
 
     <PreferenceCategory android:title="@string/set_playback">
 
