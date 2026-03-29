@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback.equalizer
 
 import android.content.Context
@@ -48,8 +47,8 @@ class EqualizerSettings @Inject constructor(@ApplicationContext context: Context
             )
 
         /**
-         * Gain values in dB for each factory preset.
-         * Bands: 31, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000 Hz.
+         * Gain values in dB for each factory preset. Bands: 31, 63, 125, 250, 500, 1000, 2000,
+         * 4000, 8000, 16000 Hz.
          */
         val PRESETS =
             arrayOf(
@@ -81,8 +80,8 @@ class EqualizerSettings @Inject constructor(@ApplicationContext context: Context
         set(value) = prefs.edit { putBoolean(KEY_ENABLED, value) }
 
     /**
-     * Index of the active factory preset, or [PRESET_CUSTOM] when the user has
-     * moved a slider manually.
+     * Index of the active factory preset, or [PRESET_CUSTOM] when the user has moved a slider
+     * manually.
      */
     var activePreset: Int
         get() = prefs.getInt(KEY_PRESET, 0)
