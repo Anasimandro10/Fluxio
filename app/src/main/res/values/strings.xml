@@ -538,7 +538,6 @@
     <string name="lng_backup_imported">Backup restored (%d items)</string>
     <string name="err_backup_export_failed">Export failed: %s</string>
     <string name="err_backup_import_failed">Restore failed: %s</string>
-    <string name="lbl_equalizer">Equalizer</string>
     <string name="lbl_eq_enabled">Enable equalizer</string>
     <string name="lbl_eq_preset">Preset</string>
     <string name="lbl_eq_bands">Bands</string>
