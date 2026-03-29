@@ -709,17 +709,18 @@ class ExoPlaybackStateHolder(
                     )
                     .build()
 
-            return ExoPlaybackStateHolder(
-                context,
-                exoPlayer,
-                playbackManager,
-                persistenceRepository,
-                playbackSettings,
-                commandFactory,
-                replayGainProcessor,
-                musicRepository,
-                imageSettings,
-            )
+           return ExoPlaybackStateHolder(
+    context,
+    exoPlayer,
+    playbackManager,
+    persistenceRepository,
+    playbackSettings,
+    commandFactory,
+    replayGainProcessor,
+    equalizerProcessor, // <--- AÑADE ESTA LÍNEA AQUÍ
+    musicRepository,
+    imageSettings,
+)
         }
     }
 
