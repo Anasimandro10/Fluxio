@@ -32,7 +32,7 @@ import kotlin.math.sin
  * A 10-band parametric equalizer implemented as an [AudioProcessor] using biquad peaking EQ
  * filters. All band gains start at 0 dB (flat response) and the EQ starts disabled.
  *
- * Processes PCM_16BIT audio. Other formats are bypassed via [AudioProcessor.AudioFormat.NOT_SET].
+ * Processes PCM_FLOAT audio. Other formats are bypassed via [AudioProcessor.AudioFormat.NOT_SET].
  *
  * Thread safety: [coeffs] and [state] are @Volatile vars. [recomputeCoefficients] and
  * [resetDelayLines] always assign a brand-new array object, so the volatile write publishes the new
@@ -76,7 +76,7 @@ class EqualizerAudioProcessor @Inject constructor() : BaseAudioProcessor() {
     override fun onConfigure(
         inputAudioFormat: AudioProcessor.AudioFormat
     ): AudioProcessor.AudioFormat {
-        if (inputAudioFormat.encoding != C.ENCODING_PCM_16BIT) {
+        if (inputAudioFormat.encoding != C.ENCODING_PCM_FLOAT) {
             return AudioProcessor.AudioFormat.NOT_SET
         }
         sampleRate = inputAudioFormat.sampleRate
@@ -114,11 +114,18 @@ class EqualizerAudioProcessor @Inject constructor() : BaseAudioProcessor() {
         val localCoeffs = coeffs
         val localState = state
 
-        // Each PCM_16BIT sample is 2 bytes (little-endian short).
-        while (inputBuffer.remaining() >= BYTES_PER_SAMPLE * channelCount) {
+        // Each PCM_FLOAT sample is 4 bytes (little-endian IEEE 754 float).
+        val bytesPerFrame = BYTES_PER_SAMPLE * channelCount
+        while (inputBuffer.remaining() >= bytesPerFrame) {
             for (ch in 0 until channelCount) {
-                // Read little-endian short and normalize to [-1f, 1f]
-                var x = inputBuffer.getLeShort() / 32768f
+                // Read 4 bytes as little-endian float
+                val bits =
+                    (inputBuffer.get().toInt() and 0xFF) or
+                        ((inputBuffer.get().toInt() and 0xFF) shl 8) or
+                        ((inputBuffer.get().toInt() and 0xFF) shl 16) or
+                        ((inputBuffer.get().toInt() and 0xFF) shl 24)
+                var x = java.lang.Float.intBitsToFloat(bits)
+
                 // Apply 10-band biquad filter chain
                 for (band in 0 until BAND_COUNT) {
                     val c = localCoeffs[band]
@@ -130,30 +137,17 @@ class EqualizerAudioProcessor @Inject constructor() : BaseAudioProcessor() {
                     s[2] = y
                     x = y
                 }
-                // Clamp and convert back to PCM_16BIT little-endian short
-                val sample =
-                    (x.coerceIn(-1f, 1f) * 32768f)
-                        .toInt()
-                        .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
-                        .toShort()
-                outputBuffer.putLeShort(sample)
+
+                // Write 4 bytes as little-endian float
+                val outBits = java.lang.Float.floatToRawIntBits(x.coerceIn(-1f, 1f))
+                outputBuffer.put((outBits and 0xFF).toByte())
+                outputBuffer.put(((outBits shr 8) and 0xFF).toByte())
+                outputBuffer.put(((outBits shr 16) and 0xFF).toByte())
+                outputBuffer.put(((outBits shr 24) and 0xFF).toByte())
             }
         }
 
         outputBuffer.flip()
-    }
-
-    /** Reads a little-endian [Short] from the [ByteBuffer] at the current position. */
-    private fun ByteBuffer.getLeShort(): Short {
-        val lo = get().toInt().and(0xFF)
-        val hi = get().toInt().and(0xFF)
-        return hi.shl(8).or(lo).toShort()
-    }
-
-    /** Writes a little-endian [Short] at the current position of the [ByteBuffer]. */
-    private fun ByteBuffer.putLeShort(short: Short) {
-        put(short.toByte())
-        put(short.toInt().shr(8).toByte())
     }
 
     /**
@@ -194,7 +188,7 @@ class EqualizerAudioProcessor @Inject constructor() : BaseAudioProcessor() {
     private companion object {
         const val BAND_COUNT = 10
         const val MAX_CHANNELS = 8
-        const val BYTES_PER_SAMPLE = 2
+        const val BYTES_PER_SAMPLE = 4 // PCM_FLOAT: 4 bytes per sample
 
         val BAND_FREQUENCIES =
             floatArrayOf(31f, 63f, 125f, 250f, 500f, 1000f, 2000f, 4000f, 8000f, 16000f)
