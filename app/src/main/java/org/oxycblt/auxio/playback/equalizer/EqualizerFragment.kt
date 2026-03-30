@@ -73,8 +73,8 @@ class EqualizerFragment : Fragment() {
     }
 
     /**
-     * Dynamically creates 10 vertical band columns and adds them to the horizontal container.
-     * Each column shows: dB value (top) → vertical SeekBar (middle) → frequency label (bottom).
+     * Dynamically creates 10 vertical band columns and adds them to the horizontal container. Each
+     * column shows: dB value (top) → vertical SeekBar (middle) → frequency label (bottom).
      */
     private fun buildBandColumns() {
         val d = resources.displayMetrics.density
@@ -83,8 +83,7 @@ class EqualizerFragment : Fragment() {
         val barHeightPx = (160 * d).toInt() // visual height of the bar track
         val barWidthPx = (32 * d).toInt() // visual width (thumb area)
 
-        val columnLp =
-            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        val columnLp = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
 
         for (i in 0 until 10) {
             val column =
@@ -158,7 +157,7 @@ class EqualizerFragment : Fragment() {
                     override fun onStartTrackingTouch(sb: SeekBar?) {}
 
                     override fun onStopTrackingTouch(sb: SeekBar?) {}
-                },
+                }
             )
 
             seekBars.add(bar)
