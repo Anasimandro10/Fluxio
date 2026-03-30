@@ -18,11 +18,13 @@
 package org.oxycblt.auxio.playback.equalizer
 
 import android.os.Bundle
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
@@ -64,52 +66,83 @@ class EqualizerFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        buildBandRows()
+        buildBandColumns()
         setupPresetSpinner()
         binding.eqSwitch.setOnCheckedChangeListener { _, checked -> viewModel.setEnabled(checked) }
         collectState()
     }
 
-    /** Dynamically creates the 10 band rows and adds them to the container. */
-    private fun buildBandRows() {
+    /**
+     * Dynamically creates 10 vertical band columns and adds them to the horizontal container.
+     * Each column shows: dB value (top) → vertical SeekBar (middle) → frequency label (bottom).
+     */
+    private fun buildBandColumns() {
         val d = resources.displayMetrics.density
-        val rowLp =
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            )
-        val pad = (8 * d).toInt()
-        val labelW = (56 * d).toInt()
-        val valueW = (58 * d).toInt()
+
+        // Visual dimensions of the vertical bar
+        val barHeightPx = (160 * d).toInt() // visual height of the bar track
+        val barWidthPx = (32 * d).toInt() // visual width (thumb area)
+
+        val columnLp =
+            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
 
         for (i in 0 until 10) {
-            val row =
+            val column =
                 LinearLayout(requireContext()).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    setPadding(0, pad, 0, pad)
-                    layoutParams = rowLp
+                    orientation = LinearLayout.VERTICAL
+                    gravity = Gravity.CENTER_HORIZONTAL
+                    layoutParams = columnLp
+                    setPadding((1 * d).toInt(), 0, (1 * d).toInt(), 0)
                 }
-            val label =
+
+            // dB value label at the top
+            val valueLabel =
                 TextView(requireContext()).apply {
-                    text = bandLabels[i]
-                    textSize = 12f
+                    text = "0.0"
+                    textSize = 9f
+                    gravity = Gravity.CENTER
                     layoutParams =
-                        LinearLayout.LayoutParams(labelW, LinearLayout.LayoutParams.WRAP_CONTENT)
+                        LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                        )
                 }
+
+            // FrameLayout wrapper whose size matches the POST-rotation visual area.
+            // clipChildren=false is required so the rotated SeekBar doesn't get clipped.
+            val wrapper =
+                FrameLayout(requireContext()).apply {
+                    clipChildren = false
+                    clipToPadding = false
+                    layoutParams =
+                        LinearLayout.LayoutParams(barWidthPx, barHeightPx).also {
+                            it.topMargin = (4 * d).toInt()
+                            it.bottomMargin = (4 * d).toInt()
+                        }
+                }
+
+            // SeekBar rotated -90° to appear vertical.
+            // Pre-rotation layout: width = barHeightPx (becomes visual height after rotation),
+            //                      height = barWidthPx (becomes visual width after rotation).
             val bar =
                 SeekBar(requireContext()).apply {
                     max = 240 // center=120, 1 step=0.1 dB, range -12 to +12 dB
                     progress = 120
-                    layoutParams =
-                        LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                    rotation = -90f
+                    layoutParams = FrameLayout.LayoutParams(barHeightPx, barWidthPx, Gravity.CENTER)
                 }
-            val value =
+
+            // Frequency label at the bottom
+            val freqLabel =
                 TextView(requireContext()).apply {
-                    text = "0.0"
-                    textSize = 12f
-                    textAlignment = View.TEXT_ALIGNMENT_TEXT_END
+                    text = bandLabels[i]
+                    textSize = 9f
+                    gravity = Gravity.CENTER
                     layoutParams =
-                        LinearLayout.LayoutParams(valueW, LinearLayout.LayoutParams.WRAP_CONTENT)
+                        LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                        )
                 }
 
             bar.setOnSeekBarChangeListener(
@@ -117,7 +150,7 @@ class EqualizerFragment : Fragment() {
                     override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
                         if (fromUser) {
                             val db = (progress - 120) / 10f
-                            value.text = String.format(Locale.US, "%.1f", db)
+                            valueLabel.text = String.format(Locale.US, "%.1f", db)
                             viewModel.setBand(i, db)
                         }
                     }
@@ -125,15 +158,17 @@ class EqualizerFragment : Fragment() {
                     override fun onStartTrackingTouch(sb: SeekBar?) {}
 
                     override fun onStopTrackingTouch(sb: SeekBar?) {}
-                }
+                },
             )
 
             seekBars.add(bar)
-            valueLabels.add(value)
-            row.addView(label)
-            row.addView(bar)
-            row.addView(value)
-            binding.eqBandsContainer.addView(row)
+            valueLabels.add(valueLabel)
+
+            wrapper.addView(bar)
+            column.addView(valueLabel)
+            column.addView(wrapper)
+            column.addView(freqLabel)
+            binding.eqBandsContainer.addView(column)
         }
     }
 

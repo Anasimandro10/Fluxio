@@ -37,11 +37,14 @@
             android:text="@string/lbl_eq_bands"
             android:textAppearance="?attr/textAppearanceTitleSmall" />
 
+        <!-- Horizontal row of 10 vertical band columns -->
         <LinearLayout
             android:id="@+id/eq_bands_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical" />
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:orientation="horizontal" />
 
     </LinearLayout>
 

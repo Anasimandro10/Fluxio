@@ -32,14 +32,14 @@ import kotlin.math.sin
  * A 10-band parametric equalizer implemented as an [AudioProcessor] using biquad peaking EQ
  * filters. All band gains start at 0 dB (flat response) and the EQ starts disabled.
  *
- * Only processes PCM_FLOAT audio; other formats are bypassed via
- * [AudioProcessor.AudioFormat.NOT_SET].
+ * Processes PCM_16BIT audio (the format ExoPlayer delivers to audio processors in this project).
+ * Other formats are bypassed via [AudioProcessor.AudioFormat.NOT_SET].
  */
 @Singleton
 class EqualizerAudioProcessor @Inject constructor() : BaseAudioProcessor() {
 
-    private var enabled = false
-    private var gains = FloatArray(BAND_COUNT)
+    @Volatile private var enabled = false
+    @Volatile private var gains = FloatArray(BAND_COUNT)
     private var sampleRate = 0
     private var channelCount = 0
 
@@ -63,7 +63,7 @@ class EqualizerAudioProcessor @Inject constructor() : BaseAudioProcessor() {
     override fun onConfigure(
         inputAudioFormat: AudioProcessor.AudioFormat
     ): AudioProcessor.AudioFormat {
-        if (inputAudioFormat.encoding != C.ENCODING_PCM_FLOAT) {
+        if (inputAudioFormat.encoding != C.ENCODING_PCM_16BIT) {
             return AudioProcessor.AudioFormat.NOT_SET
         }
         sampleRate = inputAudioFormat.sampleRate
@@ -84,18 +84,24 @@ class EqualizerAudioProcessor @Inject constructor() : BaseAudioProcessor() {
     }
 
     override fun queueInput(inputBuffer: ByteBuffer) {
-        val inputBytes = inputBuffer.remaining()
-        val outputBuffer = replaceOutputBuffer(inputBytes)
+        val remaining = inputBuffer.remaining()
+        val outputBuffer = replaceOutputBuffer(remaining)
 
-        if (!enabled || gains.all { it == 0f }) {
+        val currentEnabled = enabled
+        val currentGains = gains
+
+        if (!currentEnabled || currentGains.all { it == 0f }) {
             outputBuffer.put(inputBuffer)
             outputBuffer.flip()
             return
         }
 
+        // Each PCM_16BIT sample is 2 bytes (little-endian short).
         while (inputBuffer.remaining() >= BYTES_PER_SAMPLE * channelCount) {
             for (ch in 0 until channelCount) {
-                var x = inputBuffer.float
+                // Read little-endian short and normalize to [-1f, 1f]
+                var x = inputBuffer.getLeShort() / 32768f
+                // Apply 10-band biquad filter chain
                 for (band in 0 until BAND_COUNT) {
                     val c = coeffs[band]
                     val s = state[band][ch.coerceAtMost(state[band].size - 1)]
@@ -106,11 +112,30 @@ class EqualizerAudioProcessor @Inject constructor() : BaseAudioProcessor() {
                     s[2] = y
                     x = y
                 }
-                outputBuffer.putFloat(x.coerceIn(-1f, 1f))
+                // Clamp and convert back to PCM_16BIT little-endian short
+                val sample =
+                    (x.coerceIn(-1f, 1f) * 32768f)
+                        .toInt()
+                        .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
+                        .toShort()
+                outputBuffer.putLeShort(sample)
             }
         }
 
         outputBuffer.flip()
+    }
+
+    /** Reads a little-endian [Short] from the [ByteBuffer] at the current position. */
+    private fun ByteBuffer.getLeShort(): Short {
+        val lo = get().toInt().and(0xFF)
+        val hi = get().toInt().and(0xFF)
+        return hi.shl(8).or(lo).toShort()
+    }
+
+    /** Writes a little-endian [Short] at the current position of the [ByteBuffer]. */
+    private fun ByteBuffer.putLeShort(short: Short) {
+        put(short.toByte())
+        put(short.toInt().shr(8).toByte())
     }
 
     private fun recomputeCoefficients() {
@@ -143,7 +168,7 @@ class EqualizerAudioProcessor @Inject constructor() : BaseAudioProcessor() {
     private companion object {
         const val BAND_COUNT = 10
         const val MAX_CHANNELS = 8
-        const val BYTES_PER_SAMPLE = 4
+        const val BYTES_PER_SAMPLE = 2
 
         val BAND_FREQUENCIES =
             floatArrayOf(31f, 63f, 125f, 250f, 500f, 1000f, 2000f, 4000f, 8000f, 16000f)
