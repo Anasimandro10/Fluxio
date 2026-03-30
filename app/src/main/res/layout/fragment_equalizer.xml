@@ -14,7 +14,7 @@
             android:id="@+id/eq_switch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="20dp"
             android:text="@string/lbl_eq_enabled" />
 
         <TextView
@@ -37,14 +37,23 @@
             android:text="@string/lbl_eq_bands"
             android:textAppearance="?attr/textAppearanceTitleSmall" />
 
-        <!-- Horizontal row of 10 vertical band columns -->
-        <LinearLayout
-            android:id="@+id/eq_bands_container"
+        <!-- HorizontalScrollView so 10 columns never get squeezed -->
+        <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:scrollbars="none"
             android:clipChildren="false"
-            android:clipToPadding="false"
-            android:orientation="horizontal" />
+            android:clipToPadding="false">
+
+            <LinearLayout
+                android:id="@+id/eq_bands_container"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:orientation="horizontal" />
+
+        </HorizontalScrollView>
 
     </LinearLayout>
 

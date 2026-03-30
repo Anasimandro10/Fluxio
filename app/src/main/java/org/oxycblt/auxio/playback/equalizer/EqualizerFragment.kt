@@ -73,31 +73,48 @@ class EqualizerFragment : Fragment() {
     }
 
     /**
-     * Dynamically creates 10 vertical band columns and adds them to the horizontal container. Each
-     * column shows: dB value (top) → vertical SeekBar (middle) → frequency label (bottom).
+     * Dynamically creates 10 vertical band columns and adds them to the horizontal container.
+     *
+     * Each column layout (top → bottom):
+     *   1. Frequency label  (e.g. "1kHz")
+     *   2. FrameLayout wrapping a rotated SeekBar — appears as a vertical slider
+     *   3. dB value label   (e.g. "+3.0")
+     *
+     * To make the rotated SeekBar render correctly without being clipped:
+     *   - The FrameLayout dimensions match the VISUAL size of the bar (BAR_W × BAR_H).
+     *   - The SeekBar inside has PRE-ROTATION dimensions (BAR_H × BAR_W) and rotation = -90°.
+     *     After rotation it visually fills exactly BAR_W × BAR_H.
+     *   - clipChildren=false is set on the FrameLayout, the column, and the container so that
+     *     the SeekBar's pre-rotation layout bounds (which overflow the FrameLayout horizontally)
+     *     are never clipped away.
      */
     private fun buildBandColumns() {
         val d = resources.displayMetrics.density
 
-        // Visual dimensions of the vertical bar
-        val barHeightPx = (160 * d).toInt() // visual height of the bar track
-        val barWidthPx = (32 * d).toInt() // visual width (thumb area)
+        // Visual dimensions of the vertical slider track
+        val barW = (28 * d).toInt() // visual width of the rendered vertical bar
+        val barH = (140 * d).toInt() // visual height of the rendered vertical bar
 
-        val columnLp = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        // Fixed column width — slightly wider than the bar to accommodate labels
+        val colW = (44 * d).toInt()
 
         for (i in 0 until 10) {
+            // Column: all children are centered horizontally; clip disabled so the rotated
+            // SeekBar's pre-rotation layout bounds can overflow without being cut off.
             val column =
                 LinearLayout(requireContext()).apply {
                     orientation = LinearLayout.VERTICAL
                     gravity = Gravity.CENTER_HORIZONTAL
-                    layoutParams = columnLp
-                    setPadding((1 * d).toInt(), 0, (1 * d).toInt(), 0)
+                    clipChildren = false
+                    clipToPadding = false
+                    layoutParams =
+                        LinearLayout.LayoutParams(colW, LinearLayout.LayoutParams.WRAP_CONTENT)
                 }
 
-            // dB value label at the top
-            val valueLabel =
+            // ── TOP: frequency label ──────────────────────────────────────────
+            val freqLabel =
                 TextView(requireContext()).apply {
-                    text = "0.0"
+                    text = bandLabels[i]
                     textSize = 9f
                     gravity = Gravity.CENTER
                     layoutParams =
@@ -107,34 +124,33 @@ class EqualizerFragment : Fragment() {
                         )
                 }
 
-            // FrameLayout wrapper whose size matches the POST-rotation visual area.
-            // clipChildren=false is required so the rotated SeekBar doesn't get clipped.
+            // ── MIDDLE: FrameLayout + rotated SeekBar ─────────────────────────
+            // The FrameLayout is sized to the VISUAL bounds (barW × barH).
+            // The SeekBar inside is (barH × barW) pre-rotation, centered, then rotated -90°.
+            // After rotation its visual footprint is exactly (barW × barH) — fits perfectly.
             val wrapper =
                 FrameLayout(requireContext()).apply {
                     clipChildren = false
                     clipToPadding = false
                     layoutParams =
-                        LinearLayout.LayoutParams(barWidthPx, barHeightPx).also {
-                            it.topMargin = (4 * d).toInt()
-                            it.bottomMargin = (4 * d).toInt()
+                        LinearLayout.LayoutParams(barW, barH).also {
+                            it.topMargin = (6 * d).toInt()
+                            it.bottomMargin = (6 * d).toInt()
                         }
                 }
 
-            // SeekBar rotated -90° to appear vertical.
-            // Pre-rotation layout: width = barHeightPx (becomes visual height after rotation),
-            //                      height = barWidthPx (becomes visual width after rotation).
             val bar =
                 SeekBar(requireContext()).apply {
-                    max = 240 // center=120, 1 step=0.1 dB, range -12 to +12 dB
+                    max = 240 // center=120 → 0 dB; range: -12 to +12 dB (step 0.1 dB)
                     progress = 120
-                    rotation = -90f
-                    layoutParams = FrameLayout.LayoutParams(barHeightPx, barWidthPx, Gravity.CENTER)
+                    rotation = -90f // renders as a vertical bar (min at bottom, max at top)
+                    layoutParams = FrameLayout.LayoutParams(barH, barW, Gravity.CENTER)
                 }
 
-            // Frequency label at the bottom
-            val freqLabel =
+            // ── BOTTOM: dB value label ────────────────────────────────────────
+            val valueLabel =
                 TextView(requireContext()).apply {
-                    text = bandLabels[i]
+                    text = "0.0"
                     textSize = 9f
                     gravity = Gravity.CENTER
                     layoutParams =
@@ -164,9 +180,10 @@ class EqualizerFragment : Fragment() {
             valueLabels.add(valueLabel)
 
             wrapper.addView(bar)
-            column.addView(valueLabel)
-            column.addView(wrapper)
+            // Order: freq (top) → bar (middle) → value (bottom)
             column.addView(freqLabel)
+            column.addView(wrapper)
+            column.addView(valueLabel)
             binding.eqBandsContainer.addView(column)
         }
     }
