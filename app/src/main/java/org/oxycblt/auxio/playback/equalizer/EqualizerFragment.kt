@@ -76,17 +76,17 @@ class EqualizerFragment : Fragment() {
      * Dynamically creates 10 vertical band columns and adds them to the horizontal container.
      *
      * Each column layout (top → bottom):
-     *   1. Frequency label  (e.g. "1kHz")
-     *   2. FrameLayout wrapping a rotated SeekBar — appears as a vertical slider
-     *   3. dB value label   (e.g. "+3.0")
+     * 1. Frequency label (e.g. "1kHz")
+     * 2. FrameLayout wrapping a rotated SeekBar — appears as a vertical slider
+     * 3. dB value label (e.g. "+3.0")
      *
      * To make the rotated SeekBar render correctly without being clipped:
-     *   - The FrameLayout dimensions match the VISUAL size of the bar (BAR_W × BAR_H).
-     *   - The SeekBar inside has PRE-ROTATION dimensions (BAR_H × BAR_W) and rotation = -90°.
-     *     After rotation it visually fills exactly BAR_W × BAR_H.
-     *   - clipChildren=false is set on the FrameLayout, the column, and the container so that
-     *     the SeekBar's pre-rotation layout bounds (which overflow the FrameLayout horizontally)
-     *     are never clipped away.
+     * - The FrameLayout dimensions match the VISUAL size of the bar (BAR_W × BAR_H).
+     * - The SeekBar inside has PRE-ROTATION dimensions (BAR_H × BAR_W) and rotation = -90°. After
+     *   rotation it visually fills exactly BAR_W × BAR_H.
+     * - clipChildren=false is set on the FrameLayout, the column, and the container so that the
+     *   SeekBar's pre-rotation layout bounds (which overflow the FrameLayout horizontally) are
+     *   never clipped away.
      */
     private fun buildBandColumns() {
         val d = resources.displayMetrics.density

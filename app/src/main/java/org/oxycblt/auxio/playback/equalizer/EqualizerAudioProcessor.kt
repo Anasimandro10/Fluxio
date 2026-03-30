@@ -35,8 +35,8 @@ import kotlin.math.sin
  * Processes PCM_16BIT audio. Other formats are bypassed via [AudioProcessor.AudioFormat.NOT_SET].
  *
  * Thread safety: [coeffs] and [state] are @Volatile vars. [recomputeCoefficients] and
- * [resetDelayLines] always assign a brand-new array object, so the volatile write publishes
- * the new array atomically to the audio thread.
+ * [resetDelayLines] always assign a brand-new array object, so the volatile write publishes the new
+ * array atomically to the audio thread.
  */
 @Singleton
 class EqualizerAudioProcessor @Inject constructor() : BaseAudioProcessor() {
@@ -48,19 +48,19 @@ class EqualizerAudioProcessor @Inject constructor() : BaseAudioProcessor() {
 
     /**
      * Biquad coefficients per band: [b0, b1, b2, a1, a2], pre-normalized by a0.
+     *
      * @Volatile var so the audio thread always sees the latest array after recomputeCoefficients().
      */
     @Volatile
-    private var coeffs: Array<FloatArray> =
-        Array(BAND_COUNT) { floatArrayOf(1f, 0f, 0f, 0f, 0f) }
+    private var coeffs: Array<FloatArray> = Array(BAND_COUNT) { floatArrayOf(1f, 0f, 0f, 0f, 0f) }
 
     /**
      * Delay lines: [band][channel][x(n-1), x(n-2), y(n-1), y(n-2)].
+     *
      * @Volatile var so the audio thread always sees the latest array after resetDelayLines().
      */
     @Volatile
-    private var state: Array<Array<FloatArray>> =
-        Array(BAND_COUNT) { Array(1) { FloatArray(4) } }
+    private var state: Array<Array<FloatArray>> = Array(BAND_COUNT) { Array(1) { FloatArray(4) } }
 
     /** Updates the 10 band gains (in dB) and whether the EQ is active. */
     fun setBands(newGains: FloatArray, isEnabled: Boolean) {
@@ -158,6 +158,7 @@ class EqualizerAudioProcessor @Inject constructor() : BaseAudioProcessor() {
 
     /**
      * Creates a brand-new [Array] of biquad coefficients and assigns it atomically via the
+     *
      * @Volatile write, so the audio thread always sees a consistent snapshot.
      */
     private fun recomputeCoefficients() {
@@ -168,9 +169,7 @@ class EqualizerAudioProcessor @Inject constructor() : BaseAudioProcessor() {
         coeffs = newCoeffs // volatile write — publishes the entire new array atomically
     }
 
-    /**
-     * Creates a brand-new delay-line array and assigns it atomically via the @Volatile write.
-     */
+    /** Creates a brand-new delay-line array and assigns it atomically via the @Volatile write. */
     private fun resetDelayLines() {
         val ch = channelCount.coerceIn(1, MAX_CHANNELS)
         state = Array(BAND_COUNT) { Array(ch) { FloatArray(4) } } // volatile write
