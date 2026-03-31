@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback.equalizer
 
 import android.content.Context
@@ -33,25 +32,23 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * Repository for downloading and caching headphone EQ profiles from AutoEQ.
- * API by Jaakko Pasanen (https://autoeq.app), licensed under the MIT License.
- * See assets/licenses/autoeq_license.txt for full attribution.
+ * Repository for downloading and caching headphone EQ profiles from AutoEQ. API by Jaakko Pasanen
+ * (https://autoeq.app), licensed under the MIT License. See assets/licenses/autoeq_license.txt for
+ * full attribution.
  *
  * Usage:
- *  1. Call [search] to get a list of [AutoEqResult] matching the user query.
- *  2. Call [fetchProfile] with a chosen result to download and cache the gains.
- *  3. Call [getCachedBands] / [getCachedHeadphoneName] to read the cached profile.
+ * 1. Call [search] to get a list of [AutoEqResult] matching the user query.
+ * 2. Call [fetchProfile] with a chosen result to download and cache the gains.
+ * 3. Call [getCachedBands] / [getCachedHeadphoneName] to read the cached profile.
  */
 @Singleton
-class AutoEqRepository @Inject constructor(
-    @ApplicationContext private val context: Context,
-) {
+class AutoEqRepository @Inject constructor(@ApplicationContext private val context: Context) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     /**
-     * Searches AutoEQ for headphones matching [query].
-     * Returns up to [maxResults] results, or an empty list on any error.
+     * Searches AutoEQ for headphones matching [query]. Returns up to [maxResults] results, or an
+     * empty list on any error.
      */
     suspend fun search(query: String, maxResults: Int = 30): List<AutoEqResult> =
         withContext(Dispatchers.IO) {
@@ -78,9 +75,9 @@ class AutoEqRepository @Inject constructor(
         }
 
     /**
-     * Downloads the 10-band EQ profile for [result] and caches it locally.
-     * Returns the [FloatArray] of gains in dB (indices 0-9), or null on failure.
-     * Index 0 = 31 Hz ... index 9 = 16000 Hz, matching [EqualizerAudioProcessor].
+     * Downloads the 10-band EQ profile for [result] and caches it locally. Returns the [FloatArray]
+     * of gains in dB (indices 0-9), or null on failure. Index 0 = 31 Hz ... index 9 = 16000 Hz,
+     * matching [EqualizerAudioProcessor].
      */
     suspend fun fetchProfile(result: AutoEqResult): FloatArray? =
         withContext(Dispatchers.IO) {
@@ -114,8 +111,8 @@ class AutoEqRepository @Inject constructor(
     fun getCachedHeadphoneSource(): String? = prefs.getString(KEY_HEADPHONE_SOURCE, null)
 
     /**
-     * Returns the cached 10-band gains as a [FloatArray], or null if none cached.
-     * Indices correspond to [TARGET_FREQUENCIES] (31, 63, 125 ... 16000 Hz).
+     * Returns the cached 10-band gains as a [FloatArray], or null if none cached. Indices
+     * correspond to [TARGET_FREQUENCIES] (31, 63, 125 ... 16000 Hz).
      */
     fun getCachedBands(): FloatArray? {
         val json = prefs.getString(KEY_BANDS_JSON, null) ?: return null
@@ -130,7 +127,8 @@ class AutoEqRepository @Inject constructor(
 
     /** Clears the locally cached profile. */
     fun clearCache() {
-        prefs.edit()
+        prefs
+            .edit()
             .remove(KEY_HEADPHONE_NAME)
             .remove(KEY_HEADPHONE_SOURCE)
             .remove(KEY_BANDS_JSON)
@@ -167,8 +165,7 @@ class AutoEqRepository @Inject constructor(
         return try {
             val obj = JSONObject(body)
             val graphicEqStr =
-                obj.optString("graphicEq", null) ?: obj.optString("graphic_eq", null)
-                    ?: return null
+                obj.optString("graphicEq", null) ?: obj.optString("graphic_eq", null) ?: return null
             parseGraphicEq(graphicEqStr)
         } catch (_: Exception) {
             null
@@ -176,9 +173,9 @@ class AutoEqRepository @Inject constructor(
     }
 
     /**
-     * Parses AutoEQ GraphicEQ format: "GraphicEQ: 20 -0.43; 25 -0.52; 31 -1.20; ..."
-     * and interpolates the values at our 10 target frequencies using
-     * log-frequency linear interpolation.
+     * Parses AutoEQ GraphicEQ format: "GraphicEQ: 20 -0.43; 25 -0.52; 31 -1.20; ..." and
+     * interpolates the values at our 10 target frequencies using log-frequency linear
+     * interpolation.
      */
     private fun parseGraphicEq(raw: String): FloatArray? {
         val data = raw.removePrefix("GraphicEQ:").trim()
@@ -199,13 +196,10 @@ class AutoEqRepository @Inject constructor(
     }
 
     /**
-     * Interpolates gain at [targetFreq] using log-frequency spacing for
-     * perceptually correct results across octaves.
+     * Interpolates gain at [targetFreq] using log-frequency spacing for perceptually correct
+     * results across octaves.
      */
-    private fun interpolateGain(
-        points: List<Pair<Float, Float>>,
-        targetFreq: Float,
-    ): Float {
+    private fun interpolateGain(points: List<Pair<Float, Float>>, targetFreq: Float): Float {
         if (targetFreq <= points.first().first) return points.first().second
         if (targetFreq >= points.last().first) return points.last().second
         var lo = 0
@@ -227,7 +221,8 @@ class AutoEqRepository @Inject constructor(
     private fun saveToCache(name: String, source: String, bands: FloatArray) {
         val arr = JSONArray()
         bands.forEach { arr.put(it.toDouble()) }
-        prefs.edit()
+        prefs
+            .edit()
             .putString(KEY_HEADPHONE_NAME, name)
             .putString(KEY_HEADPHONE_SOURCE, source)
             .putString(KEY_BANDS_JSON, arr.toString())
@@ -246,8 +241,7 @@ class AutoEqRepository @Inject constructor(
         private const val APP_VERSION = "4.0.10"
 
         /** Target frequencies (Hz) matching [EqualizerAudioProcessor]. */
-        val TARGET_FREQUENCIES =
-            intArrayOf(31, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000)
+        val TARGET_FREQUENCIES = intArrayOf(31, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000)
     }
 }
 
