@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback.equalizer
 
 import androidx.media3.common.C
@@ -83,7 +82,7 @@ class EqualizerAudioProcessor @Inject constructor(equalizerSettings: EqualizerSe
 
     @Throws(AudioProcessor.UnhandledAudioFormatException::class)
     override fun onConfigure(
-        inputAudioFormat: AudioProcessor.AudioFormat,
+        inputAudioFormat: AudioProcessor.AudioFormat
     ): AudioProcessor.AudioFormat {
         // Only handle PCM_16BIT — same contract as ReplayGainAudioProcessor.
         // Return NOT_SET for everything else (PCM_FLOAT, PCM_24BIT, etc.) so the EQ is
@@ -140,14 +139,8 @@ class EqualizerAudioProcessor @Inject constructor(equalizerSettings: EqualizerSe
                     // Apply the 10-band biquad filter chain (Direct Form I).
                     for (band in 0 until BAND_COUNT) {
                         val c = localCoeffs[band]
-                        val s =
-                            localState[band][ch.coerceAtMost(localState[band].size - 1)]
-                        val y =
-                            c[0] * x +
-                                c[1] * s[0] +
-                                c[2] * s[1] -
-                                c[3] * s[2] -
-                                c[4] * s[3]
+                        val s = localState[band][ch.coerceAtMost(localState[band].size - 1)]
+                        val y = c[0] * x + c[1] * s[0] + c[2] * s[1] - c[3] * s[2] - c[4] * s[3]
                         s[1] = s[0]
                         s[0] = x
                         s[3] = s[2]
@@ -186,8 +179,8 @@ class EqualizerAudioProcessor @Inject constructor(equalizerSettings: EqualizerSe
     }
 
     /**
-     * Returns Direct Form I biquad coefficients [b0, b1, b2, a1, a2] / a0 for a peaking EQ
-     * filter at [freq] Hz with quality factor [q] and gain [gainDb] dB, for sample rate [fs] Hz.
+     * Returns Direct Form I biquad coefficients [b0, b1, b2, a1, a2] / a0 for a peaking EQ filter
+     * at [freq] Hz with quality factor [q] and gain [gainDb] dB, for sample rate [fs] Hz.
      */
     private fun peakingEqCoeffs(freq: Float, q: Float, gainDb: Float, fs: Float): FloatArray {
         if (gainDb == 0f) return floatArrayOf(1f, 0f, 0f, 0f, 0f)
