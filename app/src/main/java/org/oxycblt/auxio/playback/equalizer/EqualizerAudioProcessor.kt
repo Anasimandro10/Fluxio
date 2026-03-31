@@ -30,42 +30,63 @@ import kotlin.math.sin
 
 /**
  * A 10-band parametric equalizer implemented as an [AudioProcessor] using biquad peaking EQ
- * filters. All band gains start at 0 dB (flat response) and the EQ starts disabled.
+ * filters.
  *
- * Processes PCM_FLOAT audio. Other formats are bypassed via [AudioProcessor.AudioFormat.NOT_SET].
+ * Accepts both PCM_16BIT (MediaCodec path — MP3, AAC, FLAC, M4A) and PCM_FLOAT (FFmpeg path —
+ * OGG, Opus). For PCM_16BIT, samples are normalized to float, filtered, then written back as
+ * 16-bit. This covers all common audio formats on Android.
  *
- * Thread safety: [coeffs] and [state] are @Volatile vars. [recomputeCoefficients] and
- * [resetDelayLines] always assign a brand-new array object, so the volatile write publishes the new
- * array atomically to the audio thread.
+ * Persisted settings are restored at construction time via [EqualizerSettings] so the EQ is
+ * active from the first audio frame, even if the EQ screen has never been opened.
+ *
+ * Thread safety: all @Volatile vars are written atomically by assigning new objects (arrays) or
+ * primitive values. [onConfigure], [onFlush], [onReset] and [queueInput] run on the ExoPlayer
+ * audio thread. [setBands] runs on the UI thread. Only [enabled], [gains], [coeffs] and [state]
+ * cross thread boundaries — all are @Volatile.
  */
 @Singleton
-class EqualizerAudioProcessor @Inject constructor() : BaseAudioProcessor() {
+class EqualizerAudioProcessor
+@Inject
+constructor(
+    equalizerSettings: EqualizerSettings,
+) : BaseAudioProcessor() {
 
-    @Volatile private var enabled = false
-    @Volatile private var gains = FloatArray(BAND_COUNT)
-    private var sampleRate = 0
+    // Restored from SharedPreferences so the EQ is ready before the screen is opened.
+    @Volatile private var enabled = equalizerSettings.enabled
+    @Volatile private var gains = equalizerSettings.getBands()
+
+    // Set on the audio thread in onConfigure. @Volatile so setBands() (UI thread) can safely
+    // read sampleRate to decide whether recomputeCoefficients() is necessary.
+    @Volatile private var sampleRate = 0
+
+    // Written only on the audio thread (onConfigure). @Volatile so queueInput, also on the
+    // audio thread, always sees the latest value — important after format changes between songs.
+    @Volatile private var encoding: Int = C.ENCODING_PCM_16BIT
     private var channelCount = 0
 
     /**
      * Biquad coefficients per band: [b0, b1, b2, a1, a2], pre-normalized by a0.
      *
-     * @Volatile var so the audio thread always sees the latest array after recomputeCoefficients().
+     * @Volatile — recomputeCoefficients() assigns a brand-new array, publishing it atomically.
      */
     @Volatile
-    private var coeffs: Array<FloatArray> = Array(BAND_COUNT) { floatArrayOf(1f, 0f, 0f, 0f, 0f) }
+    private var coeffs: Array<FloatArray> =
+        Array(BAND_COUNT) { floatArrayOf(1f, 0f, 0f, 0f, 0f) }
 
     /**
      * Delay lines: [band][channel][x(n-1), x(n-2), y(n-1), y(n-2)].
      *
-     * @Volatile var so the audio thread always sees the latest array after resetDelayLines().
+     * @Volatile — resetDelayLines() assigns a brand-new array, publishing it atomically.
      */
     @Volatile
-    private var state: Array<Array<FloatArray>> = Array(BAND_COUNT) { Array(1) { FloatArray(4) } }
+    private var state: Array<Array<FloatArray>> =
+        Array(BAND_COUNT) { Array(1) { FloatArray(4) } }
 
-    /** Updates the 10 band gains (in dB) and whether the EQ is active. */
+    /** Called from the UI thread. Updates band gains and enabled flag. */
     fun setBands(newGains: FloatArray, isEnabled: Boolean) {
         gains = newGains.copyOf()
         enabled = isEnabled
+        // sampleRate is @Volatile — safe to read from UI thread.
         if (sampleRate > 0) {
             recomputeCoefficients()
             resetDelayLines()
@@ -76,14 +97,21 @@ class EqualizerAudioProcessor @Inject constructor() : BaseAudioProcessor() {
     override fun onConfigure(
         inputAudioFormat: AudioProcessor.AudioFormat
     ): AudioProcessor.AudioFormat {
-        if (inputAudioFormat.encoding != C.ENCODING_PCM_FLOAT) {
-            return AudioProcessor.AudioFormat.NOT_SET
+        return when (inputAudioFormat.encoding) {
+            C.ENCODING_PCM_16BIT,
+            C.ENCODING_PCM_FLOAT -> {
+                encoding = inputAudioFormat.encoding
+                sampleRate = inputAudioFormat.sampleRate
+                channelCount = inputAudioFormat.channelCount
+                recomputeCoefficients()
+                resetDelayLines()
+                // Return the same format — EQ does not change sample rate, channel count
+                // or encoding.
+                inputAudioFormat
+            }
+            // Bypass any other encoding (PCM_24BIT, PCM_32BIT, etc.).
+            else -> AudioProcessor.AudioFormat.NOT_SET
         }
-        sampleRate = inputAudioFormat.sampleRate
-        channelCount = inputAudioFormat.channelCount
-        recomputeCoefficients()
-        resetDelayLines()
-        return inputAudioFormat
     }
 
     override fun onFlush() {
@@ -103,34 +131,51 @@ class EqualizerAudioProcessor @Inject constructor() : BaseAudioProcessor() {
         val currentEnabled = enabled
         val currentGains = gains
 
+        // Fast path: EQ is off, or all bands are flat — copy bytes unchanged.
         if (!currentEnabled || currentGains.all { it == 0f }) {
             outputBuffer.put(inputBuffer)
             outputBuffer.flip()
             return
         }
 
-        // Capture volatile references once — safe publication guarantees we see the latest
-        // coefficients and state written by setBands() / recomputeCoefficients().
+        // Snapshot volatile references once per buffer for a consistent view.
         val localCoeffs = coeffs
         val localState = state
+        val currentEncoding = encoding
 
-        // Each PCM_FLOAT sample is 4 bytes (little-endian IEEE 754 float).
-        val bytesPerFrame = BYTES_PER_SAMPLE * channelCount
+        // Bytes per sample: 4 for FLOAT, 2 for 16BIT.
+        val bps = if (currentEncoding == C.ENCODING_PCM_FLOAT) 4 else 2
+        val bytesPerFrame = bps * channelCount
+
         while (inputBuffer.remaining() >= bytesPerFrame) {
             for (ch in 0 until channelCount) {
-                // Read 4 bytes as little-endian float
-                val bits =
-                    (inputBuffer.get().toInt() and 0xFF) or
-                        ((inputBuffer.get().toInt() and 0xFF) shl 8) or
-                        ((inputBuffer.get().toInt() and 0xFF) shl 16) or
-                        ((inputBuffer.get().toInt() and 0xFF) shl 24)
-                var x = java.lang.Float.intBitsToFloat(bits)
 
-                // Apply 10-band biquad filter chain
+                // --- Read one sample and convert to float [-1, 1] ---
+                var x: Float =
+                    if (currentEncoding == C.ENCODING_PCM_FLOAT) {
+                        // 4-byte little-endian IEEE 754 float.
+                        val b0 = inputBuffer.get().toInt() and 0xFF
+                        val b1 = inputBuffer.get().toInt() and 0xFF
+                        val b2 = inputBuffer.get().toInt() and 0xFF
+                        val b3 = inputBuffer.get().toInt() and 0xFF
+                        java.lang.Float.intBitsToFloat(b0 or (b1 shl 8) or (b2 shl 16) or (b3 shl 24))
+                    } else {
+                        // 2-byte little-endian signed short → normalize to [-1, 1].
+                        // Read both bytes as unsigned to avoid sign-extension artifacts.
+                        val lo = inputBuffer.get().toInt() and 0xFF
+                        val hi = inputBuffer.get().toInt() and 0xFF
+                        val raw = (hi shl 8) or lo
+                        // Convert unsigned 0..65535 to signed -32768..32767.
+                        val signed = if (raw >= 32768) raw - 65536 else raw
+                        signed.toFloat() / 32768f
+                    }
+
+                // --- Apply 10-band biquad filter chain (Direct Form I) ---
                 for (band in 0 until BAND_COUNT) {
                     val c = localCoeffs[band]
                     val s = localState[band][ch.coerceAtMost(localState[band].size - 1)]
-                    val y = c[0] * x + c[1] * s[0] + c[2] * s[1] - c[3] * s[2] - c[4] * s[3]
+                    val y =
+                        c[0] * x + c[1] * s[0] + c[2] * s[1] - c[3] * s[2] - c[4] * s[3]
                     s[1] = s[0]
                     s[0] = x
                     s[3] = s[2]
@@ -138,12 +183,24 @@ class EqualizerAudioProcessor @Inject constructor() : BaseAudioProcessor() {
                     x = y
                 }
 
-                // Write 4 bytes as little-endian float
-                val outBits = java.lang.Float.floatToRawIntBits(x.coerceIn(-1f, 1f))
-                outputBuffer.put((outBits and 0xFF).toByte())
-                outputBuffer.put(((outBits shr 8) and 0xFF).toByte())
-                outputBuffer.put(((outBits shr 16) and 0xFF).toByte())
-                outputBuffer.put(((outBits shr 24) and 0xFF).toByte())
+                // --- Write sample back in the original encoding ---
+                if (currentEncoding == C.ENCODING_PCM_FLOAT) {
+                    val bits =
+                        java.lang.Float.floatToRawIntBits(x.coerceIn(-1f, 1f))
+                    outputBuffer.put((bits and 0xFF).toByte())
+                    outputBuffer.put(((bits ushr 8) and 0xFF).toByte())
+                    outputBuffer.put(((bits ushr 16) and 0xFF).toByte())
+                    outputBuffer.put(((bits ushr 24) and 0xFF).toByte())
+                } else {
+                    // Scale back to -32768..32767 and clamp to prevent overflow on boost.
+                    val s =
+                        (x.coerceIn(-1f, 1f) * 32767f)
+                            .toInt()
+                            .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
+                    // Write as little-endian signed short.
+                    outputBuffer.put((s and 0xFF).toByte())
+                    outputBuffer.put(((s ushr 8) and 0xFF).toByte())
+                }
             }
         }
 
@@ -151,24 +208,24 @@ class EqualizerAudioProcessor @Inject constructor() : BaseAudioProcessor() {
     }
 
     /**
-     * Creates a brand-new [Array] of biquad coefficients and assigns it atomically via the
-     *
-     * @Volatile write, so the audio thread always sees a consistent snapshot.
+     * Computes biquad coefficients for all bands and publishes them atomically via @Volatile.
      */
     private fun recomputeCoefficients() {
+        val fs = sampleRate.toFloat()
         val newCoeffs =
             Array(BAND_COUNT) { i ->
-                peakingEqCoeffs(BAND_FREQUENCIES[i], BAND_Q, gains[i], sampleRate.toFloat())
+                peakingEqCoeffs(BAND_FREQUENCIES[i], BAND_Q, gains[i], fs)
             }
-        coeffs = newCoeffs // volatile write — publishes the entire new array atomically
+        coeffs = newCoeffs
     }
 
-    /** Creates a brand-new delay-line array and assigns it atomically via the @Volatile write. */
+    /** Allocates fresh delay lines and publishes them atomically via @Volatile. */
     private fun resetDelayLines() {
         val ch = channelCount.coerceIn(1, MAX_CHANNELS)
-        state = Array(BAND_COUNT) { Array(ch) { FloatArray(4) } } // volatile write
+        state = Array(BAND_COUNT) { Array(ch) { FloatArray(4) } }
     }
 
+    /** Returns Direct Form I biquad coefficients [b0,b1,b2,a1,a2] / a0 for a peaking EQ. */
     private fun peakingEqCoeffs(freq: Float, q: Float, gainDb: Float, fs: Float): FloatArray {
         if (gainDb == 0f) return floatArrayOf(1f, 0f, 0f, 0f, 0f)
         val a = 10f.pow(gainDb / 40f)
@@ -188,7 +245,6 @@ class EqualizerAudioProcessor @Inject constructor() : BaseAudioProcessor() {
     private companion object {
         const val BAND_COUNT = 10
         const val MAX_CHANNELS = 8
-        const val BYTES_PER_SAMPLE = 4 // PCM_FLOAT: 4 bytes per sample
 
         val BAND_FREQUENCIES =
             floatArrayOf(31f, 63f, 125f, 250f, 500f, 1000f, 2000f, 4000f, 8000f, 16000f)
