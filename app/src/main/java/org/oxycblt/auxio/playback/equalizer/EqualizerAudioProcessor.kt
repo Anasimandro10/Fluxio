@@ -32,24 +32,21 @@ import kotlin.math.sin
  * A 10-band parametric equalizer implemented as an [AudioProcessor] using biquad peaking EQ
  * filters.
  *
- * Accepts both PCM_16BIT (MediaCodec path — MP3, AAC, FLAC, M4A) and PCM_FLOAT (FFmpeg path —
- * OGG, Opus). For PCM_16BIT, samples are normalized to float, filtered, then written back as
- * 16-bit. This covers all common audio formats on Android.
+ * Accepts both PCM_16BIT (MediaCodec path — MP3, AAC, FLAC, M4A) and PCM_FLOAT (FFmpeg path — OGG,
+ * Opus). For PCM_16BIT, samples are normalized to float, filtered, then written back as 16-bit.
+ * This covers all common audio formats on Android.
  *
- * Persisted settings are restored at construction time via [EqualizerSettings] so the EQ is
- * active from the first audio frame, even if the EQ screen has never been opened.
+ * Persisted settings are restored at construction time via [EqualizerSettings] so the EQ is active
+ * from the first audio frame, even if the EQ screen has never been opened.
  *
  * Thread safety: all @Volatile vars are written atomically by assigning new objects (arrays) or
- * primitive values. [onConfigure], [onFlush], [onReset] and [queueInput] run on the ExoPlayer
- * audio thread. [setBands] runs on the UI thread. Only [enabled], [gains], [coeffs] and [state]
- * cross thread boundaries — all are @Volatile.
+ * primitive values. [onConfigure], [onFlush], [onReset] and [queueInput] run on the ExoPlayer audio
+ * thread. [setBands] runs on the UI thread. Only [enabled], [gains], [coeffs] and [state] cross
+ * thread boundaries — all are @Volatile.
  */
 @Singleton
-class EqualizerAudioProcessor
-@Inject
-constructor(
-    equalizerSettings: EqualizerSettings,
-) : BaseAudioProcessor() {
+class EqualizerAudioProcessor @Inject constructor(equalizerSettings: EqualizerSettings) :
+    BaseAudioProcessor() {
 
     // Restored from SharedPreferences so the EQ is ready before the screen is opened.
     @Volatile private var enabled = equalizerSettings.enabled
@@ -70,8 +67,7 @@ constructor(
      * @Volatile — recomputeCoefficients() assigns a brand-new array, publishing it atomically.
      */
     @Volatile
-    private var coeffs: Array<FloatArray> =
-        Array(BAND_COUNT) { floatArrayOf(1f, 0f, 0f, 0f, 0f) }
+    private var coeffs: Array<FloatArray> = Array(BAND_COUNT) { floatArrayOf(1f, 0f, 0f, 0f, 0f) }
 
     /**
      * Delay lines: [band][channel][x(n-1), x(n-2), y(n-1), y(n-2)].
@@ -79,8 +75,7 @@ constructor(
      * @Volatile — resetDelayLines() assigns a brand-new array, publishing it atomically.
      */
     @Volatile
-    private var state: Array<Array<FloatArray>> =
-        Array(BAND_COUNT) { Array(1) { FloatArray(4) } }
+    private var state: Array<Array<FloatArray>> = Array(BAND_COUNT) { Array(1) { FloatArray(4) } }
 
     /** Called from the UI thread. Updates band gains and enabled flag. */
     fun setBands(newGains: FloatArray, isEnabled: Boolean) {
@@ -158,7 +153,9 @@ constructor(
                         val b1 = inputBuffer.get().toInt() and 0xFF
                         val b2 = inputBuffer.get().toInt() and 0xFF
                         val b3 = inputBuffer.get().toInt() and 0xFF
-                        java.lang.Float.intBitsToFloat(b0 or (b1 shl 8) or (b2 shl 16) or (b3 shl 24))
+                        java.lang.Float.intBitsToFloat(
+                            b0 or (b1 shl 8) or (b2 shl 16) or (b3 shl 24)
+                        )
                     } else {
                         // 2-byte little-endian signed short → normalize to [-1, 1].
                         // Read both bytes as unsigned to avoid sign-extension artifacts.
@@ -174,8 +171,7 @@ constructor(
                 for (band in 0 until BAND_COUNT) {
                     val c = localCoeffs[band]
                     val s = localState[band][ch.coerceAtMost(localState[band].size - 1)]
-                    val y =
-                        c[0] * x + c[1] * s[0] + c[2] * s[1] - c[3] * s[2] - c[4] * s[3]
+                    val y = c[0] * x + c[1] * s[0] + c[2] * s[1] - c[3] * s[2] - c[4] * s[3]
                     s[1] = s[0]
                     s[0] = x
                     s[3] = s[2]
@@ -185,8 +181,7 @@ constructor(
 
                 // --- Write sample back in the original encoding ---
                 if (currentEncoding == C.ENCODING_PCM_FLOAT) {
-                    val bits =
-                        java.lang.Float.floatToRawIntBits(x.coerceIn(-1f, 1f))
+                    val bits = java.lang.Float.floatToRawIntBits(x.coerceIn(-1f, 1f))
                     outputBuffer.put((bits and 0xFF).toByte())
                     outputBuffer.put(((bits ushr 8) and 0xFF).toByte())
                     outputBuffer.put(((bits ushr 16) and 0xFF).toByte())
@@ -207,15 +202,11 @@ constructor(
         outputBuffer.flip()
     }
 
-    /**
-     * Computes biquad coefficients for all bands and publishes them atomically via @Volatile.
-     */
+    /** Computes biquad coefficients for all bands and publishes them atomically via @Volatile. */
     private fun recomputeCoefficients() {
         val fs = sampleRate.toFloat()
         val newCoeffs =
-            Array(BAND_COUNT) { i ->
-                peakingEqCoeffs(BAND_FREQUENCIES[i], BAND_Q, gains[i], fs)
-            }
+            Array(BAND_COUNT) { i -> peakingEqCoeffs(BAND_FREQUENCIES[i], BAND_Q, gains[i], fs) }
         coeffs = newCoeffs
     }
 
