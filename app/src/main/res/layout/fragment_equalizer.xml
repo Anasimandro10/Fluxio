@@ -107,9 +107,7 @@
                         android:text="Flat"
                         android:textSize="12sp"
                         android:paddingStart="12dp"
-                        android:paddingEnd="12dp"
-                        app:iconGravity="end"
-                        app:icon="@drawable/ic_expand_more_24" />
+                        android:paddingEnd="12dp" />
 
                 </LinearLayout>
 
