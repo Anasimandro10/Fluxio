@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback.equalizer
 
 import android.os.Bundle
@@ -51,8 +50,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
 
     private val viewModel: EqualizerViewModel by viewModels()
 
-    private val freqLabels =
-        arrayOf("31", "63", "125", "250", "500", "1k", "2k", "4k", "8k", "16k")
+    private val freqLabels = arrayOf("31", "63", "125", "250", "500", "1k", "2k", "4k", "8k", "16k")
     private val seekBars = mutableListOf<SeekBar>()
     private val dbTextViews = mutableListOf<TextView>()
     private var ignoreSpinner = false
@@ -60,10 +58,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
     override fun onCreateBinding(inflater: LayoutInflater) =
         FragmentEqualizerBinding.inflate(inflater)
 
-    override fun onBindingCreated(
-        binding: FragmentEqualizerBinding,
-        savedInstanceState: Bundle?,
-    ) {
+    override fun onBindingCreated(binding: FragmentEqualizerBinding, savedInstanceState: Bundle?) {
         // Push content below the status bar / notch
         ViewCompat.setOnApplyWindowInsetsListener(binding.eqScroll) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -119,11 +114,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
             val bandIdx = i
             sb.setOnSeekBarChangeListener(
                 object : SeekBar.OnSeekBarChangeListener {
-                    override fun onProgressChanged(
-                        bar: SeekBar,
-                        progress: Int,
-                        fromUser: Boolean,
-                    ) {
+                    override fun onProgressChanged(bar: SeekBar, progress: Int, fromUser: Boolean) {
                         if (fromUser) {
                             viewModel.setBand(bandIdx, (progress - 120) / 10f)
                         }
@@ -192,9 +183,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
     // -------------------------------------------------------------------------
 
     private fun setupSwitch(binding: FragmentEqualizerBinding) {
-        binding.eqSwitch.setOnCheckedChangeListener { _, checked ->
-            viewModel.setEnabled(checked)
-        }
+        binding.eqSwitch.setOnCheckedChangeListener { _, checked -> viewModel.setEnabled(checked) }
     }
 
     // -------------------------------------------------------------------------
@@ -275,62 +264,61 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
                     combine(viewModel.autoEqProfileName, viewModel.isModifiedFromProfile) {
                             name,
                             modified ->
-                        Pair(name, modified)
-                    }.collect { (name, modified) ->
-                        if (name != null) {
-                            binding.eqAutoeqProfileLabel.visibility = View.VISIBLE
-                            binding.eqAutoeqProfileLabel.text =
-                                if (modified) {
-                                    "${getString(R.string.lbl_autoeq_profile)}: $name (${getString(R.string.lbl_autoeq_modified)})"
-                                } else {
-                                    "${getString(R.string.lbl_autoeq_profile)}: $name"
-                                }
-                        } else {
-                            binding.eqAutoeqProfileLabel.visibility = View.GONE
+                            Pair(name, modified)
                         }
-                    }
+                        .collect { (name, modified) ->
+                            if (name != null) {
+                                binding.eqAutoeqProfileLabel.visibility = View.VISIBLE
+                                binding.eqAutoeqProfileLabel.text =
+                                    if (modified) {
+                                        "${getString(R.string.lbl_autoeq_profile)}: $name (${getString(R.string.lbl_autoeq_modified)})"
+                                    } else {
+                                        "${getString(R.string.lbl_autoeq_profile)}: $name"
+                                    }
+                            } else {
+                                binding.eqAutoeqProfileLabel.visibility = View.GONE
+                            }
+                        }
                 }
 
                 // Show AutoEQ search results
                 launch {
-                    combine(viewModel.searchResults, viewModel.isSearching) {
-                            results,
-                            searching ->
-                        Pair(results, searching)
-                    }.collect { (results, searching) ->
-                        binding.eqAutoeqSearchBtn.isEnabled = !searching
-                        binding.eqAutoeqResults.removeAllViews()
-
-                        if (results.isNotEmpty()) {
-                            binding.eqAutoeqResults.visibility = View.VISIBLE
-                            for (result in results) {
-                                val btn =
-                                    MaterialButton(requireContext()).apply {
-                                        layoutParams =
-                                            LinearLayout.LayoutParams(
-                                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                                ViewGroup.LayoutParams.WRAP_CONTENT,
-                                            )
-                                        text = "${result.name} — ${result.source}"
-                                        setOnClickListener {
-                                            viewModel.applyAutoEqProfile(result)
-                                            binding.eqAutoeqSearch.setText("")
-                                            binding.eqAutoeqResults.removeAllViews()
-                                            binding.eqAutoeqResults.visibility = View.GONE
-                                        }
-                                    }
-                                binding.eqAutoeqResults.addView(btn)
-                            }
-                        } else {
-                            binding.eqAutoeqResults.visibility = View.GONE
+                    combine(viewModel.searchResults, viewModel.isSearching) { results, searching ->
+                            Pair(results, searching)
                         }
-                    }
+                        .collect { (results, searching) ->
+                            binding.eqAutoeqSearchBtn.isEnabled = !searching
+                            binding.eqAutoeqResults.removeAllViews()
+
+                            if (results.isNotEmpty()) {
+                                binding.eqAutoeqResults.visibility = View.VISIBLE
+                                for (result in results) {
+                                    val btn =
+                                        MaterialButton(requireContext()).apply {
+                                            layoutParams =
+                                                LinearLayout.LayoutParams(
+                                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                                                )
+                                            text = "${result.name} — ${result.source}"
+                                            setOnClickListener {
+                                                viewModel.applyAutoEqProfile(result)
+                                                binding.eqAutoeqSearch.setText("")
+                                                binding.eqAutoeqResults.removeAllViews()
+                                                binding.eqAutoeqResults.visibility = View.GONE
+                                            }
+                                        }
+                                    binding.eqAutoeqResults.addView(btn)
+                                }
+                            } else {
+                                binding.eqAutoeqResults.visibility = View.GONE
+                            }
+                        }
                 }
             }
         }
     }
 
     // Formats gain as "5,0" or "-1,5" (comma as decimal separator)
-    private fun formatDb(gain: Float): String =
-        String.format("%.1f", gain).replace('.', ',')
+    private fun formatDb(gain: Float): String = String.format("%.1f", gain).replace('.', ',')
 }
