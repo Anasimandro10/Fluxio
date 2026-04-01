@@ -18,12 +18,13 @@
 package org.oxycblt.auxio.playback.equalizer
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
-import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
@@ -73,19 +74,14 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
                 launch { viewModel.enabled.collect { onEnabledChanged(binding, it) } }
                 launch { viewModel.bands.collect { onBandsChanged(it) } }
                 launch { viewModel.activePreset.collect { onPresetChanged(binding, it) } }
-                launch { viewModel.searchResults.collect { onSearchResultsChanged(binding, it) } }
-                launch {
-                    viewModel.isSearching.collect { binding.eqAutoeqSearchBtn.isEnabled = !it }
-                }
+                launch { viewModel.searchState.collect { onSearchStateChanged(binding, it) } }
+                launch { viewModel.isApplyingProfile.collect { onApplyingProfileChanged(binding, it) } }
                 launch {
                     combine(viewModel.autoEqProfileName, viewModel.isModifiedFromProfile) {
-                            name,
-                            modified ->
+                            name, modified ->
                             Pair(name, modified)
                         }
-                        .collect { (name, modified) ->
-                            onProfileLabelChanged(binding, name, modified)
-                        }
+                        .collect { (name, modified) -> onProfileLabelChanged(binding, name, modified) }
                 }
             }
         }
@@ -122,8 +118,6 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
                         FrameLayout.LayoutParams(trackLenPx, thumbSizePx).apply {
                             gravity = Gravity.CENTER
                         }
-                    // Fix: NestedScrollView intercepts the vertical drag produced by the
-                    // rotated SeekBar. Disallow parent interception on every touch event.
                     setOnTouchListener { v, _ ->
                         v.parent.requestDisallowInterceptTouchEvent(true)
                         false
@@ -135,9 +129,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
                                 progress: Int,
                                 fromUser: Boolean,
                             ) {
-                                if (fromUser) {
-                                    viewModel.setBand(i, (progress - 120) / 10f)
-                                }
+                                if (fromUser) viewModel.setBand(i, (progress - 120) / 10f)
                             }
 
                             override fun onStartTrackingTouch(sb: SeekBar) {
@@ -200,8 +192,21 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
     }
 
     private fun setupAutoEqSearch(binding: FragmentEqualizerBinding) {
-        // When the search field gains focus, scroll to bring the AutoEQ card to the top.
-        // This creates the "search bar moves up" effect without custom view translation.
+        // Live search: triggers viewModel.onQueryChanged on every text change.
+        // The ViewModel debounces for 300 ms before executing the actual search.
+        binding.eqAutoeqSearch.addTextChangedListener(
+            object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                    viewModel.onQueryChanged(s?.toString() ?: "")
+                }
+
+                override fun afterTextChanged(s: Editable?) {}
+            }
+        )
+
+        // Scroll AutoEQ card into view when search field gets focus
         binding.eqAutoeqSearch.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) {
                 binding.eqCardAutoeq.post {
@@ -209,23 +214,6 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
                 }
             }
         }
-
-        binding.eqAutoeqSearch.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                doSearch(binding)
-                true
-            } else {
-                false
-            }
-        }
-
-        binding.eqAutoeqSearchBtn.setOnClickListener { doSearch(binding) }
-    }
-
-    private fun doSearch(binding: FragmentEqualizerBinding) {
-        val query = binding.eqAutoeqSearch.text?.toString()?.trim() ?: return
-        viewModel.searchAutoEq(query)
-        hideKeyboard(binding.eqAutoeqSearch)
     }
 
     // ---- State handlers ----
@@ -235,7 +223,6 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         seekBars.forEach { it?.isEnabled = enabled }
         binding.eqPresetSpinner.isEnabled = enabled
         binding.eqAutoeqSearch.isEnabled = enabled
-        binding.eqAutoeqSearchBtn.isEnabled = enabled
     }
 
     private fun onBandsChanged(bands: FloatArray) {
@@ -257,50 +244,54 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         }
     }
 
-    private fun onSearchResultsChanged(
+    private fun onSearchStateChanged(
         binding: FragmentEqualizerBinding,
-        results: List<AutoEqResult>,
+        state: AutoEqSearchState,
     ) {
-        binding.eqAutoeqResults.removeAllViews()
-        if (results.isEmpty()) {
-            animateResultsOut(binding)
-            return
+        when (state) {
+            is AutoEqSearchState.Idle -> {
+                binding.eqAutoeqProgress.visibility = View.GONE
+                binding.eqAutoeqStatus.visibility = View.GONE
+                hideResults(binding)
+            }
+            is AutoEqSearchState.Loading -> {
+                binding.eqAutoeqProgress.visibility = View.VISIBLE
+                binding.eqAutoeqStatus.visibility = View.GONE
+                hideResults(binding)
+            }
+            is AutoEqSearchState.Results -> {
+                binding.eqAutoeqProgress.visibility = View.GONE
+                binding.eqAutoeqStatus.visibility = View.GONE
+                showResults(binding, state.items)
+            }
+            is AutoEqSearchState.NoResults -> {
+                binding.eqAutoeqProgress.visibility = View.GONE
+                binding.eqAutoeqStatus.text = getString(R.string.lbl_autoeq_no_results)
+                binding.eqAutoeqStatus.visibility = View.VISIBLE
+                hideResults(binding)
+            }
+            is AutoEqSearchState.Error -> {
+                binding.eqAutoeqProgress.visibility = View.GONE
+                binding.eqAutoeqStatus.text = getString(R.string.lbl_autoeq_error)
+                binding.eqAutoeqStatus.visibility = View.VISIBLE
+                hideResults(binding)
+            }
         }
-
-        // Add one button per result with staggered slide-in animation
-        for ((index, result) in results.withIndex()) {
-            val btn =
-                Button(requireContext()).apply {
-                    text = "${result.name}  —  ${result.source}"
-                    isAllCaps = false
-                    textSize = 13f
-                    gravity = Gravity.START or Gravity.CENTER_VERTICAL
-                    layoutParams =
-                        LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                        )
-                    alpha = 0f
-                    translationY = (10 * resources.displayMetrics.density)
-                    setOnClickListener {
-                        viewModel.applyAutoEqProfile(result)
-                        binding.eqAutoeqSearch.text?.clear()
-                        binding.eqAutoeqSearch.clearFocus()
-                        hideKeyboard(binding.eqAutoeqSearch)
-                    }
-                }
-            binding.eqAutoeqResults.addView(btn)
-            btn.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setDuration(220)
-                .setStartDelay((index * 55).toLong())
-                .setInterpolator(DecelerateInterpolator())
-                .start()
-        }
-
-        animateResultsIn(binding)
     }
+
+    private fun onApplyingProfileChanged(binding: FragmentEqualizerBinding, applying: Boolean) {
+        // Show the loading bar while the profile is being downloaded
+        if (applying) {
+            binding.eqAutoeqProgress.visibility = View.VISIBLE
+            binding.eqAutoeqSearch.isEnabled = false
+        } else {
+            binding.eqAutoeqProgress.visibility = View.GONE
+            binding.eqAutoeqSearch.isEnabled = _enabled.value
+        }
+    }
+
+    // Helper to read the current enabled state without a Flow
+    private val _enabled get() = viewModel.enabled.value
 
     private fun onProfileLabelChanged(
         binding: FragmentEqualizerBinding,
@@ -311,46 +302,87 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
             binding.eqAutoeqProfileLabel.visibility = View.GONE
             return
         }
-        val suffix = if (modified) " (${getString(R.string.lbl_autoeq_modified)})" else ""
         binding.eqAutoeqProfileLabel.text =
-            "${getString(R.string.lbl_autoeq_profile)}: $name$suffix"
+            if (modified) getString(R.string.lbl_autoeq_modified, name)
+            else getString(R.string.lbl_autoeq_profile, name)
         binding.eqAutoeqProfileLabel.visibility = View.VISIBLE
     }
 
-    // ---- Animations ----
+    // ---- Results display ----
 
-    private fun animateResultsIn(binding: FragmentEqualizerBinding) {
-        val results = binding.eqAutoeqResults
-        if (results.visibility == View.VISIBLE) return
-        results.alpha = 0f
-        results.visibility = View.VISIBLE
-        results
-            .animate()
-            .alpha(1f)
-            .setDuration(200)
-            .setInterpolator(DecelerateInterpolator())
-            .start()
-        // After animation, scroll down to show all results
-        results.postDelayed(
-            {
-                if (isAdded) {
-                    binding.eqScroll.smoothScrollTo(0, binding.eqCardAutoeq.bottom + 32)
+    private fun showResults(binding: FragmentEqualizerBinding, results: List<AutoEqResult>) {
+        binding.eqAutoeqResults.removeAllViews()
+
+        for ((index, result) in results.withIndex()) {
+            val btn =
+                Button(requireContext()).apply {
+                    text = buildResultLabel(result)
+                    isAllCaps = false
+                    textSize = 13f
+                    gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                    layoutParams =
+                        LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                        )
+                    alpha = 0f
+                    translationY = (8 * resources.displayMetrics.density)
+                    setOnClickListener {
+                        viewModel.applyAutoEqProfile(result)
+                        binding.eqAutoeqSearch.text?.clear()
+                        binding.eqAutoeqSearch.clearFocus()
+                        hideKeyboard(binding.eqAutoeqSearch)
+                    }
                 }
+
+            binding.eqAutoeqResults.addView(btn)
+            btn.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(180)
+                .setStartDelay((index * 40).toLong())
+                .setInterpolator(DecelerateInterpolator())
+                .start()
+        }
+
+        // Fade in the container and scroll it into view
+        if (binding.eqAutoeqResults.visibility != View.VISIBLE) {
+            binding.eqAutoeqResults.alpha = 0f
+            binding.eqAutoeqResults.visibility = View.VISIBLE
+            binding.eqAutoeqResults
+                .animate()
+                .alpha(1f)
+                .setDuration(180)
+                .setInterpolator(DecelerateInterpolator())
+                .start()
+        }
+        binding.eqAutoeqResults.postDelayed(
+            {
+                if (isAdded) binding.eqScroll.smoothScrollTo(0, binding.eqCardAutoeq.bottom + 32)
             },
-            260,
+            220,
         )
     }
 
-    private fun animateResultsOut(binding: FragmentEqualizerBinding) {
+    private fun hideResults(binding: FragmentEqualizerBinding) {
         val results = binding.eqAutoeqResults
-        if (results.visibility != View.VISIBLE) return
+        if (results.visibility == View.GONE) return
         results
             .animate()
             .alpha(0f)
-            .setDuration(150)
+            .setDuration(120)
             .setInterpolator(AccelerateInterpolator())
-            .withEndAction { results.visibility = View.GONE }
+            .withEndAction {
+                results.visibility = View.GONE
+                results.removeAllViews()
+            }
             .start()
+    }
+
+    /** Builds the display text for a search result button. */
+    private fun buildResultLabel(result: AutoEqResult): String {
+        return if (result.source.isNotBlank()) "${result.name}  —  ${result.source}"
+        else result.name
     }
 
     // ---- Util ----

@@ -106,33 +106,37 @@
                     android:text="@string/lbl_autoeq"
                     android:textAppearance="?attr/textAppearanceTitleSmall" />
 
-                <LinearLayout
+                <!-- Search field — live search on text change -->
+                <EditText
+                    android:id="@+id/eq_autoeq_search"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:hint="@string/hint_autoeq_search"
+                    android:imeOptions="actionSearch"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:singleLine="true" />
 
-                    <EditText
-                        android:id="@+id/eq_autoeq_search"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
-                        android:layout_weight="1"
-                        android:hint="@string/hint_autoeq_search"
-                        android:imeOptions="actionSearch"
-                        android:inputType="text"
-                        android:maxLines="1"
-                        android:singleLine="true" />
+                <!-- Loading indicator (shown while index downloads or local search runs) -->
+                <ProgressBar
+                    android:id="@+id/eq_autoeq_progress"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="4dp"
+                    android:layout_marginTop="6dp"
+                    android:indeterminate="true"
+                    android:visibility="gone" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/eq_autoeq_search_btn"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/lbl_search" />
+                <!-- Status text: shown for no-results or error states -->
+                <TextView
+                    android:id="@+id/eq_autoeq_status"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:visibility="gone" />
 
-                </LinearLayout>
-
+                <!-- Active profile label -->
                 <TextView
                     android:id="@+id/eq_autoeq_profile_label"
                     android:layout_width="match_parent"
@@ -141,6 +145,7 @@
                     android:textAppearance="?attr/textAppearanceBodySmall"
                     android:visibility="gone" />
 
+                <!-- Results list (buttons generated at runtime) -->
                 <LinearLayout
                     android:id="@+id/eq_autoeq_results"
                     android:layout_width="match_parent"
