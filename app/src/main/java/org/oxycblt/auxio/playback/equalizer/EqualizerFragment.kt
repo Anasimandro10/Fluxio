@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback.equalizer
 
 import android.os.Bundle
@@ -57,10 +56,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
     override fun onCreateBinding(inflater: LayoutInflater) =
         FragmentEqualizerBinding.inflate(inflater)
 
-    override fun onBindingCreated(
-        binding: FragmentEqualizerBinding,
-        savedInstanceState: Bundle?,
-    ) {
+    override fun onBindingCreated(binding: FragmentEqualizerBinding, savedInstanceState: Bundle?) {
         ViewCompat.setOnApplyWindowInsetsListener(binding.eqScroll) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.updatePadding(top = bars.top)
@@ -78,16 +74,18 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
                 launch { viewModel.bands.collect { onBandsChanged(it) } }
                 launch { viewModel.activePreset.collect { onPresetChanged(binding, it) } }
                 launch { viewModel.searchResults.collect { onSearchResultsChanged(binding, it) } }
-                launch { viewModel.isSearching.collect { binding.eqAutoeqSearchBtn.isEnabled = !it } }
                 launch {
-                    combine(
-                        viewModel.autoEqProfileName,
-                        viewModel.isModifiedFromProfile,
-                    ) { name, modified ->
-                        Pair(name, modified)
-                    }.collect { (name, modified) ->
-                        onProfileLabelChanged(binding, name, modified)
-                    }
+                    viewModel.isSearching.collect { binding.eqAutoeqSearchBtn.isEnabled = !it }
+                }
+                launch {
+                    combine(viewModel.autoEqProfileName, viewModel.isModifiedFromProfile) {
+                            name,
+                            modified ->
+                            Pair(name, modified)
+                        }
+                        .collect { (name, modified) ->
+                            onProfileLabelChanged(binding, name, modified)
+                        }
                 }
             }
         }
@@ -103,17 +101,17 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         val density = resources.displayMetrics.density
         val trackLenPx = (172 * density + 0.5f).toInt()
         val thumbSizePx = (32 * density + 0.5f).toInt()
-        val freqLabels =
-            listOf("31", "63", "125", "250", "500", "1k", "2k", "4k", "8k", "16k")
+        val freqLabels = listOf("31", "63", "125", "250", "500", "1k", "2k", "4k", "8k", "16k")
 
         binding.eqBandsContainer.removeAllViews()
         binding.eqFreqLabels.removeAllViews()
         binding.eqDbLabels.removeAllViews()
 
         for (i in 0 until 10) {
-            val frame = FrameLayout(requireContext()).apply {
-                layoutParams = LinearLayout.LayoutParams(0, trackLenPx, 1f)
-            }
+            val frame =
+                FrameLayout(requireContext()).apply {
+                    layoutParams = LinearLayout.LayoutParams(0, trackLenPx, 1f)
+                }
 
             val seekBar =
                 SeekBar(requireContext()).apply {
@@ -147,7 +145,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
                             }
 
                             override fun onStopTrackingTouch(sb: SeekBar) {}
-                        },
+                        }
                     )
                 }
 
@@ -161,12 +159,8 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
                     textSize = 9f
                     gravity = Gravity.CENTER
                     layoutParams =
-                        LinearLayout.LayoutParams(
-                            0,
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                            1f,
-                        )
-                },
+                        LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                }
             )
         }
     }
@@ -202,9 +196,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
     }
 
     private fun setupSwitch(binding: FragmentEqualizerBinding) {
-        binding.eqSwitch.setOnCheckedChangeListener { _, checked ->
-            viewModel.setEnabled(checked)
-        }
+        binding.eqSwitch.setOnCheckedChangeListener { _, checked -> viewModel.setEnabled(checked) }
     }
 
     private fun setupAutoEqSearch(binding: FragmentEqualizerBinding) {
@@ -332,7 +324,8 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         if (results.visibility == View.VISIBLE) return
         results.alpha = 0f
         results.visibility = View.VISIBLE
-        results.animate()
+        results
+            .animate()
             .alpha(1f)
             .setDuration(200)
             .setInterpolator(DecelerateInterpolator())
@@ -351,7 +344,8 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
     private fun animateResultsOut(binding: FragmentEqualizerBinding) {
         val results = binding.eqAutoeqResults
         if (results.visibility != View.VISIBLE) return
-        results.animate()
+        results
+            .animate()
             .alpha(0f)
             .setDuration(150)
             .setInterpolator(AccelerateInterpolator())
