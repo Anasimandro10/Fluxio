@@ -102,16 +102,16 @@ constructor(
     }
 
     fun applyAutoEqProfile(result: AutoEqResult) {
-    viewModelScope.launch(Dispatchers.IO) {
-        val gains = autoEqRepository.fetchProfile(result) ?: return@launch
-        _bands.value = gains
-        _activePreset.value = EqualizerSettings.PRESET_CUSTOM
-        equalizerSettings.activePreset = EqualizerSettings.PRESET_CUSTOM
-        equalizerSettings.saveBands(gains)
-        equalizerProcessor.setBands(gains, _enabled.value)
-        _autoEqProfileName.value = result.name
-        _isModifiedFromProfile.value = false
-        _searchResults.value = emptyList()
+        viewModelScope.launch(Dispatchers.IO) {
+            val gains = autoEqRepository.fetchProfile(result) ?: return@launch
+            _bands.value = gains
+            _activePreset.value = EqualizerSettings.PRESET_CUSTOM
+            equalizerSettings.activePreset = EqualizerSettings.PRESET_CUSTOM
+            equalizerSettings.saveBands(gains)
+            equalizerProcessor.setBands(gains, _enabled.value)
+            _autoEqProfileName.value = result.name
+            _isModifiedFromProfile.value = false
+            _searchResults.value = emptyList()
         }
     }
 }
