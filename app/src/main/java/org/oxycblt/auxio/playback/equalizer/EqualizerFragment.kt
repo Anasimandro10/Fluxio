@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback.equalizer
 
 import android.os.Bundle
@@ -25,7 +24,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
-import android.widget.ArrayAdapter
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.core.view.isVisible
@@ -56,7 +54,8 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
     private var searchJob: Job? = null
     private var ignoreSpinner = false
 
-    private val bandFrequencies = listOf("31", "63", "125", "250", "500", "1k", "2k", "4k", "8k", "16k")
+    private val bandFrequencies =
+        listOf("31", "63", "125", "250", "500", "1k", "2k", "4k", "8k", "16k")
 
     override fun onCreateBinding(inflater: LayoutInflater): FragmentEqualizerBinding =
         FragmentEqualizerBinding.inflate(inflater)
@@ -100,7 +99,8 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
                     override fun onStartTrackingTouch(sb: SeekBar) {}
 
                     override fun onStopTrackingTouch(sb: SeekBar) {}
-                })
+                }
+            )
 
             seekBars.add(seekBar)
             bandValueLabels.add(valueLabel)
@@ -129,21 +129,18 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
     // ── Switch ────────────────────────────────────────────────────────────────
 
     private fun setupSwitch(binding: FragmentEqualizerBinding) {
-        binding.eqSwitch.setOnCheckedChangeListener { _, checked ->
-            viewModel.setEnabled(checked)
-        }
+        binding.eqSwitch.setOnCheckedChangeListener { _, checked -> viewModel.setEnabled(checked) }
     }
 
     // ── AutoEQ search ─────────────────────────────────────────────────────────
 
     private fun setupAutoEqSearch(binding: FragmentEqualizerBinding) {
-        autoEqAdapter =
-            AutoEqResultAdapter { result ->
-                viewModel.applyAutoEqProfile(result)
-                binding.autoeqSearchInput.text?.clear()
-                binding.autoeqResults.isVisible = false
-                binding.autoeqNoResults.isVisible = false
-            }
+        autoEqAdapter = AutoEqResultAdapter { result ->
+            viewModel.applyAutoEqProfile(result)
+            binding.autoeqSearchInput.text?.clear()
+            binding.autoeqResults.isVisible = false
+            binding.autoeqNoResults.isVisible = false
+        }
 
         binding.autoeqResults.apply {
             layoutManager = LinearLayoutManager(requireContext())
@@ -154,7 +151,12 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         // Live search as the user types — debounced 350ms
         binding.autoeqSearchInput.addTextChangedListener(
             object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun beforeTextChanged(
+                    s: CharSequence?,
+                    start: Int,
+                    count: Int,
+                    after: Int,
+                ) {}
 
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
 
@@ -172,7 +174,8 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
                             viewModel.searchAutoEq(query)
                         }
                 }
-            })
+            }
+        )
 
         // Also search on keyboard "Search" action
         binding.autoeqSearchInput.setOnEditorActionListener { _, actionId, _ ->
@@ -249,7 +252,8 @@ private class AutoEqResultAdapter(private val onClick: (AutoEqResult) -> Unit) :
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_autoeq_result, parent, false)
+        val view =
+            LayoutInflater.from(parent.context).inflate(R.layout.item_autoeq_result, parent, false)
         return ViewHolder(view)
     }
 
