@@ -112,5 +112,6 @@ constructor(
         _autoEqProfileName.value = result.name
         _isModifiedFromProfile.value = false
         _searchResults.value = emptyList()
+        }
     }
 }
