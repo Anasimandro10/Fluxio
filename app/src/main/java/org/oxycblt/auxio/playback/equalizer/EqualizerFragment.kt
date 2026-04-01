@@ -15,218 +15,104 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.oxycblt.auxio.playback.equalizer
 
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.FrameLayout
+import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Locale
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.databinding.FragmentEqualizerBinding
+import org.oxycblt.auxio.ui.ViewBindingFragment
 
-/** Screen that displays the 10-band equalizer with preset selector and on/off switch. */
 @AndroidEntryPoint
-class EqualizerFragment : Fragment() {
-
-    private var _binding: FragmentEqualizerBinding? = null
-    private val binding
-        get() = _binding!!
+class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
 
     private val viewModel: EqualizerViewModel by viewModels()
-
-    private val bandLabels =
-        listOf("31Hz", "63Hz", "125Hz", "250Hz", "500Hz", "1kHz", "2kHz", "4kHz", "8kHz", "16kHz")
-    private val seekBars = mutableListOf<SeekBar>()
-    private val valueLabels = mutableListOf<TextView>()
     private var ignoreSpinner = false
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
+    override fun onCreateBinding(inflater: LayoutInflater): FragmentEqualizerBinding =
+        FragmentEqualizerBinding.inflate(inflater)
+
+    override fun onBindingCreated(
+        binding: FragmentEqualizerBinding,
         savedInstanceState: Bundle?,
-    ): View {
-        _binding = FragmentEqualizerBinding.inflate(inflater, container, false)
-        return binding.root
-    }
+    ) {
+        binding.eqToolbar.setNavigationOnClickListener { findNavController().navigateUp() }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        buildBandColumns()
-        setupPresetSpinner()
         binding.eqSwitch.setOnCheckedChangeListener { _, checked -> viewModel.setEnabled(checked) }
-        collectState()
-    }
 
-    /**
-     * Dynamically creates 10 vertical band columns and adds them to the horizontal container.
-     *
-     * Each column layout (top → bottom):
-     * 1. Frequency label (e.g. "1kHz")
-     * 2. FrameLayout wrapping a rotated SeekBar — appears as a vertical slider
-     * 3. dB value label (e.g. "+3.0")
-     *
-     * To make the rotated SeekBar render correctly without being clipped:
-     * - The FrameLayout dimensions match the VISUAL size of the bar (BAR_W × BAR_H).
-     * - The SeekBar inside has PRE-ROTATION dimensions (BAR_H × BAR_W) and rotation = -90°. After
-     *   rotation it visually fills exactly BAR_W × BAR_H.
-     * - clipChildren=false is set on the FrameLayout, the column, and the container so that the
-     *   SeekBar's pre-rotation layout bounds (which overflow the FrameLayout horizontally) are
-     *   never clipped away.
-     */
-    private fun buildBandColumns() {
-        val d = resources.displayMetrics.density
-
-        // Visual dimensions of the vertical slider track
-        val barW = (28 * d).toInt() // visual width of the rendered vertical bar
-        val barH = (140 * d).toInt() // visual height of the rendered vertical bar
-
-        // Fixed column width — slightly wider than the bar to accommodate labels
-        val colW = (44 * d).toInt()
-
-        for (i in 0 until 10) {
-            // Column: all children are centered horizontally; clip disabled so the rotated
-            // SeekBar's pre-rotation layout bounds can overflow without being cut off.
-            val column =
-                LinearLayout(requireContext()).apply {
-                    orientation = LinearLayout.VERTICAL
-                    gravity = Gravity.CENTER_HORIZONTAL
-                    clipChildren = false
-                    clipToPadding = false
-                    layoutParams =
-                        LinearLayout.LayoutParams(colW, LinearLayout.LayoutParams.WRAP_CONTENT)
-                }
-
-            // ── TOP: frequency label ──────────────────────────────────────────
-            val freqLabel =
-                TextView(requireContext()).apply {
-                    text = bandLabels[i]
-                    textSize = 9f
-                    gravity = Gravity.CENTER
-                    layoutParams =
-                        LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                        )
-                }
-
-            // ── MIDDLE: FrameLayout + rotated SeekBar ─────────────────────────
-            // The FrameLayout is sized to the VISUAL bounds (barW × barH).
-            // The SeekBar inside is (barH × barW) pre-rotation, centered, then rotated -90°.
-            // After rotation its visual footprint is exactly (barW × barH) — fits perfectly.
-            val wrapper =
-                FrameLayout(requireContext()).apply {
-                    clipChildren = false
-                    clipToPadding = false
-                    layoutParams =
-                        LinearLayout.LayoutParams(barW, barH).also {
-                            it.topMargin = (6 * d).toInt()
-                            it.bottomMargin = (6 * d).toInt()
-                        }
-                }
-
-            val bar =
-                SeekBar(requireContext()).apply {
-                    max = 240 // center=120 → 0 dB; range: -12 to +12 dB (step 0.1 dB)
-                    progress = 120
-                    rotation = -90f // renders as a vertical bar (min at bottom, max at top)
-                    layoutParams = FrameLayout.LayoutParams(barH, barW, Gravity.CENTER)
-                }
-
-            // ── BOTTOM: dB value label ────────────────────────────────────────
-            val valueLabel =
-                TextView(requireContext()).apply {
-                    text = "0.0"
-                    textSize = 9f
-                    gravity = Gravity.CENTER
-                    layoutParams =
-                        LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                        )
-                }
-
-            bar.setOnSeekBarChangeListener(
-                object : SeekBar.OnSeekBarChangeListener {
-                    override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
-                        if (fromUser) {
-                            val db = (progress - 120) / 10f
-                            valueLabel.text = String.format(Locale.US, "%.1f", db)
-                            viewModel.setBand(i, db)
-                        }
-                    }
-
-                    override fun onStartTrackingTouch(sb: SeekBar?) {}
-
-                    override fun onStopTrackingTouch(sb: SeekBar?) {}
-                }
-            )
-
-            seekBars.add(bar)
-            valueLabels.add(valueLabel)
-
-            wrapper.addView(bar)
-            // Order: freq (top) → bar (middle) → value (bottom)
-            column.addView(freqLabel)
-            column.addView(wrapper)
-            column.addView(valueLabel)
-            binding.eqBandsContainer.addView(column)
-        }
-    }
-
-    private fun setupPresetSpinner() {
-        val names = EqualizerSettings.PRESET_NAMES + listOf(getString(R.string.lbl_eq_custom))
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, names)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.eqPresetSpinner.adapter = adapter
+        val presetNames =
+            EqualizerSettings.PRESET_NAMES.toMutableList() +
+                listOf(getString(R.string.lbl_eq_custom))
+        val spinnerAdapter =
+            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, presetNames)
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.eqPresetSpinner.adapter = spinnerAdapter
         binding.eqPresetSpinner.onItemSelectedListener =
             object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(
-                    parent: AdapterView<*>?,
+                    parent: AdapterView<*>,
                     view: View?,
                     position: Int,
                     id: Long,
                 ) {
-                    if (!ignoreSpinner && position < EqualizerSettings.PRESET_NAMES.size) {
+                    if (ignoreSpinner) return
+                    if (position < EqualizerSettings.PRESET_NAMES.size) {
                         viewModel.applyPreset(position)
                     }
                 }
 
-                override fun onNothingSelected(parent: AdapterView<*>?) {}
+                override fun onNothingSelected(parent: AdapterView<*>) {}
             }
-    }
 
-    private fun collectState() {
+        buildBandRows(binding)
+
+        binding.eqAutoEqSearchBtn.setOnClickListener {
+            val query = binding.eqAutoEqSearch.text?.toString().orEmpty()
+            viewModel.searchAutoEq(query)
+        }
+
+        binding.eqAutoEqSearch.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                val query = binding.eqAutoEqSearch.text?.toString().orEmpty()
+                viewModel.searchAutoEq(query)
+                true
+            } else {
+                false
+            }
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    viewModel.bands.collect { bands ->
-                        for (i in bands.indices) {
-                            val progress = ((bands[i] * 10f) + 120).toInt().coerceIn(0, 240)
-                            seekBars[i].progress = progress
-                            valueLabels[i].text = String.format(Locale.US, "%.1f", bands[i])
-                        }
-                    }
-                }
+                launch { viewModel.bands.collect { bands -> updateBandViews(binding, bands) } }
                 launch {
                     viewModel.enabled.collect { enabled ->
                         binding.eqSwitch.isChecked = enabled
-                        seekBars.forEach { it.isEnabled = enabled }
                         binding.eqPresetSpinner.isEnabled = enabled
+                        binding.eqAutoEqSearch.isEnabled = enabled
+                        binding.eqAutoEqSearchBtn.isEnabled = enabled
+                        for (i in 0 until binding.eqBandsContainer.childCount) {
+                            val col =
+                                binding.eqBandsContainer.getChildAt(i) as? LinearLayout ?: continue
+                            (col.getChildAt(1) as? SeekBar)?.isEnabled = enabled
+                        }
                     }
                 }
                 launch {
@@ -242,14 +128,157 @@ class EqualizerFragment : Fragment() {
                         binding.eqPresetSpinner.post { ignoreSpinner = false }
                     }
                 }
+                launch {
+                    combine(viewModel.autoEqProfileName, viewModel.isModifiedFromProfile) {
+                            name,
+                            modified ->
+                            name to modified
+                        }
+                        .collect { (name, modified) ->
+                            updateProfileLabel(binding, name, modified)
+                        }
+                }
+                launch {
+                    combine(viewModel.searchResults, viewModel.isSearching) { results, searching ->
+                            results to searching
+                        }
+                        .collect { (results, searching) ->
+                            binding.eqAutoEqSearchBtn.isEnabled = !searching
+                            buildAutoEqResults(binding, results)
+                        }
+                }
             }
         }
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
-        seekBars.clear()
-        valueLabels.clear()
+    private fun buildBandRows(binding: FragmentEqualizerBinding) {
+        val freqs = listOf("31", "63", "125", "250", "500", "1k", "2k", "4k", "8k", "16k")
+        binding.eqBandsContainer.removeAllViews()
+        val seekBarWidthPx = (140 * resources.displayMetrics.density).toInt()
+
+        freqs.forEachIndexed { index, freq ->
+            val col =
+                LinearLayout(requireContext()).apply {
+                    orientation = LinearLayout.VERTICAL
+                    layoutParams =
+                        LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
+                    gravity = Gravity.CENTER_HORIZONTAL
+                }
+
+            val dbLabel =
+                TextView(requireContext()).apply {
+                    layoutParams =
+                        LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                        )
+                    textSize = 9f
+                    gravity = Gravity.CENTER
+                    text = "0.0"
+                }
+
+            val seekBar =
+                SeekBar(requireContext()).apply {
+                    max = 240
+                    progress = 120
+                    rotation = -90f
+                    layoutParams =
+                        LinearLayout.LayoutParams(seekBarWidthPx, seekBarWidthPx / 4)
+                    setOnSeekBarChangeListener(
+                        object : SeekBar.OnSeekBarChangeListener {
+                            override fun onProgressChanged(
+                                sb: SeekBar,
+                                progress: Int,
+                                fromUser: Boolean,
+                            ) {
+                                if (fromUser) {
+                                    val db = (progress - 120) / 10f
+                                    dbLabel.text = String.format("%.1f", db)
+                                    viewModel.setBand(index, db)
+                                }
+                            }
+
+                            override fun onStartTrackingTouch(sb: SeekBar) {}
+
+                            override fun onStopTrackingTouch(sb: SeekBar) {}
+                        }
+                    )
+                }
+
+            val freqLabel =
+                TextView(requireContext()).apply {
+                    layoutParams =
+                        LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                        )
+                    textSize = 9f
+                    gravity = Gravity.CENTER
+                    text = freq
+                }
+
+            col.addView(dbLabel)
+            col.addView(seekBar)
+            col.addView(freqLabel)
+            binding.eqBandsContainer.addView(col)
+        }
     }
+
+    private fun updateBandViews(binding: FragmentEqualizerBinding, bands: FloatArray) {
+        for (i in 0 until binding.eqBandsContainer.childCount) {
+            val col = binding.eqBandsContainer.getChildAt(i) as? LinearLayout ?: continue
+            val dbLabel = col.getChildAt(0) as? TextView ?: continue
+            val seekBar = col.getChildAt(1) as? SeekBar ?: continue
+            val progress = (bands[i] * 10 + 120).toInt().coerceIn(0, 240)
+            seekBar.progress = progress
+            dbLabel.text = String.format("%.1f", bands[i])
+        }
+    }
+
+    private fun updateProfileLabel(
+        binding: FragmentEqualizerBinding,
+        name: String?,
+        modified: Boolean,
+    ) {
+        if (name == null) {
+            binding.eqAutoEqProfileLabel.visibility = View.GONE
+        } else {
+            binding.eqAutoEqProfileLabel.visibility = View.VISIBLE
+            binding.eqAutoEqProfileLabel.text =
+                if (modified) {
+                    getString(R.string.lbl_autoeq_modified, name)
+                } else {
+                    getString(R.string.lbl_autoeq_profile, name)
+                }
+        }
+    }
+
+    private fun buildAutoEqResults(
+        binding: FragmentEqualizerBinding,
+        results: List<AutoEqResult>,
+    ) {
+        binding.eqAutoEqResults.removeAllViews()
+        results.forEach { result ->
+            val btn =
+                Button(requireContext()).apply {
+                    text = buildString {
+                        append(result.name)
+                        append(" \u2014 ")
+                        append(result.source)
+                    }
+                    layoutParams =
+                        LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                        )
+                    setOnClickListener {
+                        viewModel.applyAutoEqProfile(result)
+                        binding.eqAutoEqSearch.setText("")
+                    }
+                }
+            binding.eqAutoEqResults.addView(btn)
+        }
+    }
+
+    override fun onDestroyBinding(binding: FragmentEqualizerBinding) {}
 }

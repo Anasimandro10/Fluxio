@@ -120,6 +120,11 @@
 
     <string name="lbl_playback">Now playing</string>
     <string name="lbl_equalizer">Equalizer</string>
+        <string name="lbl_autoeq">AutoEQ</string>
+    <string name="hint_autoeq_search">Search headphones\u2026</string>
+    <string name="lbl_autoeq_profile">Profile: %s</string>
+    <string name="lbl_autoeq_modified">Profile: %s (modified)</string>
+    <string name="lbl_search">Search</string>
     <string name="lbl_sleep_timer">Sleep timer</string>
     <string name="lbl_sleep_timer_off">Timer is off</string>
     <string name="lbl_sleep_preset_15">15 min</string>

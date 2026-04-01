@@ -15,68 +15,104 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package org.oxycblt.auxio.playback.equalizer
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
-/** Exposes equalizer state to the UI and forwards changes to [EqualizerAudioProcessor]. */
 @HiltViewModel
 class EqualizerViewModel
 @Inject
 constructor(
     private val equalizerSettings: EqualizerSettings,
     private val equalizerProcessor: EqualizerAudioProcessor,
+    private val autoEqRepository: AutoEqRepository,
 ) : ViewModel() {
 
     private val _bands = MutableStateFlow(equalizerSettings.getBands())
-
-    /** Current gain for each of the 10 bands (dB). */
-    val bands: StateFlow<FloatArray> = _bands.asStateFlow()
+    val bands: StateFlow<FloatArray> = _bands
 
     private val _activePreset = MutableStateFlow(equalizerSettings.activePreset)
-
-    /** Active factory preset index, or [EqualizerSettings.PRESET_CUSTOM]. */
-    val activePreset: StateFlow<Int> = _activePreset.asStateFlow()
+    val activePreset: StateFlow<Int> = _activePreset
 
     private val _enabled = MutableStateFlow(equalizerSettings.enabled)
+    val enabled: StateFlow<Boolean> = _enabled
 
-    /** Whether the equalizer is currently on. */
-    val enabled: StateFlow<Boolean> = _enabled.asStateFlow()
+    private val _searchResults = MutableStateFlow<List<AutoEqResult>>(emptyList())
+    val searchResults: StateFlow<List<AutoEqResult>> = _searchResults
+
+    private val _autoEqProfileName = MutableStateFlow(autoEqRepository.getCachedHeadphoneName())
+    val autoEqProfileName: StateFlow<String?> = _autoEqProfileName
+
+    private val _isModifiedFromProfile = MutableStateFlow(false)
+    val isModifiedFromProfile: StateFlow<Boolean> = _isModifiedFromProfile
+
+    private val _isSearching = MutableStateFlow(false)
+    val isSearching: StateFlow<Boolean> = _isSearching
 
     init {
-        // Restore persisted state into the audio processor on first creation.
         equalizerProcessor.setBands(_bands.value, _enabled.value)
     }
 
-    /** Turns the equalizer on or off. */
     fun setEnabled(enabled: Boolean) {
-        equalizerSettings.enabled = enabled
         _enabled.value = enabled
+        equalizerSettings.enabled = enabled
         equalizerProcessor.setBands(_bands.value, enabled)
     }
 
-    /** Updates a single band. Marks the preset as custom. */
     fun setBand(index: Int, gainDb: Float) {
-        val newBands = _bands.value.copyOf()
-        newBands[index] = gainDb
-        _bands.value = newBands
-        equalizerSettings.saveBands(newBands)
-        equalizerSettings.activePreset = EqualizerSettings.PRESET_CUSTOM
+        val current = _bands.value.copyOf()
+        current[index] = gainDb
+        _bands.value = current
         _activePreset.value = EqualizerSettings.PRESET_CUSTOM
-        equalizerProcessor.setBands(newBands, _enabled.value)
+        equalizerSettings.activePreset = EqualizerSettings.PRESET_CUSTOM
+        equalizerSettings.saveBands(current)
+        equalizerProcessor.setBands(current, _enabled.value)
+        if (_autoEqProfileName.value != null) {
+            _isModifiedFromProfile.value = true
+        }
     }
 
-    /** Applies a factory preset. Resets all bands to the preset values. */
     fun applyPreset(presetIndex: Int) {
-        equalizerSettings.applyPreset(presetIndex)
-        val newBands = equalizerSettings.getBands()
-        _bands.value = newBands
+        val gains = EqualizerSettings.PRESETS[presetIndex].copyOf()
+        _bands.value = gains
         _activePreset.value = presetIndex
-        equalizerProcessor.setBands(newBands, _enabled.value)
+        _autoEqProfileName.value = null
+        _isModifiedFromProfile.value = false
+        equalizerSettings.applyPreset(presetIndex)
+        equalizerProcessor.setBands(gains, _enabled.value)
+    }
+
+    fun searchAutoEq(query: String) {
+        if (query.isBlank()) {
+            _searchResults.value = emptyList()
+            return
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            _isSearching.value = true
+            _searchResults.value = autoEqRepository.search(query, maxResults = 8)
+            _isSearching.value = false
+        }
+    }
+
+    fun applyAutoEqProfile(result: AutoEqResult) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val gains = autoEqRepository.fetchProfile(result)
+            _bands.value = gains
+            _activePreset.value = EqualizerSettings.PRESET_CUSTOM
+            equalizerSettings.activePreset = EqualizerSettings.PRESET_CUSTOM
+            equalizerSettings.saveBands(gains)
+            equalizerProcessor.setBands(gains, _enabled.value)
+            _autoEqProfileName.value = result.name
+            _isModifiedFromProfile.value = false
+            _searchResults.value = emptyList()
+        }
     }
 }
