@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package org.oxycblt.auxio.playback.equalizer
 
 import android.os.Bundle
@@ -50,10 +49,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
     override fun onCreateBinding(inflater: LayoutInflater): FragmentEqualizerBinding =
         FragmentEqualizerBinding.inflate(inflater)
 
-    override fun onBindingCreated(
-        binding: FragmentEqualizerBinding,
-        savedInstanceState: Bundle?,
-    ) {
+    override fun onBindingCreated(binding: FragmentEqualizerBinding, savedInstanceState: Bundle?) {
         binding.eqToolbar.setNavigationOnClickListener { findNavController().navigateUp() }
 
         binding.eqSwitch.setOnCheckedChangeListener { _, checked -> viewModel.setEnabled(checked) }
@@ -134,9 +130,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
                             modified ->
                             name to modified
                         }
-                        .collect { (name, modified) ->
-                            updateProfileLabel(binding, name, modified)
-                        }
+                        .collect { (name, modified) -> updateProfileLabel(binding, name, modified) }
                 }
                 launch {
                     combine(viewModel.searchResults, viewModel.isSearching) { results, searching ->
@@ -182,8 +176,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
                     max = 240
                     progress = 120
                     rotation = -90f
-                    layoutParams =
-                        LinearLayout.LayoutParams(seekBarWidthPx, seekBarWidthPx / 4)
+                    layoutParams = LinearLayout.LayoutParams(seekBarWidthPx, seekBarWidthPx / 4)
                     setOnSeekBarChangeListener(
                         object : SeekBar.OnSeekBarChangeListener {
                             override fun onProgressChanged(
@@ -253,10 +246,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         }
     }
 
-    private fun buildAutoEqResults(
-        binding: FragmentEqualizerBinding,
-        results: List<AutoEqResult>,
-    ) {
+    private fun buildAutoEqResults(binding: FragmentEqualizerBinding, results: List<AutoEqResult>) {
         binding.eqAutoEqResults.removeAllViews()
         results.forEach { result ->
             val btn =
