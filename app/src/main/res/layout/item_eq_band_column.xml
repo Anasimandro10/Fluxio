@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="0dp"
+    android:layout_height="match_parent"
+    android:layout_weight="1"
+    android:orientation="vertical"
+    android:gravity="center_horizontal">
+
+    <TextView
+        android:id="@+id/eq_band_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0.0"
+        android:textSize="9sp"
+        android:textColor="?attr/colorOnSurfaceVariant" />
+
+    <SeekBar
+        android:id="@+id/eq_band_seekbar"
+        android:layout_width="24dp"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:rotation="-90"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp" />
+
+    <TextView
+        android:id="@+id/eq_band_freq"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="31"
+        android:textSize="9sp"
+        android:textColor="?attr/colorOnSurfaceVariant" />
+
+</LinearLayout>
