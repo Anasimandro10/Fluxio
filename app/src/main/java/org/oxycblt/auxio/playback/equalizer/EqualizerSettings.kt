@@ -29,6 +29,12 @@ class EqualizerSettings @Inject constructor(@ApplicationContext context: Context
 
     private val prefs = context.getSharedPreferences("fluxio_equalizer", Context.MODE_PRIVATE)
 
+    /** Audio device type used to key per-device EQ preset assignments. */
+    enum class DeviceType {
+        BLUETOOTH,
+        WIRED,
+    }
+
     companion object {
         /** Display names for the 11 factory presets. Index matches [PRESETS]. */
         val PRESET_NAMES =
@@ -68,10 +74,22 @@ class EqualizerSettings @Inject constructor(@ApplicationContext context: Context
         /** Sentinel value meaning the user has customised at least one band. */
         const val PRESET_CUSTOM = -1
 
+        /**
+         * Sentinel value meaning no preset is assigned to this device type — do not switch EQ on
+         * connect.
+         */
+        const val DEVICE_PROFILE_NONE = -2
+
         private const val KEY_ENABLED = "eq_enabled"
         private const val KEY_PRESET = "eq_preset"
 
         private fun bandKey(index: Int) = "eq_band_$index"
+
+        private fun devicePresetKey(type: DeviceType) =
+            when (type) {
+                DeviceType.BLUETOOTH -> "eq_device_preset_bt"
+                DeviceType.WIRED -> "eq_device_preset_wired"
+            }
     }
 
     /** Whether the equalizer is currently active. */
@@ -112,5 +130,20 @@ class EqualizerSettings @Inject constructor(@ApplicationContext context: Context
         if (presetIndex != PRESET_CUSTOM) {
             saveBands(PRESETS[presetIndex])
         }
+    }
+
+    /**
+     * Returns the preset index assigned to [type], or [DEVICE_PROFILE_NONE] if no preset is
+     * configured for that device type.
+     */
+    fun getDevicePreset(type: DeviceType): Int =
+        prefs.getInt(devicePresetKey(type), DEVICE_PROFILE_NONE)
+
+    /**
+     * Assigns [presetIndex] to [type]. Use [DEVICE_PROFILE_NONE] to disable auto-switching for
+     * that device type.
+     */
+    fun setDevicePreset(type: DeviceType, presetIndex: Int) {
+        prefs.edit { putInt(devicePresetKey(type), presetIndex) }
     }
 }

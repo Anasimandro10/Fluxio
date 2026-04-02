@@ -196,4 +196,7 @@
     <string name="set_key_backup_import" translatable="false">fluxio_backup_import</string>
     <string name="set_key_equalizer" translatable="false">set_key_equalizer</string>
 
+    <!-- Device EQ profile settings key -->
+    <string name="set_key_device_profiles" translatable="false">fluxio_device_profiles</string>
+
 </resources>

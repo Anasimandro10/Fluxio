@@ -17,7 +17,7 @@
 
 Fluxio is a fork of [Auxio](https://github.com/oxygencobalt/Auxio) — a fast, reliable local music player for Android — extended with features the original intentionally omits: a built-in equalizer, synchronized lyrics, listening statistics, and a redesigned UI.
 
-No account. No telemetry. No ads. It plays music.
+No account. No telemetry. No ads. It plays audio.
 
 ## Features
 

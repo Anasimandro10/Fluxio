@@ -23,7 +23,10 @@ import android.content.Context
 import android.content.Intent
 
 /**
- * A [BroadcastReceiver] that starts music playback when a bluetooth headset is connected.
+ * A [BroadcastReceiver] that starts music playback when a Bluetooth headset is connected.
+ *
+ * Note: automatic EQ preset switching on Bluetooth connect is handled separately by
+ * [AudioDeviceListener] using [android.media.AudioDeviceCallback].
  *
  * @author seijikun, OxygenCobalt
  */

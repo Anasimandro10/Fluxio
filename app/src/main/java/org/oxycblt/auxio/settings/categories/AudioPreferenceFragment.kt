@@ -32,13 +32,18 @@ import timber.log.Timber as L
 class AudioPreferenceFragment : BasePreferenceFragment(R.xml.preferences_audio) {
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
-        // Ejecutamos la lógica original de la clase padre
         super.onCreatePreferences(savedInstanceState, rootKey)
 
-        // Buscamos la preferencia del ecualizador y le asignamos la navegación (Paso 7)
         findPreference<Preference>(getString(R.string.set_key_equalizer))
             ?.setOnPreferenceClickListener {
                 findNavController().navigate(R.id.equalizer_fragment)
+                true
+            }
+
+        findPreference<Preference>(getString(R.string.set_key_device_profiles))
+            ?.setOnPreferenceClickListener {
+                L.d("Opening device profile dialog")
+                DeviceProfileDialog().show(childFragmentManager, DeviceProfileDialog.TAG)
                 true
             }
     }
