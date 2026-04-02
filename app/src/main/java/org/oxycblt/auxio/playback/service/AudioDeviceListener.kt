@@ -29,8 +29,8 @@ import org.oxycblt.auxio.playback.equalizer.EqualizerSettings
 import timber.log.Timber as L
 
 /**
- * Registers an [AudioDeviceCallback] and applies the user-assigned EQ preset whenever a
- * Bluetooth A2DP or wired headset device connects.
+ * Registers an [AudioDeviceCallback] and applies the user-assigned EQ preset whenever a Bluetooth
+ * A2DP or wired headset device connects.
  *
  * Lifecycle mirrors [ExoPlaybackStateHolder]: [attach] is called in [ExoPlaybackStateHolder.attach]
  * and [release] is called in [ExoPlaybackStateHolder.release].

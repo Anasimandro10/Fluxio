@@ -140,8 +140,8 @@ class EqualizerSettings @Inject constructor(@ApplicationContext context: Context
         prefs.getInt(devicePresetKey(type), DEVICE_PROFILE_NONE)
 
     /**
-     * Assigns [presetIndex] to [type]. Use [DEVICE_PROFILE_NONE] to disable auto-switching for
-     * that device type.
+     * Assigns [presetIndex] to [type]. Use [DEVICE_PROFILE_NONE] to disable auto-switching for that
+     * device type.
      */
     fun setDevicePreset(type: DeviceType, presetIndex: Int) {
         prefs.edit { putInt(devicePresetKey(type), presetIndex) }
