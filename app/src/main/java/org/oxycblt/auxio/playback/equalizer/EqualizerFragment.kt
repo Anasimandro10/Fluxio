@@ -293,7 +293,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
             binding.eqAutoeqSearch.isEnabled = false
         } else {
             binding.eqAutoeqProgress.visibility = View.GONE
-            binding.eqAutoeqSearch.isEnabled = _enabled.value
+            binding.eqAutoeqSearch.isEnabled = _enabled
         }
     }
 
