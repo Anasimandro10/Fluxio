@@ -97,8 +97,8 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     /**
      * Downloads the 10-band EQ profile for [result] and caches it locally.
      *
-     * @return FloatArray of 10 gain values in dB (index 0 = 31 Hz, index 9 = 16 000 Hz), or null
-     *   if the download failed.
+     * @return FloatArray of 10 gain values in dB (index 0 = 31 Hz, index 9 = 16 000 Hz), or null if
+     *   the download failed.
      */
     suspend fun fetchProfile(result: AutoEqResult): FloatArray? =
         withContext(Dispatchers.IO) {
@@ -260,8 +260,8 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     }
 
     /**
-     * Parses AutoEQ GraphicEQ format ("GraphicEQ: 20 -0.43; 25 -0.52; ...") and interpolates at
-     * the 10 target frequencies using log-frequency linear interpolation.
+     * Parses AutoEQ GraphicEQ format ("GraphicEQ: 20 -0.43; 25 -0.52; ...") and interpolates at the
+     * 10 target frequencies using log-frequency linear interpolation.
      */
     private fun parseGraphicEq(raw: String): FloatArray? {
         val data = raw.removePrefix("GraphicEQ:").trim()
