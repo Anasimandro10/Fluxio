@@ -41,8 +41,8 @@ import org.json.JSONObject
  * the app cache directory. Subsequent searches are local and instant. The index is refreshed every
  * 7 days.
  *
- * API by Jaakko Pasanen (https://autoeq.app), MIT License.
- * See assets/licenses/autoeq_license.txt for attribution.
+ * API by Jaakko Pasanen (https://autoeq.app), MIT License. See assets/licenses/autoeq_license.txt
+ * for attribution.
  */
 @Singleton
 class AutoEqRepository @Inject constructor(@ApplicationContext private val context: Context) {
@@ -73,7 +73,9 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
      * @return true if the index is ready, false if unavailable (network error and no cache).
      */
     suspend fun ensureIndexLoaded(): Boolean {
-        memoryIndex?.let { return true }
+        memoryIndex?.let {
+            return true
+        }
         if (indexLoadFailed) return false
         return indexMutex.withLock { loadIndexLocked() }
     }
@@ -91,20 +93,15 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
         if (q.length < 2) return emptyList()
         return index
             .filter { it.name.lowercase().contains(q) }
-            .sortedWith(
-                compareBy(
-                    { !it.name.lowercase().startsWith(q) },
-                    { it.name.lowercase() },
-                )
-            )
+            .sortedWith(compareBy({ !it.name.lowercase().startsWith(q) }, { it.name.lowercase() }))
             .take(maxResults)
     }
 
     /**
      * Downloads the 10-band EQ profile for [result] and caches it locally.
      *
-     * @return FloatArray of 10 gain values in dB (index 0 = 31 Hz, index 9 = 16 000 Hz),
-     *   or null if the download failed.
+     * @return FloatArray of 10 gain values in dB (index 0 = 31 Hz, index 9 = 16 000 Hz), or null if
+     *   the download failed.
      */
     suspend fun fetchProfile(result: AutoEqResult): FloatArray? =
         withContext(Dispatchers.IO) {
@@ -113,7 +110,8 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
                     result.id.split("/").joinToString("/") {
                         URLEncoder.encode(it, "UTF-8").replace("+", "%20")
                     }
-                val body = downloadRaw("$BASE_URL/headphones/$pathEncoded") ?: return@withContext null
+                val body =
+                    downloadRaw("$BASE_URL/headphones/$pathEncoded") ?: return@withContext null
                 val gains = parseProfileResponse(body) ?: return@withContext null
                 saveToCache(result.name, result.source, gains)
                 gains
@@ -165,49 +163,52 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     // -------------------------------------------------------------------------
 
     /** Must be called inside [indexMutex]. */
-    private suspend fun loadIndexLocked(): Boolean = withContext(Dispatchers.IO) {
-        // Double-check after acquiring the lock
-        memoryIndex?.let { return@withContext true }
+    private suspend fun loadIndexLocked(): Boolean =
+        withContext(Dispatchers.IO) {
+            // Double-check after acquiring the lock
+            memoryIndex?.let {
+                return@withContext true
+            }
 
-        // Try valid on-disk cache first
-        if (indexFile.exists()) {
-            val ageMs = System.currentTimeMillis() - indexFile.lastModified()
-            if (ageMs < INDEX_TTL_MS) {
+            // Try valid on-disk cache first
+            if (indexFile.exists()) {
+                val ageMs = System.currentTimeMillis() - indexFile.lastModified()
+                if (ageMs < INDEX_TTL_MS) {
+                    val parsed = tryParseIndex(indexFile.readText())
+                    if (parsed != null) {
+                        memoryIndex = parsed
+                        return@withContext true
+                    }
+                }
+            }
+
+            // Download fresh index
+            val json = downloadRaw("$BASE_URL/headphones")
+            if (json != null) {
+                val parsed = tryParseIndex(json)
+                if (parsed != null) {
+                    try {
+                        indexFile.writeText(json)
+                    } catch (_: Exception) {
+                        /* non-fatal — still use in-memory result */
+                    }
+                    memoryIndex = parsed
+                    return@withContext true
+                }
+            }
+
+            // Fallback: use expired cache if available
+            if (indexFile.exists()) {
                 val parsed = tryParseIndex(indexFile.readText())
                 if (parsed != null) {
                     memoryIndex = parsed
                     return@withContext true
                 }
             }
-        }
 
-        // Download fresh index
-        val json = downloadRaw("$BASE_URL/headphones")
-        if (json != null) {
-            val parsed = tryParseIndex(json)
-            if (parsed != null) {
-                try {
-                    indexFile.writeText(json)
-                } catch (_: Exception) {
-                    /* non-fatal — still use in-memory result */
-                }
-                memoryIndex = parsed
-                return@withContext true
-            }
+            indexLoadFailed = true
+            false
         }
-
-        // Fallback: use expired cache if available
-        if (indexFile.exists()) {
-            val parsed = tryParseIndex(indexFile.readText())
-            if (parsed != null) {
-                memoryIndex = parsed
-                return@withContext true
-            }
-        }
-
-        indexLoadFailed = true
-        false
-    }
 
     // -------------------------------------------------------------------------
     // Private helpers
@@ -236,7 +237,8 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
             if (array.length() == 0) return null
             (0 until array.length()).mapNotNull { i ->
                 val obj = array.getJSONObject(i)
-                val name = obj.optString("name").takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                val name =
+                    obj.optString("name").takeIf { it.isNotBlank() } ?: return@mapNotNull null
                 AutoEqResult(
                     id = obj.optString("id").ifBlank { name },
                     name = name,
@@ -262,8 +264,8 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     }
 
     /**
-     * Parses AutoEQ GraphicEQ format ("GraphicEQ: 20 -0.43; 25 -0.52; ...") and interpolates at
-     * the 10 target frequencies using log-frequency linear interpolation.
+     * Parses AutoEQ GraphicEQ format ("GraphicEQ: 20 -0.43; 25 -0.52; ...") and interpolates at the
+     * 10 target frequencies using log-frequency linear interpolation.
      */
     private fun parseGraphicEq(raw: String): FloatArray? {
         val data = raw.removePrefix("GraphicEQ:").trim()

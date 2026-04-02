@@ -75,13 +75,18 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
                 launch { viewModel.bands.collect { onBandsChanged(it) } }
                 launch { viewModel.activePreset.collect { onPresetChanged(binding, it) } }
                 launch { viewModel.searchState.collect { onSearchStateChanged(binding, it) } }
-                launch { viewModel.isApplyingProfile.collect { onApplyingProfileChanged(binding, it) } }
+                launch {
+                    viewModel.isApplyingProfile.collect { onApplyingProfileChanged(binding, it) }
+                }
                 launch {
                     combine(viewModel.autoEqProfileName, viewModel.isModifiedFromProfile) {
-                            name, modified ->
+                            name,
+                            modified ->
                             Pair(name, modified)
                         }
-                        .collect { (name, modified) -> onProfileLabelChanged(binding, name, modified) }
+                        .collect { (name, modified) ->
+                            onProfileLabelChanged(binding, name, modified)
+                        }
                 }
             }
         }
@@ -196,7 +201,12 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         // The ViewModel debounces for 300 ms before executing the actual search.
         binding.eqAutoeqSearch.addTextChangedListener(
             object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun beforeTextChanged(
+                    s: CharSequence?,
+                    start: Int,
+                    count: Int,
+                    after: Int,
+                ) {}
 
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                     viewModel.onQueryChanged(s?.toString() ?: "")
@@ -244,10 +254,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         }
     }
 
-    private fun onSearchStateChanged(
-        binding: FragmentEqualizerBinding,
-        state: AutoEqSearchState,
-    ) {
+    private fun onSearchStateChanged(binding: FragmentEqualizerBinding, state: AutoEqSearchState) {
         when (state) {
             is AutoEqSearchState.Idle -> {
                 binding.eqAutoeqProgress.visibility = View.GONE
@@ -291,7 +298,8 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
     }
 
     // Helper to read the current enabled state without a Flow
-    private val _enabled get() = viewModel.enabled.value
+    private val _enabled
+        get() = viewModel.enabled.value
 
     private fun onProfileLabelChanged(
         binding: FragmentEqualizerBinding,
@@ -357,9 +365,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
                 .start()
         }
         binding.eqAutoeqResults.postDelayed(
-            {
-                if (isAdded) binding.eqScroll.smoothScrollTo(0, binding.eqCardAutoeq.bottom + 32)
-            },
+            { if (isAdded) binding.eqScroll.smoothScrollTo(0, binding.eqCardAutoeq.bottom + 32) },
             220,
         )
     }
