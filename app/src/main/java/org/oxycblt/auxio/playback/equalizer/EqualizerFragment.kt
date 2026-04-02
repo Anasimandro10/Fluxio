@@ -45,6 +45,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.databinding.FragmentEqualizerBinding
+import org.oxycblt.auxio.settings.categories.DeviceProfileDialog
 import org.oxycblt.auxio.ui.ViewBindingFragment
 
 @AndroidEntryPoint
@@ -68,6 +69,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         setupPresetSpinner(binding)
         setupSwitch(binding)
         setupAutoEqSearch(binding)
+        setupDeviceProfiles(binding)
 
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -197,8 +199,6 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
     }
 
     private fun setupAutoEqSearch(binding: FragmentEqualizerBinding) {
-        // Live search: triggers viewModel.onQueryChanged on every text change.
-        // The ViewModel debounces for 300 ms before executing the actual search.
         binding.eqAutoeqSearch.addTextChangedListener(
             object : TextWatcher {
                 override fun beforeTextChanged(
@@ -216,13 +216,22 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
             }
         )
 
-        // Scroll AutoEQ card into view when search field gets focus
         binding.eqAutoeqSearch.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) {
                 binding.eqCardAutoeq.post {
                     binding.eqScroll.smoothScrollTo(0, binding.eqCardAutoeq.top - 16)
                 }
             }
+        }
+    }
+
+    /**
+     * Binds the device-profiles button. Opens [DeviceProfileDialog] so the user can assign an EQ
+     * preset per device type (Bluetooth / wired) directly from the EQ screen.
+     */
+    private fun setupDeviceProfiles(binding: FragmentEqualizerBinding) {
+        binding.eqBtnDeviceProfiles.setOnClickListener {
+            DeviceProfileDialog().show(childFragmentManager, DeviceProfileDialog.TAG)
         }
     }
 
@@ -233,6 +242,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         seekBars.forEach { it?.isEnabled = enabled }
         binding.eqPresetSpinner.isEnabled = enabled
         binding.eqAutoeqSearch.isEnabled = enabled
+        // Device profiles button stays enabled regardless of EQ on/off state
     }
 
     private fun onBandsChanged(bands: FloatArray) {
@@ -287,7 +297,6 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
     }
 
     private fun onApplyingProfileChanged(binding: FragmentEqualizerBinding, applying: Boolean) {
-        // Show the loading bar while the profile is being downloaded
         if (applying) {
             binding.eqAutoeqProgress.visibility = View.VISIBLE
             binding.eqAutoeqSearch.isEnabled = false
@@ -297,7 +306,6 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         }
     }
 
-    // Helper to read the current enabled state without a Flow
     private val _enabled
         get() = viewModel.enabled.value
 
@@ -353,7 +361,6 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
                 .start()
         }
 
-        // Fade in the container and scroll it into view
         if (binding.eqAutoeqResults.visibility != View.VISIBLE) {
             binding.eqAutoeqResults.alpha = 0f
             binding.eqAutoeqResults.visibility = View.VISIBLE

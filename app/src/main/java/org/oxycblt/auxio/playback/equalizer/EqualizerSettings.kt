@@ -29,7 +29,7 @@ class EqualizerSettings @Inject constructor(@ApplicationContext context: Context
 
     private val prefs = context.getSharedPreferences("fluxio_equalizer", Context.MODE_PRIVATE)
 
-    /** Audio device type used to key per-device EQ preset assignments. */
+    /** Audio output device type used for per-device EQ preset assignment. */
     enum class DeviceType {
         BLUETOOTH,
         WIRED,
@@ -75,8 +75,8 @@ class EqualizerSettings @Inject constructor(@ApplicationContext context: Context
         const val PRESET_CUSTOM = -1
 
         /**
-         * Sentinel value meaning no preset is assigned to this device type — do not switch EQ on
-         * connect.
+         * Sentinel value meaning "do not change the EQ when this device type connects". Used by
+         * [getDevicePreset] and [setDevicePreset].
          */
         const val DEVICE_PROFILE_NONE = -2
 
@@ -85,11 +85,7 @@ class EqualizerSettings @Inject constructor(@ApplicationContext context: Context
 
         private fun bandKey(index: Int) = "eq_band_$index"
 
-        private fun devicePresetKey(type: DeviceType) =
-            when (type) {
-                DeviceType.BLUETOOTH -> "eq_device_preset_bt"
-                DeviceType.WIRED -> "eq_device_preset_wired"
-            }
+        private fun devicePresetKey(type: DeviceType) = "eq_device_preset_${type.name}"
     }
 
     /** Whether the equalizer is currently active. */
@@ -133,17 +129,17 @@ class EqualizerSettings @Inject constructor(@ApplicationContext context: Context
     }
 
     /**
-     * Returns the preset index assigned to [type], or [DEVICE_PROFILE_NONE] if no preset is
-     * configured for that device type.
+     * Returns the preset index assigned to [type] when that device connects, or
+     * [DEVICE_PROFILE_NONE] if no automatic switch is configured.
      */
     fun getDevicePreset(type: DeviceType): Int =
         prefs.getInt(devicePresetKey(type), DEVICE_PROFILE_NONE)
 
     /**
-     * Assigns [presetIndex] to [type]. Use [DEVICE_PROFILE_NONE] to disable auto-switching for that
-     * device type.
+     * Assigns [preset] to [type]. When a device of that type connects, the EQ will switch to that
+     * preset automatically. Pass [DEVICE_PROFILE_NONE] to disable the auto-switch.
      */
-    fun setDevicePreset(type: DeviceType, presetIndex: Int) {
-        prefs.edit { putInt(devicePresetKey(type), presetIndex) }
+    fun setDevicePreset(type: DeviceType, preset: Int) {
+        prefs.edit { putInt(devicePresetKey(type), preset) }
     }
 }

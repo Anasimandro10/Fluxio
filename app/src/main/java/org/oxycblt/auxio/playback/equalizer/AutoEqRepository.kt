@@ -37,9 +37,9 @@ import org.json.JSONObject
 /**
  * Repository for downloading and caching headphone EQ profiles from AutoEQ.
  *
- * On first use, downloads the full headphone index (~300 KB) from the AutoEQ API and stores it in
- * the app cache directory. Subsequent searches are local and instant. The index is refreshed every
- * 7 days.
+ * On first use, downloads the full headphone index from the AutoEQ API and stores it in the app
+ * cache directory. Subsequent searches are local and instant. The index is refreshed every 7 days.
+ * If a network attempt fails, the next search will retry — there is no permanent failure flag.
  *
  * API by Jaakko Pasanen (https://autoeq.app), MIT License. See assets/licenses/autoeq_license.txt
  * for attribution.
@@ -60,23 +60,20 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     // Prevents concurrent index downloads
     private val indexMutex = Mutex()
 
-    // Set to true when a download attempt fails, to avoid hammering the network
-    @Volatile private var indexLoadFailed = false
-
     // -------------------------------------------------------------------------
     // Public API
     // -------------------------------------------------------------------------
 
     /**
-     * Ensures the full headphone index is available in memory. Downloads it if needed.
+     * Ensures the full headphone index is available in memory. Downloads it if needed. If the
+     * download fails (no connectivity, server error), returns false. The next call will retry.
      *
-     * @return true if the index is ready, false if unavailable (network error and no cache).
+     * @return true if the index is ready, false if unavailable.
      */
     suspend fun ensureIndexLoaded(): Boolean {
         memoryIndex?.let {
             return true
         }
-        if (indexLoadFailed) return false
         return indexMutex.withLock { loadIndexLocked() }
     }
 
@@ -100,8 +97,8 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     /**
      * Downloads the 10-band EQ profile for [result] and caches it locally.
      *
-     * @return FloatArray of 10 gain values in dB (index 0 = 31 Hz, index 9 = 16 000 Hz), or null if
-     *   the download failed.
+     * @return FloatArray of 10 gain values in dB (index 0 = 31 Hz, index 9 = 16 000 Hz), or null
+     *   if the download failed.
      */
     suspend fun fetchProfile(result: AutoEqResult): FloatArray? =
         withContext(Dispatchers.IO) {
@@ -155,7 +152,6 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     fun clearIndexCache() {
         indexFile.delete()
         memoryIndex = null
-        indexLoadFailed = false
     }
 
     // -------------------------------------------------------------------------
@@ -206,7 +202,7 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
                 }
             }
 
-            indexLoadFailed = true
+            // Return false without setting any permanent flag — next search will retry
             false
         }
 
@@ -264,8 +260,8 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     }
 
     /**
-     * Parses AutoEQ GraphicEQ format ("GraphicEQ: 20 -0.43; 25 -0.52; ...") and interpolates at the
-     * 10 target frequencies using log-frequency linear interpolation.
+     * Parses AutoEQ GraphicEQ format ("GraphicEQ: 20 -0.43; 25 -0.52; ...") and interpolates at
+     * the 10 target frequencies using log-frequency linear interpolation.
      */
     private fun parseGraphicEq(raw: String): FloatArray? {
         val data = raw.removePrefix("GraphicEQ:").trim()

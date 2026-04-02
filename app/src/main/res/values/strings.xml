@@ -555,4 +555,9 @@
     <string name="set_device_profiles_bt">Bluetooth preset</string>
     <string name="set_device_profiles_wired">Wired headset preset</string>
     <string name="set_device_profiles_no_change">No change</string>
+        <!-- Device profiles for EQ -->
+    <string name="set_device_profiles">Device profiles</string>
+    <string name="set_device_profiles_no_change">No change</string>
+    <string name="set_device_profiles_bt">Bluetooth headphones</string>
+    <string name="set_device_profiles_wired">Wired headphones</string>
 </resources>
