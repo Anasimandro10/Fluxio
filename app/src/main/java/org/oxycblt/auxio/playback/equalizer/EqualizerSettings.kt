@@ -29,7 +29,7 @@ class EqualizerSettings @Inject constructor(@ApplicationContext context: Context
 
     private val prefs = context.getSharedPreferences("fluxio_equalizer", Context.MODE_PRIVATE)
 
-    /** Audio output device type used for per-device EQ preset assignment. */
+    /** Audio device type used to look up per-device EQ presets. */
     enum class DeviceType {
         BLUETOOTH,
         WIRED,
@@ -75,17 +75,17 @@ class EqualizerSettings @Inject constructor(@ApplicationContext context: Context
         const val PRESET_CUSTOM = -1
 
         /**
-         * Sentinel value meaning "do not change the EQ when this device type connects". Used by
-         * [getDevicePreset] and [setDevicePreset].
+         * Returned by [getDevicePreset] when no EQ preset has been assigned to a device type.
+         * [AudioDeviceListener] checks for this value before calling [applyPreset].
          */
         const val DEVICE_PROFILE_NONE = -2
 
         private const val KEY_ENABLED = "eq_enabled"
         private const val KEY_PRESET = "eq_preset"
+        private const val KEY_DEVICE_BT = "eq_device_bt_preset"
+        private const val KEY_DEVICE_WIRED = "eq_device_wired_preset"
 
         private fun bandKey(index: Int) = "eq_band_$index"
-
-        private fun devicePresetKey(type: DeviceType) = "eq_device_preset_${type.name}"
     }
 
     /** Whether the equalizer is currently active. */
@@ -102,14 +102,14 @@ class EqualizerSettings @Inject constructor(@ApplicationContext context: Context
         set(value) = prefs.edit { putInt(KEY_PRESET, value) }
 
     /** Returns the current gain for each of the 10 bands (dB). */
-    fun getBands(): FloatArray {
-        val preset = activePreset
-        return if (preset == PRESET_CUSTOM) {
-            FloatArray(10) { i -> prefs.getFloat(bandKey(i), 0f) }
-        } else {
-            PRESETS[preset].copyOf()
+    fun getBands(): FloatArray =
+        when (val preset = activePreset) {
+            PRESET_CUSTOM -> FloatArray(10) { i -> prefs.getFloat(bandKey(i), 0f) }
+            in PRESETS.indices -> PRESETS[preset].copyOf()
+            // Safety fallback: activePreset holds a value outside the valid range.
+            // Happens only if SharedPreferences are externally corrupted. Reset to Plano.
+            else -> PRESETS[0].copyOf()
         }
-    }
 
     /** Persists per-band gains. Does not change [activePreset]. */
     fun saveBands(gains: FloatArray) {
@@ -129,17 +129,28 @@ class EqualizerSettings @Inject constructor(@ApplicationContext context: Context
     }
 
     /**
-     * Returns the preset index assigned to [type] when that device connects, or
-     * [DEVICE_PROFILE_NONE] if no automatic switch is configured.
+     * Returns the preset index assigned to [deviceType], or [DEVICE_PROFILE_NONE] if the user has
+     * not configured an automatic preset for that device type.
      */
-    fun getDevicePreset(type: DeviceType): Int =
-        prefs.getInt(devicePresetKey(type), DEVICE_PROFILE_NONE)
+    fun getDevicePreset(deviceType: DeviceType): Int {
+        val key =
+            when (deviceType) {
+                DeviceType.BLUETOOTH -> KEY_DEVICE_BT
+                DeviceType.WIRED -> KEY_DEVICE_WIRED
+            }
+        return prefs.getInt(key, DEVICE_PROFILE_NONE)
+    }
 
     /**
-     * Assigns [preset] to [type]. When a device of that type connects, the EQ switches to that
-     * preset automatically. Pass [DEVICE_PROFILE_NONE] to disable the auto-switch.
+     * Persists the preset index to apply automatically when [deviceType] connects. Pass
+     * [DEVICE_PROFILE_NONE] to disable automatic switching for that device type.
      */
-    fun setDevicePreset(type: DeviceType, preset: Int) {
-        prefs.edit { putInt(devicePresetKey(type), preset) }
+    fun setDevicePreset(deviceType: DeviceType, presetIndex: Int) {
+        val key =
+            when (deviceType) {
+                DeviceType.BLUETOOTH -> KEY_DEVICE_BT
+                DeviceType.WIRED -> KEY_DEVICE_WIRED
+            }
+        prefs.edit { putInt(key, presetIndex) }
     }
 }

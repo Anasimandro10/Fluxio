@@ -127,6 +127,11 @@
     <string name="lbl_autoeq_no_results">No headphones found</string>
     <string name="lbl_autoeq_error">Could not load headphone database. Check your connection.</string>
     <string name="lbl_autoeq_clear_profile">Clear profile</string>
+        <string name="set_device_profiles">EQ por dispositivo</string>
+    <string name="desc_device_profiles">Cambia el perfil del EQ automáticamente al conectar un dispositivo</string>
+    <string name="set_device_profiles_no_change">Sin cambios</string>
+    <string name="set_device_profiles_bt">Bluetooth</string>
+    <string name="set_device_profiles_wired">Auriculares con cable</string>
     <string name="lbl_sleep_timer">Sleep timer</string>
     <string name="lbl_sleep_timer_off">Timer is off</string>
     <string name="lbl_sleep_preset_15">15 min</string>

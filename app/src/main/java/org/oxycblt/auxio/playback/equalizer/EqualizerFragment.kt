@@ -45,7 +45,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.databinding.FragmentEqualizerBinding
-import org.oxycblt.auxio.settings.categories.DeviceProfileDialog
 import org.oxycblt.auxio.ui.ViewBindingFragment
 
 @AndroidEntryPoint
@@ -69,10 +68,13 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         setupPresetSpinner(binding)
         setupSwitch(binding)
         setupAutoEqSearch(binding)
-        setupDeviceProfiles(binding)
 
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
+                // Sync UI with any preset applied automatically by AudioDeviceListener
+                // while this screen was closed or the app was in the background.
+                viewModel.refreshFromSettings()
+
                 launch { viewModel.enabled.collect { onEnabledChanged(binding, it) } }
                 launch { viewModel.bands.collect { onBandsChanged(it) } }
                 launch { viewModel.activePreset.collect { onPresetChanged(binding, it) } }
@@ -222,13 +224,6 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
                     binding.eqScroll.smoothScrollTo(0, binding.eqCardAutoeq.top - 16)
                 }
             }
-        }
-    }
-
-    /** Opens [DeviceProfileDialog] so the user can assign an EQ preset per device type. */
-    private fun setupDeviceProfiles(binding: FragmentEqualizerBinding) {
-        binding.eqBtnDeviceProfiles.setOnClickListener {
-            DeviceProfileDialog().show(childFragmentManager, DeviceProfileDialog.TAG)
         }
     }
 
@@ -385,8 +380,12 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
             .start()
     }
 
-    private fun buildResultLabel(result: AutoEqResult): String =
-        if (result.source.isNotBlank()) "${result.name}  —  ${result.source}" else result.name
+    private fun buildResultLabel(result: AutoEqResult): String {
+        return if (result.source.isNotBlank()) "${result.name}  —  ${result.source}"
+        else result.name
+    }
+
+    // ---- Util ----
 
     private fun hideKeyboard(view: View) {
         requireContext()

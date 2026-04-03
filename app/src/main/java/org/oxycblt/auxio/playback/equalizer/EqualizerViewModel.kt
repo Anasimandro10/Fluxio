@@ -115,6 +115,24 @@ constructor(
         _isModifiedFromProfile.value = false
         equalizerSettings.applyPreset(presetIndex)
         equalizerProcessor.setBands(gains, _enabled.value)
+        // Clear the AutoEQ cache so the headphone name does not reappear after an app restart.
+        autoEqRepository.clearProfileCache()
+    }
+
+    /**
+     * Re-reads all EQ state from [EqualizerSettings] and pushes it to the UI flows. Called by
+     * [EqualizerFragment] when it enters the STARTED state, so changes applied automatically by
+     * [AudioDeviceListener] (while the screen was off or in the background) are reflected
+     * immediately when the user opens the EQ screen.
+     */
+    fun refreshFromSettings() {
+        val bands = equalizerSettings.getBands()
+        val preset = equalizerSettings.activePreset
+        val isEnabled = equalizerSettings.enabled
+        _bands.value = bands
+        _activePreset.value = preset
+        _enabled.value = isEnabled
+        equalizerProcessor.setBands(bands, isEnabled)
     }
 
     // ---- AutoEQ search ----
