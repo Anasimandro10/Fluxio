@@ -88,8 +88,7 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     }
 
     /**
-     * Downloads the 10-band EQ profile for [result] and caches it locally. Returns null on
-     * failure.
+     * Downloads the 10-band EQ profile for [result] and caches it locally. Returns null on failure.
      */
     suspend fun fetchProfile(result: AutoEqResult): FloatArray? =
         withContext(Dispatchers.IO) {
@@ -176,7 +175,9 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
                     memoryIndex = parsed
                     return@withContext true
                 } else {
-                    L.w("AutoEQ index downloaded but could not be parsed (first 200 chars): ${json.take(200)}")
+                    L.w(
+                        "AutoEQ index downloaded but could not be parsed (first 200 chars): ${json.take(200)}"
+                    )
                 }
             } else {
                 L.w("AutoEQ index download failed (null response)")
@@ -275,7 +276,8 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
                             } catch (_: Exception) {
                                 return@mapNotNull null
                             }
-                        if (nameStr.isBlank()) null else AutoEqResult(id = nameStr, name = nameStr, source = "")
+                        if (nameStr.isBlank()) null
+                        else AutoEqResult(id = nameStr, name = nameStr, source = "")
                     }
                 }
 
