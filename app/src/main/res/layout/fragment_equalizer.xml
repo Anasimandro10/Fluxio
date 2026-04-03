@@ -106,7 +106,6 @@
                     android:text="@string/lbl_autoeq"
                     android:textAppearance="?attr/textAppearanceTitleSmall" />
 
-                <!-- Search field — live search on text change -->
                 <EditText
                     android:id="@+id/eq_autoeq_search"
                     android:layout_width="match_parent"
@@ -117,7 +116,6 @@
                     android:maxLines="1"
                     android:singleLine="true" />
 
-                <!-- Loading indicator (shown while index downloads or local search runs) -->
                 <ProgressBar
                     android:id="@+id/eq_autoeq_progress"
                     style="?android:attr/progressBarStyleHorizontal"
@@ -127,7 +125,6 @@
                     android:indeterminate="true"
                     android:visibility="gone" />
 
-                <!-- Status text: shown for no-results or error states -->
                 <TextView
                     android:id="@+id/eq_autoeq_status"
                     android:layout_width="match_parent"
@@ -136,7 +133,6 @@
                     android:textAppearance="?attr/textAppearanceBodySmall"
                     android:visibility="gone" />
 
-                <!-- Active profile label -->
                 <TextView
                     android:id="@+id/eq_autoeq_profile_label"
                     android:layout_width="match_parent"
@@ -145,7 +141,6 @@
                     android:textAppearance="?attr/textAppearanceBodySmall"
                     android:visibility="gone" />
 
-                <!-- Results list (buttons generated at runtime) -->
                 <LinearLayout
                     android:id="@+id/eq_autoeq_results"
                     android:layout_width="match_parent"
@@ -172,12 +167,25 @@
                 android:orientation="horizontal"
                 android:padding="16dp">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="@string/set_device_profiles"
-                    android:textAppearance="?attr/textAppearanceTitleSmall" />
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/set_device_profiles"
+                        android:textAppearance="?attr/textAppearanceTitleSmall" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/set_device_profiles_bt"
+                        android:textAppearance="?attr/textAppearanceBodySmall" />
+
+                </LinearLayout>
 
                 <Button
                     android:id="@+id/eq_btn_device_profiles"

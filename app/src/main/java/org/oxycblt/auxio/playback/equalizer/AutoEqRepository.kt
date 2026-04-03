@@ -39,7 +39,7 @@ import org.json.JSONObject
  *
  * On first use, downloads the full headphone index from the AutoEQ API and stores it in the app
  * cache directory. Subsequent searches are local and instant. The index is refreshed every 7 days.
- * If a network attempt fails, the next search will retry — there is no permanent failure flag.
+ * If a network attempt fails, the next search retries — there is no permanent failure flag.
  *
  * API by Jaakko Pasanen (https://autoeq.app), MIT License. See assets/licenses/autoeq_license.txt
  * for attribution.
@@ -47,17 +47,13 @@ import org.json.JSONObject
 @Singleton
 class AutoEqRepository @Inject constructor(@ApplicationContext private val context: Context) {
 
-    // Profile cache (last applied headphone)
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    // Index cache on disk
     private val indexFile = File(context.cacheDir, INDEX_FILE_NAME)
 
-    // In-memory index (loaded once, kept for the lifetime of the process)
     @Volatile private var memoryIndex: List<AutoEqResult>? = null
 
-    // Prevents concurrent index downloads
     private val indexMutex = Mutex()
 
     // -------------------------------------------------------------------------
@@ -65,24 +61,18 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     // -------------------------------------------------------------------------
 
     /**
-     * Ensures the full headphone index is available in memory. Downloads it if needed. If the
-     * download fails (no connectivity, server error), returns false. The next call will retry.
-     *
-     * @return true if the index is ready, false if unavailable.
+     * Ensures the full headphone index is available in memory. Downloads it if needed. Returns
+     * false only if both the network and the on-disk cache are unavailable. The next call retries.
      */
     suspend fun ensureIndexLoaded(): Boolean {
-        memoryIndex?.let {
-            return true
-        }
+        memoryIndex?.let { return true }
         return indexMutex.withLock { loadIndexLocked() }
     }
 
     /**
-     * Searches the in-memory index locally. Call [ensureIndexLoaded] before this.
+     * Searches the in-memory index locally. Call [ensureIndexLoaded] first.
      *
-     * Results are sorted so that names starting with [query] appear first, then alphabetically.
-     *
-     * @return empty list if the index is not loaded or [query] has fewer than 2 characters.
+     * Results are sorted so names starting with [query] appear first, then alphabetically.
      */
     fun searchLocal(query: String, maxResults: Int = 20): List<AutoEqResult> {
         val index = memoryIndex ?: return emptyList()
@@ -95,10 +85,7 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     }
 
     /**
-     * Downloads the 10-band EQ profile for [result] and caches it locally.
-     *
-     * @return FloatArray of 10 gain values in dB (index 0 = 31 Hz, index 9 = 16 000 Hz), or null if
-     *   the download failed.
+     * Downloads the 10-band EQ profile for [result] and caches it locally. Returns null on failure.
      */
     suspend fun fetchProfile(result: AutoEqResult): FloatArray? =
         withContext(Dispatchers.IO) {
@@ -117,16 +104,10 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
             }
         }
 
-    /** Returns the display name of the currently cached headphone, or null. */
     fun getCachedHeadphoneName(): String? = prefs.getString(KEY_HEADPHONE_NAME, null)
 
-    /** Returns the measurement source of the cached headphone, or null. */
     fun getCachedHeadphoneSource(): String? = prefs.getString(KEY_HEADPHONE_SOURCE, null)
 
-    /**
-     * Returns the cached 10-band gains as a [FloatArray], or null if none are cached. Indices
-     * correspond to [TARGET_FREQUENCIES].
-     */
     fun getCachedBands(): FloatArray? {
         val json = prefs.getString(KEY_BANDS_JSON, null) ?: return null
         return try {
@@ -138,7 +119,6 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
         }
     }
 
-    /** Clears the locally cached profile (last applied headphone). */
     fun clearProfileCache() {
         prefs
             .edit()
@@ -148,7 +128,6 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
             .apply()
     }
 
-    /** Deletes the on-disk index so it will be re-downloaded on next use. */
     fun clearIndexCache() {
         indexFile.delete()
         memoryIndex = null
@@ -158,15 +137,11 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     // Index loading
     // -------------------------------------------------------------------------
 
-    /** Must be called inside [indexMutex]. */
     private suspend fun loadIndexLocked(): Boolean =
         withContext(Dispatchers.IO) {
-            // Double-check after acquiring the lock
-            memoryIndex?.let {
-                return@withContext true
-            }
+            memoryIndex?.let { return@withContext true }
 
-            // Try valid on-disk cache first
+            // Use valid on-disk cache if available and fresh
             if (indexFile.exists()) {
                 val ageMs = System.currentTimeMillis() - indexFile.lastModified()
                 if (ageMs < INDEX_TTL_MS) {
@@ -185,15 +160,13 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
                 if (parsed != null) {
                     try {
                         indexFile.writeText(json)
-                    } catch (_: Exception) {
-                        /* non-fatal — still use in-memory result */
-                    }
+                    } catch (_: Exception) { /* non-fatal */ }
                     memoryIndex = parsed
                     return@withContext true
                 }
             }
 
-            // Fallback: use expired cache if available
+            // Fallback: use expired cache
             if (indexFile.exists()) {
                 val parsed = tryParseIndex(indexFile.readText())
                 if (parsed != null) {
@@ -202,7 +175,7 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
                 }
             }
 
-            // Return false without setting any permanent flag — next search will retry
+            // Return false — no permanent flag, next call retries
             false
         }
 
@@ -259,10 +232,6 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
         }
     }
 
-    /**
-     * Parses AutoEQ GraphicEQ format ("GraphicEQ: 20 -0.43; 25 -0.52; ...") and interpolates at the
-     * 10 target frequencies using log-frequency linear interpolation.
-     */
     private fun parseGraphicEq(raw: String): FloatArray? {
         val data = raw.removePrefix("GraphicEQ:").trim()
         val points = mutableListOf<Pair<Float, Float>>()
@@ -322,21 +291,15 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
         private const val TIMEOUT_MS = 15_000
         private const val MAX_GAIN_DB = 12f
         private const val APP_VERSION = "4.0.10"
-
-        /** 7-day cache TTL for the headphone index. */
         private const val INDEX_TTL_MS = 7L * 24 * 60 * 60 * 1000
 
-        /** Target frequencies matching [EqualizerAudioProcessor]. */
         val TARGET_FREQUENCIES = intArrayOf(31, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000)
     }
 }
 
 /** A headphone model from the AutoEQ index. */
 data class AutoEqResult(
-    /** API identifier used to fetch the full EQ profile. */
     val id: String,
-    /** Human-readable headphone model name shown to the user. */
     val name: String,
-    /** Measurement source, e.g. "oratory1990", "Rtings", "crinacle". */
     val source: String,
 )

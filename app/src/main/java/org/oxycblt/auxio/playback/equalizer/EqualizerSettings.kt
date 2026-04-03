@@ -136,7 +136,7 @@ class EqualizerSettings @Inject constructor(@ApplicationContext context: Context
         prefs.getInt(devicePresetKey(type), DEVICE_PROFILE_NONE)
 
     /**
-     * Assigns [preset] to [type]. When a device of that type connects, the EQ will switch to that
+     * Assigns [preset] to [type]. When a device of that type connects, the EQ switches to that
      * preset automatically. Pass [DEVICE_PROFILE_NONE] to disable the auto-switch.
      */
     fun setDevicePreset(type: DeviceType, preset: Int) {

@@ -225,10 +225,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         }
     }
 
-    /**
-     * Binds the device-profiles button. Opens [DeviceProfileDialog] so the user can assign an EQ
-     * preset per device type (Bluetooth / wired) directly from the EQ screen.
-     */
+    /** Opens [DeviceProfileDialog] so the user can assign an EQ preset per device type. */
     private fun setupDeviceProfiles(binding: FragmentEqualizerBinding) {
         binding.eqBtnDeviceProfiles.setOnClickListener {
             DeviceProfileDialog().show(childFragmentManager, DeviceProfileDialog.TAG)
@@ -242,7 +239,6 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         seekBars.forEach { it?.isEnabled = enabled }
         binding.eqPresetSpinner.isEnabled = enabled
         binding.eqAutoeqSearch.isEnabled = enabled
-        // Device profiles button stays enabled regardless of EQ on/off state
     }
 
     private fun onBandsChanged(bands: FloatArray) {
@@ -302,12 +298,9 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
             binding.eqAutoeqSearch.isEnabled = false
         } else {
             binding.eqAutoeqProgress.visibility = View.GONE
-            binding.eqAutoeqSearch.isEnabled = _enabled
+            binding.eqAutoeqSearch.isEnabled = viewModel.enabled.value
         }
     }
-
-    private val _enabled
-        get() = viewModel.enabled.value
 
     private fun onProfileLabelChanged(
         binding: FragmentEqualizerBinding,
@@ -392,13 +385,8 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
             .start()
     }
 
-    /** Builds the display text for a search result button. */
-    private fun buildResultLabel(result: AutoEqResult): String {
-        return if (result.source.isNotBlank()) "${result.name}  —  ${result.source}"
-        else result.name
-    }
-
-    // ---- Util ----
+    private fun buildResultLabel(result: AutoEqResult): String =
+        if (result.source.isNotBlank()) "${result.name}  —  ${result.source}" else result.name
 
     private fun hideKeyboard(view: View) {
         requireContext()
