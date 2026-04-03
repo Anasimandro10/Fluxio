@@ -33,6 +33,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import timber.log.Timber as L
 
 /**
  * Repository for downloading and caching headphone EQ profiles from AutoEQ.
@@ -87,7 +88,8 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     }
 
     /**
-     * Downloads the 10-band EQ profile for [result] and caches it locally. Returns null on failure.
+     * Downloads the 10-band EQ profile for [result] and caches it locally. Returns null on
+     * failure.
      */
     suspend fun fetchProfile(result: AutoEqResult): FloatArray? =
         withContext(Dispatchers.IO) {
@@ -101,7 +103,8 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
                 val gains = parseProfileResponse(body) ?: return@withContext null
                 saveToCache(result.name, result.source, gains)
                 gains
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                L.e("AutoEQ fetchProfile failed: ${e.message}")
                 null
             }
         }
@@ -151,6 +154,7 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
                 if (ageMs < INDEX_TTL_MS) {
                     val parsed = tryParseIndex(indexFile.readText())
                     if (parsed != null) {
+                        L.d("AutoEQ index loaded from disk cache (${parsed.size} entries)")
                         memoryIndex = parsed
                         return@withContext true
                     }
@@ -158,10 +162,12 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
             }
 
             // Download fresh index
+            L.d("AutoEQ downloading index from $BASE_URL/headphones")
             val json = downloadRaw("$BASE_URL/headphones")
             if (json != null) {
                 val parsed = tryParseIndex(json)
                 if (parsed != null) {
+                    L.d("AutoEQ index downloaded (${parsed.size} entries)")
                     try {
                         indexFile.writeText(json)
                     } catch (_: Exception) {
@@ -169,18 +175,24 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
                     }
                     memoryIndex = parsed
                     return@withContext true
+                } else {
+                    L.w("AutoEQ index downloaded but could not be parsed (first 200 chars): ${json.take(200)}")
                 }
+            } else {
+                L.w("AutoEQ index download failed (null response)")
             }
 
             // Fallback: use expired cache
             if (indexFile.exists()) {
                 val parsed = tryParseIndex(indexFile.readText())
                 if (parsed != null) {
+                    L.d("AutoEQ index loaded from expired disk cache (${parsed.size} entries)")
                     memoryIndex = parsed
                     return@withContext true
                 }
             }
 
+            L.e("AutoEQ index could not be loaded from network or cache")
             // Return false — no permanent flag, next call retries
             false
         }
@@ -196,50 +208,112 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
             connection.readTimeout = TIMEOUT_MS
             connection.setRequestProperty("User-Agent", "Fluxio/$APP_VERSION")
             try {
-                if (connection.responseCode != HttpURLConnection.HTTP_OK) null
-                else connection.inputStream.bufferedReader().readText()
+                val code = connection.responseCode
+                if (code != HttpURLConnection.HTTP_OK) {
+                    L.w("AutoEQ HTTP $code for $urlStr")
+                    null
+                } else {
+                    connection.inputStream.bufferedReader().readText()
+                }
             } finally {
                 connection.disconnect()
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            L.w("AutoEQ request failed for $urlStr: ${e.message}")
             null
         }
     }
 
+    /**
+     * Parses the headphone index from a JSON string. Handles multiple formats:
+     * - A top-level JSONArray of objects with "name", "id", "source" fields.
+     * - A top-level JSONObject wrapping the array under "headphones", "results" or "data".
+     * - A top-level JSONArray of plain strings (name only).
+     *
+     * Returns null only if none of the formats can be parsed.
+     */
     private fun tryParseIndex(json: String): List<AutoEqResult>? {
         return try {
-            val array = JSONArray(json)
+            val array: JSONArray =
+                try {
+                    JSONArray(json)
+                } catch (_: Exception) {
+                    // Wrapped object — try common field names
+                    val obj = JSONObject(json)
+                    obj.optJSONArray("headphones")
+                        ?: obj.optJSONArray("results")
+                        ?: obj.optJSONArray("data")
+                        ?: obj.optJSONArray("items")
+                        ?: return null
+                }
+
             if (array.length() == 0) return null
-            (0 until array.length()).mapNotNull { i ->
-                val obj = array.getJSONObject(i)
-                val name =
-                    obj.optString("name").takeIf { it.isNotBlank() } ?: return@mapNotNull null
-                AutoEqResult(
-                    id = obj.optString("id").ifBlank { name },
-                    name = name,
-                    source = obj.optString("source"),
-                )
-            }
-        } catch (_: Exception) {
+
+            val results =
+                (0 until array.length()).mapNotNull { i ->
+                    try {
+                        val obj = array.getJSONObject(i)
+                        val name =
+                            obj.optString("name").takeIf { it.isNotBlank() }
+                                ?: return@mapNotNull null
+                        AutoEqResult(
+                            id =
+                                obj.optString("id").ifBlank {
+                                    obj.optString("path").ifBlank { name }
+                                },
+                            name = name,
+                            source =
+                                obj.optString("source").ifBlank {
+                                    obj.optString("type").ifBlank { "" }
+                                },
+                        )
+                    } catch (_: Exception) {
+                        // Element might be a plain string
+                        val nameStr =
+                            try {
+                                array.getString(i)
+                            } catch (_: Exception) {
+                                return@mapNotNull null
+                            }
+                        if (nameStr.isBlank()) null else AutoEqResult(id = nameStr, name = nameStr, source = "")
+                    }
+                }
+
+            results.takeIf { it.isNotEmpty() }
+        } catch (e: Exception) {
+            L.w("AutoEQ tryParseIndex exception: ${e.message}")
             null
         }
     }
 
+    /**
+     * Parses the 10-band gains from a profile API response. Accepts:
+     * - JSON object with a "graphicEq" or "graphic_eq" field.
+     * - Plain text containing "GraphicEQ:" directly.
+     */
     private fun parseProfileResponse(body: String): FloatArray? {
-        return try {
-            val obj = JSONObject(body)
-            val graphicEqStr =
+        // Try JSON first
+        val graphicEqStr =
+            try {
+                val obj = JSONObject(body)
                 obj.optString("graphicEq").ifBlank { null }
                     ?: obj.optString("graphic_eq").ifBlank { null }
-                    ?: return null
-            parseGraphicEq(graphicEqStr)
-        } catch (_: Exception) {
-            null
-        }
+                    ?: obj.optString("graphiceq").ifBlank { null }
+            } catch (_: Exception) {
+                null
+            }
+
+        if (graphicEqStr != null) return parseGraphicEq(graphicEqStr)
+
+        // Fallback: plain text response containing GraphicEQ directly
+        if (body.contains("GraphicEQ:", ignoreCase = true)) return parseGraphicEq(body)
+
+        L.w("AutoEQ parseProfileResponse: unrecognised format (first 200): ${body.take(200)}")
+        return null
     }
 
     private fun parseGraphicEq(raw: String): FloatArray? {
-        val data = raw.removePrefix("GraphicEQ:").trim()
+        val data = raw.replace("GraphicEQ:", "", ignoreCase = true).trim()
         val points = mutableListOf<Pair<Float, Float>>()
         for (token in data.split(";")) {
             val parts = token.trim().split(Regex("\\s+"))

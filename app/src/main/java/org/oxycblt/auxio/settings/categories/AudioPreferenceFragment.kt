@@ -25,7 +25,6 @@ import org.oxycblt.auxio.R
 import org.oxycblt.auxio.settings.BasePreferenceFragment
 import org.oxycblt.auxio.settings.ui.WrappedDialogPreference
 import org.oxycblt.auxio.util.navigateSafe
-import timber.log.Timber as L
 
 /** Audio settings interface. */
 @AndroidEntryPoint
@@ -39,18 +38,10 @@ class AudioPreferenceFragment : BasePreferenceFragment(R.xml.preferences_audio) 
                 findNavController().navigate(R.id.equalizer_fragment)
                 true
             }
-
-        findPreference<Preference>(getString(R.string.set_key_device_profiles))
-            ?.setOnPreferenceClickListener {
-                L.d("Opening device profile dialog")
-                DeviceProfileDialog().show(childFragmentManager, DeviceProfileDialog.TAG)
-                true
-            }
     }
 
     override fun onOpenDialogPreference(preference: WrappedDialogPreference) {
         if (preference.key == getString(R.string.set_key_pre_amp)) {
-            L.d("Navigating to pre-amp dialog")
             findNavController().navigateSafe(AudioPreferenceFragmentDirections.preAmpSettings())
         }
     }

@@ -8,11 +8,6 @@
         android:title="@string/lbl_equalizer"
         android:summary="@string/desc_equalizer" />
 
-    <Preference
-        android:key="@string/set_key_device_profiles"
-        android:title="@string/set_device_profiles"
-        android:summary="@string/desc_device_profiles" />
-
     <PreferenceCategory android:title="@string/set_playback">
 
         <SwitchPreferenceCompat

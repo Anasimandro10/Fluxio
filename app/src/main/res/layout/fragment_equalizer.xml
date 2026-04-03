@@ -61,18 +61,20 @@
                     android:id="@+id/eq_preset_spinner"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_marginBottom="8dp" />
 
+                <!-- eq_db_labels se mantiene invisible para no romper el binding -->
                 <LinearLayout
                     android:id="@+id/eq_db_labels"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal" />
+                    android:layout_height="0dp"
+                    android:orientation="horizontal"
+                    android:visibility="gone" />
 
                 <LinearLayout
                     android:id="@+id/eq_bands_container"
                     android:layout_width="match_parent"
-                    android:layout_height="180dp"
+                    android:layout_height="190dp"
                     android:orientation="horizontal" />
 
                 <LinearLayout
@@ -106,15 +108,23 @@
                     android:text="@string/lbl_autoeq"
                     android:textAppearance="?attr/textAppearanceTitleSmall" />
 
-                <EditText
-                    android:id="@+id/eq_autoeq_search"
+                <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/hint_autoeq_search"
-                    android:imeOptions="actionSearch"
-                    android:inputType="text"
-                    android:maxLines="1"
-                    android:singleLine="true" />
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
+                    app:endIconMode="clear_text">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/eq_autoeq_search"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:imeOptions="actionSearch"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:singleLine="true" />
+
+                </com.google.android.material.textfield.TextInputLayout>
 
                 <ProgressBar
                     android:id="@+id/eq_autoeq_progress"
