@@ -65,7 +65,9 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
      * false only if both the network and the on-disk cache are unavailable. The next call retries.
      */
     suspend fun ensureIndexLoaded(): Boolean {
-        memoryIndex?.let { return true }
+        memoryIndex?.let {
+            return true
+        }
         return indexMutex.withLock { loadIndexLocked() }
     }
 
@@ -139,7 +141,9 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
 
     private suspend fun loadIndexLocked(): Boolean =
         withContext(Dispatchers.IO) {
-            memoryIndex?.let { return@withContext true }
+            memoryIndex?.let {
+                return@withContext true
+            }
 
             // Use valid on-disk cache if available and fresh
             if (indexFile.exists()) {
@@ -160,7 +164,9 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
                 if (parsed != null) {
                     try {
                         indexFile.writeText(json)
-                    } catch (_: Exception) { /* non-fatal */ }
+                    } catch (_: Exception) {
+                        /* non-fatal */
+                    }
                     memoryIndex = parsed
                     return@withContext true
                 }
@@ -298,8 +304,4 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
 }
 
 /** A headphone model from the AutoEQ index. */
-data class AutoEqResult(
-    val id: String,
-    val name: String,
-    val source: String,
-)
+data class AutoEqResult(val id: String, val name: String, val source: String)
