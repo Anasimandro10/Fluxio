@@ -51,13 +51,15 @@ constructor(
                 for (device in addedDevices) {
                     val deviceType = device.type.toDeviceType() ?: continue
                     val preset = equalizerSettings.getDevicePreset(deviceType)
-                    if (preset == EqualizerSettings.DEVICE_PROFILE_NONE) break
+                    // No preset configured for this device type — check the next device.
+                    if (preset == EqualizerSettings.DEVICE_PROFILE_NONE) continue
                     L.d("Device connected ($deviceType), applying EQ preset $preset")
                     equalizerSettings.applyPreset(preset)
                     equalizerProcessor.setBands(
                         equalizerSettings.getBands(),
                         equalizerSettings.enabled,
                     )
+                    // Apply only once — stop after the first device with a configured preset.
                     break
                 }
             }

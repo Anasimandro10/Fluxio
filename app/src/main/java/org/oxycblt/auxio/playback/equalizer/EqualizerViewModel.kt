@@ -124,6 +124,9 @@ constructor(
      * [EqualizerFragment] when it enters the STARTED state, so changes applied automatically by
      * [AudioDeviceListener] (while the screen was off or in the background) are reflected
      * immediately when the user opens the EQ screen.
+     *
+     * If [AudioDeviceListener] applied a factory preset while the screen was closed, the AutoEQ
+     * profile label is also cleared so the UI does not show a stale headphone name.
      */
     fun refreshFromSettings() {
         val bands = equalizerSettings.getBands()
@@ -133,6 +136,11 @@ constructor(
         _activePreset.value = preset
         _enabled.value = isEnabled
         equalizerProcessor.setBands(bands, isEnabled)
+        // A factory preset means AutoEQ is no longer active — clear the profile label.
+        if (preset != EqualizerSettings.PRESET_CUSTOM) {
+            _autoEqProfileName.value = null
+            _isModifiedFromProfile.value = false
+        }
     }
 
     // ---- AutoEQ search ----

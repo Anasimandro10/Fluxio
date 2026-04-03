@@ -45,6 +45,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.databinding.FragmentEqualizerBinding
+import org.oxycblt.auxio.settings.categories.DeviceProfileDialog
 import org.oxycblt.auxio.ui.ViewBindingFragment
 
 @AndroidEntryPoint
@@ -68,6 +69,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         setupPresetSpinner(binding)
         setupSwitch(binding)
         setupAutoEqSearch(binding)
+        setupDeviceProfilesButton(binding)
 
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -224,6 +226,13 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
                     binding.eqScroll.smoothScrollTo(0, binding.eqCardAutoeq.top - 16)
                 }
             }
+        }
+    }
+
+    /** Opens [DeviceProfileDialog] from the shortcut button inside the EQ screen. */
+    private fun setupDeviceProfilesButton(binding: FragmentEqualizerBinding) {
+        binding.eqBtnDeviceProfiles.setOnClickListener {
+            DeviceProfileDialog().show(childFragmentManager, DeviceProfileDialog.TAG)
         }
     }
 
