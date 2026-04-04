@@ -33,7 +33,7 @@ sealed class AutoEqSearchState {
     /** No query entered yet, or results were cleared. */
     object Idle : AutoEqSearchState()
 
-    /** Query entered; waiting for results (debounce, index download, or local search). */
+    /** Query entered; waiting for API response. */
     object Loading : AutoEqSearchState()
 
     /** Results ready to display. */
@@ -42,7 +42,7 @@ sealed class AutoEqSearchState {
     /** Query returned no matching headphones. */
     object NoResults : AutoEqSearchState()
 
-    /** The headphone index could not be loaded (network error, no cache). */
+    /** The AutoEQ API could not be reached. */
     object Error : AutoEqSearchState()
 }
 
@@ -64,11 +64,11 @@ constructor(
     private val _enabled = MutableStateFlow(equalizerSettings.enabled)
     val enabled: StateFlow<Boolean> = _enabled
 
-    /** Unified search state — replaces the old searchResults + isSearching flows. */
     private val _searchState = MutableStateFlow<AutoEqSearchState>(AutoEqSearchState.Idle)
     val searchState: StateFlow<AutoEqSearchState> = _searchState
 
-    private val _autoEqProfileName = MutableStateFlow(autoEqRepository.getCachedHeadphoneName())
+    private val _autoEqProfileName =
+        MutableStateFlow(autoEqRepository.getCachedHeadphoneName())
     val autoEqProfileName: StateFlow<String?> = _autoEqProfileName
 
     private val _isModifiedFromProfile = MutableStateFlow(false)
@@ -82,8 +82,6 @@ constructor(
 
     init {
         equalizerProcessor.setBands(_bands.value, _enabled.value)
-        // Pre-load the headphone index in the background so it is ready when the user types.
-        viewModelScope.launch(Dispatchers.IO) { autoEqRepository.ensureIndexLoaded() }
     }
 
     // ---- EQ controls ----
@@ -115,18 +113,13 @@ constructor(
         _isModifiedFromProfile.value = false
         equalizerSettings.applyPreset(presetIndex)
         equalizerProcessor.setBands(gains, _enabled.value)
-        // Clear the AutoEQ cache so the headphone name does not reappear after an app restart.
         autoEqRepository.clearProfileCache()
     }
 
     /**
-     * Re-reads all EQ state from [EqualizerSettings] and pushes it to the UI flows. Called by
-     * [EqualizerFragment] when it enters the STARTED state, so changes applied automatically by
-     * [AudioDeviceListener] (while the screen was off or in the background) are reflected
-     * immediately when the user opens the EQ screen.
-     *
-     * If [AudioDeviceListener] applied a factory preset while the screen was closed, the AutoEQ
-     * profile label is also cleared so the UI does not show a stale headphone name.
+     * Re-reads all EQ state from [EqualizerSettings] and pushes it to the UI flows.
+     * Called when the EQ screen enters STARTED, so changes applied by [AudioDeviceListener]
+     * in the background are reflected immediately.
      */
     fun refreshFromSettings() {
         val bands = equalizerSettings.getBands()
@@ -136,7 +129,6 @@ constructor(
         _activePreset.value = preset
         _enabled.value = isEnabled
         equalizerProcessor.setBands(bands, isEnabled)
-        // A factory preset means AutoEQ is no longer active — clear the profile label.
         if (preset != EqualizerSettings.PRESET_CUSTOM) {
             _autoEqProfileName.value = null
             _isModifiedFromProfile.value = false
@@ -146,8 +138,11 @@ constructor(
     // ---- AutoEQ search ----
 
     /**
-     * Called whenever the search field text changes. Triggers a local search after a 300 ms
-     * debounce. Clears results immediately if [query] is blank or fewer than 2 characters.
+     * Called whenever the search field text changes. After a 300 ms debounce, hits the AutoEQ
+     * search API directly with [query] — no local index required.
+     *
+     * Sets [searchState] to [AutoEqSearchState.Error] if the network request fails, or
+     * [AutoEqSearchState.NoResults] if the API returned an empty list.
      */
     fun onQueryChanged(query: String) {
         searchJob?.cancel()
@@ -160,15 +155,13 @@ constructor(
             viewModelScope.launch {
                 _searchState.value = AutoEqSearchState.Loading
                 delay(DEBOUNCE_MS)
-                val loaded = autoEqRepository.ensureIndexLoaded()
-                if (!loaded) {
-                    _searchState.value = AutoEqSearchState.Error
-                    return@launch
-                }
-                val results = autoEqRepository.searchLocal(trimmed)
+                val results = autoEqRepository.search(trimmed)
                 _searchState.value =
-                    if (results.isEmpty()) AutoEqSearchState.NoResults
-                    else AutoEqSearchState.Results(results)
+                    when {
+                        results == null -> AutoEqSearchState.Error
+                        results.isEmpty() -> AutoEqSearchState.NoResults
+                        else -> AutoEqSearchState.Results(results)
+                    }
             }
     }
 
@@ -179,8 +172,8 @@ constructor(
     }
 
     /**
-     * Downloads and applies the EQ profile for [result]. Disables interaction during download via
-     * [isApplyingProfile].
+     * Downloads and applies the EQ profile for [result].
+     * Disables search interaction while downloading via [isApplyingProfile].
      */
     fun applyAutoEqProfile(result: AutoEqResult) {
         viewModelScope.launch(Dispatchers.IO) {
