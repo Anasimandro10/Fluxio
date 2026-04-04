@@ -44,6 +44,12 @@ import timber.log.Timber as L
  *
  * On every queue change, the next song in the queue is prefetched in the background so its lyrics
  * are ready the moment it starts playing.
+ *
+ * Sync strategy:
+ * - [updateCurrentLine] uses binary search (O(log n)) instead of a linear scan.
+ * - The ticker is always cancelled and restarted on every [onProgressionChanged] call while
+ *   playing. This ensures the wakeup deadline is recalculated after any seek, preventing the
+ *   highlight from sticking on the wrong line for several seconds after the user scrubs.
  */
 @HiltViewModel
 class LyricsViewModel
@@ -158,12 +164,22 @@ constructor(
         prefetchNext(queue, index)
     }
 
+    /**
+     * Called whenever the playback position or play/pause state changes, including after a seek.
+     *
+     * The ticker is always restarted here when playing so that its next wakeup deadline is
+     * calculated from the new position — this prevents the highlight from staying on the wrong
+     * line after the user scrubs forward or backward.
+     */
     override fun onProgressionChanged(progression: Progression) {
         currentProgression = progression
         updateCurrentLine(progression.calculateElapsedPositionMs())
-        if (progression.isPlaying) {
-            if (_lines.value.isNotEmpty() && _isSynced.value) startTicker()
-        } else {
+        if (progression.isPlaying && _lines.value.isNotEmpty() && _isSynced.value) {
+            // Always restart: this recalculates the wakeup time from the current position,
+            // which may have jumped significantly if the user just seeked.
+            stopTicker()
+            startTicker()
+        } else if (!progression.isPlaying) {
             stopTicker()
         }
     }
@@ -228,21 +244,25 @@ constructor(
     // Sync ticker
     // -------------------------------------------------------------------------
 
+    /**
+     * Starts the sync ticker. Always creates a fresh job — callers must call [stopTicker] first if
+     * a ticker might already be running.
+     */
     private fun startTicker() {
-        if (tickerJob?.isActive == true) return
         tickerJob =
             viewModelScope.launch(Dispatchers.Default) {
                 while (true) {
                     val posMs = currentProgression?.calculateElapsedPositionMs() ?: break
                     updateCurrentLine(posMs)
-                    // Calculate delay until the next lyric line instead of always sleeping
-                    // 500ms. This way we only wake up when there is actually something to do.
+                    // Sleep until just before the next line's timestamp so the highlight
+                    // lands as close as possible to the correct moment.
                     val lines = _lines.value
                     val nextLineMs = lines.firstOrNull { it.startMs > posMs }?.startMs
                     val delayMs =
                         if (nextLineMs != null) {
-                            // Wake 80ms early for smooth highlighting.
-                            (nextLineMs - posMs - 80L).coerceIn(50L, 2000L)
+                            // Wake 50ms early: tight enough for accurate highlighting,
+                            // generous enough to absorb scheduler jitter on slow devices.
+                            (nextLineMs - posMs - 50L).coerceIn(20L, 2000L)
                         } else {
                             // No next line — check every 2 seconds.
                             2000L
@@ -257,11 +277,35 @@ constructor(
         tickerJob = null
     }
 
+    /**
+     * Finds the index of the active lyric line for [posMs] using binary search (O(log n)).
+     *
+     * The active line is the last one whose [LrcLine.startMs] is ≤ [posMs]. If that line is a
+     * silence marker ([LrcLine.isSilence] = true), -1 is returned so the UI turns off the
+     * highlight.
+     *
+     * Emits to [currentLineIndex] only when the value actually changes to avoid triggering
+     * unnecessary recompositions or adapter updates.
+     */
     private fun updateCurrentLine(posMs: Long) {
         if (!_isSynced.value) return
         val snapshot = _lines.value
         if (snapshot.isEmpty()) return
-        val active = snapshot.indexOfLast { it.startMs <= posMs }
+
+        // Binary search: find the rightmost line with startMs <= posMs.
+        var lo = 0
+        var hi = snapshot.size - 1
+        var active = -1
+        while (lo <= hi) {
+            val mid = (lo + hi) ushr 1
+            if (snapshot[mid].startMs <= posMs) {
+                active = mid
+                lo = mid + 1
+            } else {
+                hi = mid - 1
+            }
+        }
+
         val reported = if (active >= 0 && snapshot[active].isSilence) -1 else active
         if (_currentLineIndex.value != reported) _currentLineIndex.value = reported
     }
