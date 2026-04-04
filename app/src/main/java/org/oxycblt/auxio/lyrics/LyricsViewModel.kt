@@ -168,8 +168,8 @@ constructor(
      * Called whenever the playback position or play/pause state changes, including after a seek.
      *
      * The ticker is always restarted here when playing so that its next wakeup deadline is
-     * calculated from the new position — this prevents the highlight from staying on the wrong
-     * line after the user scrubs forward or backward.
+     * calculated from the new position — this prevents the highlight from staying on the wrong line
+     * after the user scrubs forward or backward.
      */
     override fun onProgressionChanged(progression: Progression) {
         currentProgression = progression
