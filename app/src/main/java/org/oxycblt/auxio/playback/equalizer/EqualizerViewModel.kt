@@ -67,8 +67,7 @@ constructor(
     private val _searchState = MutableStateFlow<AutoEqSearchState>(AutoEqSearchState.Idle)
     val searchState: StateFlow<AutoEqSearchState> = _searchState
 
-    private val _autoEqProfileName =
-        MutableStateFlow(autoEqRepository.getCachedHeadphoneName())
+    private val _autoEqProfileName = MutableStateFlow(autoEqRepository.getCachedHeadphoneName())
     val autoEqProfileName: StateFlow<String?> = _autoEqProfileName
 
     private val _isModifiedFromProfile = MutableStateFlow(false)
@@ -117,9 +116,9 @@ constructor(
     }
 
     /**
-     * Re-reads all EQ state from [EqualizerSettings] and pushes it to the UI flows.
-     * Called when the EQ screen enters STARTED, so changes applied by [AudioDeviceListener]
-     * in the background are reflected immediately.
+     * Re-reads all EQ state from [EqualizerSettings] and pushes it to the UI flows. Called when the
+     * EQ screen enters STARTED, so changes applied by [AudioDeviceListener] in the background are
+     * reflected immediately.
      */
     fun refreshFromSettings() {
         val bands = equalizerSettings.getBands()
@@ -138,11 +137,11 @@ constructor(
     // ---- AutoEQ search ----
 
     /**
-     * Called whenever the search field text changes. After a 300 ms debounce, hits
-     * GET /results/search/{query} on the AutoEQ API and emits results.
+     * Called whenever the search field text changes. After a 300 ms debounce, hits GET
+     * /results/search/{query} on the AutoEQ API and emits results.
      *
-     * Sets [AutoEqSearchState.Error] if the network request fails, or
-     * [AutoEqSearchState.NoResults] if the API returned an empty list.
+     * Sets [AutoEqSearchState.Error] if the network request fails, or [AutoEqSearchState.NoResults]
+     * if the API returned an empty list.
      */
     fun onQueryChanged(query: String) {
         searchJob?.cancel()
@@ -172,8 +171,8 @@ constructor(
     }
 
     /**
-     * Downloads and applies the EQ profile for [result] via GET /results/{id}.
-     * Disables search interaction while downloading via [isApplyingProfile].
+     * Downloads and applies the EQ profile for [result] via GET /results/{id}. Disables search
+     * interaction while downloading via [isApplyingProfile].
      */
     fun applyAutoEqProfile(result: AutoEqResult) {
         viewModelScope.launch(Dispatchers.IO) {
