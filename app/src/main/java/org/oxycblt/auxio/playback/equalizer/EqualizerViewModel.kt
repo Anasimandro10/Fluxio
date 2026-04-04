@@ -67,8 +67,7 @@ constructor(
     private val _searchState = MutableStateFlow<AutoEqSearchState>(AutoEqSearchState.Idle)
     val searchState: StateFlow<AutoEqSearchState> = _searchState
 
-    private val _autoEqProfileName =
-        MutableStateFlow(autoEqRepository.getCachedHeadphoneName())
+    private val _autoEqProfileName = MutableStateFlow(autoEqRepository.getCachedHeadphoneName())
     val autoEqProfileName: StateFlow<String?> = _autoEqProfileName
 
     private val _isModifiedFromProfile = MutableStateFlow(false)
@@ -117,9 +116,9 @@ constructor(
     }
 
     /**
-     * Re-reads all EQ state from [EqualizerSettings] and pushes it to the UI flows.
-     * Called when the EQ screen enters STARTED, so changes applied by [AudioDeviceListener]
-     * in the background are reflected immediately.
+     * Re-reads all EQ state from [EqualizerSettings] and pushes it to the UI flows. Called when the
+     * EQ screen enters STARTED, so changes applied by [AudioDeviceListener] in the background are
+     * reflected immediately.
      */
     fun refreshFromSettings() {
         val bands = equalizerSettings.getBands()
@@ -172,8 +171,8 @@ constructor(
     }
 
     /**
-     * Downloads and applies the EQ profile for [result].
-     * Disables search interaction while downloading via [isApplyingProfile].
+     * Downloads and applies the EQ profile for [result]. Disables search interaction while
+     * downloading via [isApplyingProfile].
      */
     fun applyAutoEqProfile(result: AutoEqResult) {
         viewModelScope.launch(Dispatchers.IO) {

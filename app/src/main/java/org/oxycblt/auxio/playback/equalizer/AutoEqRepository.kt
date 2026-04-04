@@ -38,8 +38,8 @@ import timber.log.Timber as L
  * Each search query hits the AutoEQ search endpoint directly — no full index is downloaded or
  * cached locally. Only the selected profile is cached in SharedPreferences so it survives restarts.
  *
- * API by Jaakko Pasanen (https://autoeq.app), MIT License.
- * See assets/licenses/autoeq_license.txt for attribution.
+ * API by Jaakko Pasanen (https://autoeq.app), MIT License. See assets/licenses/autoeq_license.txt
+ * for attribution.
  */
 @Singleton
 class AutoEqRepository @Inject constructor(@ApplicationContext private val context: Context) {
@@ -54,14 +54,13 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     /**
      * Searches for headphones matching [query] via the AutoEQ API.
      *
-     * Returns null if the network request failed (caller should show Error state).
-     * Returns an empty list if the request succeeded but no headphones matched.
+     * Returns null if the network request failed (caller should show Error state). Returns an empty
+     * list if the request succeeded but no headphones matched.
      */
     suspend fun search(query: String): List<AutoEqResult>? =
         withContext(Dispatchers.IO) {
             try {
-                val encoded =
-                    URLEncoder.encode(query.trim(), "UTF-8").replace("+", "%20")
+                val encoded = URLEncoder.encode(query.trim(), "UTF-8").replace("+", "%20")
                 val body =
                     downloadRaw("$BASE_URL/headphones?search=$encoded&limit=$SEARCH_LIMIT")
                         ?: return@withContext null
@@ -73,21 +72,17 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
         }
 
     /**
-     * Downloads the 10-band EQ profile for [result] and caches it locally.
-     * Returns null on failure.
+     * Downloads the 10-band EQ profile for [result] and caches it locally. Returns null on failure.
      */
     suspend fun fetchProfile(result: AutoEqResult): FloatArray? =
         withContext(Dispatchers.IO) {
             try {
                 val pathEncoded =
-                    result.id
-                        .split("/")
-                        .joinToString("/") {
-                            URLEncoder.encode(it, "UTF-8").replace("+", "%20")
-                        }
+                    result.id.split("/").joinToString("/") {
+                        URLEncoder.encode(it, "UTF-8").replace("+", "%20")
+                    }
                 val body =
-                    downloadRaw("$BASE_URL/headphones/$pathEncoded")
-                        ?: return@withContext null
+                    downloadRaw("$BASE_URL/headphones/$pathEncoded") ?: return@withContext null
                 val gains = parseProfileResponse(body) ?: return@withContext null
                 saveToCache(result.name, result.source, gains)
                 gains
@@ -149,8 +144,8 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     }
 
     /**
-     * Parses the search response from the AutoEQ API.
-     * Handles both a top-level JSONArray and a wrapped JSONObject.
+     * Parses the search response from the AutoEQ API. Handles both a top-level JSONArray and a
+     * wrapped JSONObject.
      */
     private fun parseSearchResponse(json: String): List<AutoEqResult> {
         return try {
@@ -169,13 +164,9 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
                 try {
                     val obj = array.getJSONObject(i)
                     val name =
-                        obj.optString("name").takeIf { it.isNotBlank() }
-                            ?: return@mapNotNull null
+                        obj.optString("name").takeIf { it.isNotBlank() } ?: return@mapNotNull null
                     AutoEqResult(
-                        id =
-                            obj.optString("id").ifBlank {
-                                obj.optString("path").ifBlank { name }
-                            },
+                        id = obj.optString("id").ifBlank { obj.optString("path").ifBlank { name } },
                         name = name,
                         source = obj.optString("source").ifBlank { "" },
                     )
@@ -190,8 +181,8 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     }
 
     /**
-     * Parses the 10-band gains from a profile API response.
-     * Accepts a JSON object with a "graphicEq" field or plain text with "GraphicEQ:".
+     * Parses the 10-band gains from a profile API response. Accepts a JSON object with a
+     * "graphicEq" field or plain text with "GraphicEQ:".
      */
     private fun parseProfileResponse(body: String): FloatArray? {
         val graphicEqStr =
