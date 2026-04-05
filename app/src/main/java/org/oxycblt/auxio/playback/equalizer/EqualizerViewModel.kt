@@ -116,9 +116,9 @@ constructor(
     }
 
     /**
-     * Re-reads all EQ state from [EqualizerSettings] and pushes it to the UI flows. Called when the
-     * EQ screen enters STARTED, so changes applied by [AudioDeviceListener] in the background are
-     * reflected immediately.
+     * Re-reads all EQ state from [EqualizerSettings] and pushes it to the UI flows. Called when
+     * the EQ screen enters STARTED, so changes applied by [AudioDeviceListener] in the background
+     * are reflected immediately.
      */
     fun refreshFromSettings() {
         val bands = equalizerSettings.getBands()
@@ -140,8 +140,9 @@ constructor(
      * Called whenever the search field text changes. After a 300 ms debounce, hits GET
      * /results/search/{query} on the AutoEQ API and emits results.
      *
-     * Sets [AutoEqSearchState.Error] if the network request fails, or [AutoEqSearchState.NoResults]
-     * if the API returned an empty list.
+     * The spinner ([AutoEqSearchState.Loading]) is shown only after the debounce expires, so it
+     * never flickers during fast typing. Sets [AutoEqSearchState.Error] if the network request
+     * fails, or [AutoEqSearchState.NoResults] if the API returned an empty list.
      */
     fun onQueryChanged(query: String) {
         searchJob?.cancel()
@@ -152,8 +153,9 @@ constructor(
         }
         searchJob =
             viewModelScope.launch {
-                _searchState.value = AutoEqSearchState.Loading
                 delay(DEBOUNCE_MS)
+                // Debounce passed — user stopped typing. Show spinner now.
+                _searchState.value = AutoEqSearchState.Loading
                 val results = autoEqRepository.search(trimmed)
                 _searchState.value =
                     when {

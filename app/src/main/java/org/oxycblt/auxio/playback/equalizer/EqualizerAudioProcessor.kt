@@ -36,9 +36,10 @@ import kotlin.math.sin
  * this ExoPlayer build (same contract as [ReplayGainAudioProcessor]). Any other encoding returns
  * [AudioProcessor.AudioFormat.NOT_SET] so the processor is silently bypassed without errors.
  *
- * Thread safety: [enabled], [gains], [coeffs] and [state] are [@Volatile]. [setBands] runs on the
- * UI thread; [onConfigure], [onFlush], [onReset] and [queueInput] run on the ExoPlayer audio
- * thread. Assignments of new array objects are atomic (JVM guarantee).
+ * Thread safety: [enabled], [gains], [coeffs], [sampleRate], [channelCount] and [state] are
+ * [@Volatile]. [setBands] runs on the UI thread; [onConfigure], [onFlush], [onReset] and
+ * [queueInput] run on the ExoPlayer audio thread. Assignments of new array objects are atomic
+ * (JVM guarantee).
  */
 @Singleton
 class EqualizerAudioProcessor @Inject constructor(equalizerSettings: EqualizerSettings) :
@@ -48,10 +49,11 @@ class EqualizerAudioProcessor @Inject constructor(equalizerSettings: EqualizerSe
     @Volatile private var enabled = equalizerSettings.enabled
     @Volatile private var gains = equalizerSettings.getBands()
 
-    // Set on the audio thread in onConfigure. @Volatile so setBands() (UI thread) can safely
-    // read sampleRate to decide whether recomputeCoefficients() is necessary.
+    // Set on the audio thread in onConfigure. Both @Volatile so setBands() (UI thread) reads
+    // the latest values written by the audio thread and resetDelayLines() creates the correct
+    // number of per-channel delay lines.
     @Volatile private var sampleRate = 0
-    private var channelCount = 0
+    @Volatile private var channelCount = 0
 
     /**
      * Biquad coefficients per band: [b0, b1, b2, a1, a2], pre-normalized by a0.
@@ -73,7 +75,7 @@ class EqualizerAudioProcessor @Inject constructor(equalizerSettings: EqualizerSe
     fun setBands(newGains: FloatArray, isEnabled: Boolean) {
         gains = newGains.copyOf()
         enabled = isEnabled
-        // sampleRate is @Volatile — safe to read from UI thread.
+        // sampleRate and channelCount are @Volatile — safe to read from UI thread.
         if (sampleRate > 0) {
             recomputeCoefficients()
             resetDelayLines()
