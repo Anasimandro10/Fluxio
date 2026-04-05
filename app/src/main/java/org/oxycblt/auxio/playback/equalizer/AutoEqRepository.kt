@@ -35,11 +35,12 @@ import timber.log.Timber as L
 /**
  * Repository for downloading headphone EQ profiles from the AutoEQ API on demand.
  *
- * Endpoints (base = https://autoeq.app/api): Search → GET /results/search/{query} Response: JSON
- * array — fields can be short (n/s/i/r) or long (name/source/id/rank). Profile → GET /results/{id}
- * Response: plain text "GraphicEQ: freq gain; freq gain; …"
+ * Endpoints (base = https://autoeq.app/api): All profiles → GET /results Response: JSON array.
+ * Search → GET /results/search/{query} Response: JSON array. Profile → GET /results/{id} Response:
+ * plain text "GraphicEQ: freq gain; freq gain; …"
  *
- * No full index is downloaded. Only the selected profile is cached in SharedPreferences.
+ * The full profile index is cached in memory for the session lifetime. Only the selected profile's
+ * EQ bands are persisted to SharedPreferences.
  *
  * API by Jaakko Pasanen (https://autoeq.app), MIT License. See assets/licenses/autoeq_license.txt
  * for attribution.
@@ -50,15 +51,38 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
+    /** In-memory cache of all profiles. Populated once per process lifetime. */
+    @Volatile private var allProfilesCache: List<AutoEqResult>? = null
+
     // -------------------------------------------------------------------------
     // Public API
     // -------------------------------------------------------------------------
 
     /**
-     * Searches for headphones matching [query] via GET /results/search/{query}.
-     *
-     * Returns null if the network request failed. Returns an empty list if the API succeeded but no
-     * headphones matched.
+     * Downloads the complete list of headphone profiles via GET /results. The result is cached in
+     * memory so subsequent calls return immediately. Returns null if the network request failed.
+     */
+    suspend fun loadAllProfiles(): List<AutoEqResult>? {
+        allProfilesCache?.let { return it }
+        return withContext(Dispatchers.IO) {
+            try {
+                val body =
+                    downloadRaw("$BASE_URL/results", acceptJson = true)
+                        ?: return@withContext null
+                val list = parseSearchResponse(body)
+                if (list.isEmpty()) return@withContext null
+                allProfilesCache = list
+                list
+            } catch (e: Exception) {
+                L.e("AutoEQ loadAllProfiles failed: ${e.message}")
+                null
+            }
+        }
+    }
+
+    /**
+     * Searches for headphones matching [query] via GET /results/search/{query}. Used as fallback
+     * when loadAllProfiles is unavailable. Returns null if the network request failed.
      */
     suspend fun search(query: String): List<AutoEqResult>? =
         withContext(Dispatchers.IO) {
@@ -121,10 +145,6 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     // Private helpers
     // -------------------------------------------------------------------------
 
-    /**
-     * Downloads the body of [urlStr] as a String. Returns null on any network error or non-200
-     * response.
-     */
     private fun downloadRaw(urlStr: String, acceptJson: Boolean): String? {
         var connection: HttpURLConnection? = null
         return try {
@@ -153,10 +173,6 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
         }
     }
 
-    /**
-     * Parses the search JSON response. Accepts both compact field names (n/s/i/r) and full names
-     * (name/source/id/rank), and handles both top-level array and wrapped object responses.
-     */
     private fun parseSearchResponse(json: String): List<AutoEqResult> {
         return try {
             val trimmed = json.trim()
@@ -174,7 +190,6 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
             (0 until array.length()).mapNotNull { i ->
                 try {
                     val obj = array.getJSONObject(i)
-                    // Support both short field names (n/s/i/r) and long names (name/source/id/rank)
                     val name =
                         obj.optString("n").takeIf { it.isNotBlank() }
                             ?: obj.optString("name").takeIf { it.isNotBlank() }
@@ -200,10 +215,6 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
         }
     }
 
-    /**
-     * Parses the plain-text GraphicEQ response. Expected: "GraphicEQ: 31 -1.5; 63 0.2; 125 2.1; …"
-     * Interpolates to the 10 target frequencies.
-     */
     private fun parseGraphicEq(raw: String): FloatArray? {
         val data = raw.replace("GraphicEQ:", "", ignoreCase = true).trim()
         val points = mutableListOf<Pair<Float, Float>>()

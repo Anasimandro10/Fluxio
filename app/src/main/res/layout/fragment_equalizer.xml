@@ -13,7 +13,6 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Card ON/OFF -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -43,7 +42,6 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Card Bandas + Presets -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -63,7 +61,6 @@
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="8dp" />
 
-                <!-- eq_db_labels se mantiene invisible para no romper el binding -->
                 <LinearLayout
                     android:id="@+id/eq_db_labels"
                     android:layout_width="match_parent"
@@ -86,7 +83,6 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Card AutoEQ -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/eq_card_autoeq"
             android:layout_width="match_parent"
@@ -108,61 +104,24 @@
                     android:text="@string/lbl_autoeq"
                     android:textAppearance="?attr/textAppearanceTitleSmall" />
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/hint_autoeq_search"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-                    app:endIconMode="clear_text">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/eq_autoeq_search"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:imeOptions="actionSearch"
-                        android:inputType="text"
-                        android:maxLines="1"
-                        android:singleLine="true" />
-
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <ProgressBar
-                    android:id="@+id/eq_autoeq_progress"
-                    style="?android:attr/progressBarStyleHorizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="4dp"
-                    android:layout_marginTop="6dp"
-                    android:indeterminate="true"
-                    android:visibility="gone" />
-
-                <TextView
-                    android:id="@+id/eq_autoeq_status"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:textAppearance="?attr/textAppearanceBodySmall"
-                    android:visibility="gone" />
-
                 <TextView
                     android:id="@+id/eq_autoeq_profile_label"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="12dp"
                     android:textAppearance="?attr/textAppearanceBodySmall"
                     android:visibility="gone" />
 
-                <LinearLayout
-                    android:id="@+id/eq_autoeq_results"
+                <Button
+                    android:id="@+id/eq_btn_autoeq_browse"
+                    style="?attr/materialButtonOutlinedStyle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:orientation="vertical"
-                    android:visibility="gone" />
+                    android:text="@string/lbl_autoeq_browse" />
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Card Perfiles de dispositivo -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

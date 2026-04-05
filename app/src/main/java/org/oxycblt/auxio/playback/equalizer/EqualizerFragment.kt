@@ -18,16 +18,11 @@
 package org.oxycblt.auxio.playback.equalizer
 
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
-import android.view.animation.DecelerateInterpolator
-import android.view.inputmethod.InputMethodManager
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.SeekBar
@@ -67,22 +62,16 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         buildBandViews(binding)
         setupPresetSpinner(binding)
         setupSwitch(binding)
-        setupAutoEqSearch(binding)
+        setupAutoEqBrowse(binding)
         setupDeviceProfilesButton(binding)
 
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                // Sync UI with any preset applied automatically by AudioDeviceListener
-                // while this screen was closed or the app was in the background.
                 viewModel.refreshFromSettings()
 
                 launch { viewModel.enabled.collect { onEnabledChanged(binding, it) } }
                 launch { viewModel.bands.collect { onBandsChanged(it) } }
                 launch { viewModel.activePreset.collect { onPresetChanged(binding, it) } }
-                launch { viewModel.searchState.collect { onSearchStateChanged(binding, it) } }
-                launch {
-                    viewModel.isApplyingProfile.collect { onApplyingProfileChanged(binding, it) }
-                }
                 launch {
                     combine(viewModel.autoEqProfileName, viewModel.isModifiedFromProfile) {
                             name,
@@ -201,30 +190,10 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         binding.eqSwitch.setOnCheckedChangeListener { _, checked -> viewModel.setEnabled(checked) }
     }
 
-    private fun setupAutoEqSearch(binding: FragmentEqualizerBinding) {
-        binding.eqAutoeqSearch.addTextChangedListener(
-            object : TextWatcher {
-                override fun beforeTextChanged(
-                    s: CharSequence?,
-                    start: Int,
-                    count: Int,
-                    after: Int,
-                ) {}
-
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                    viewModel.onQueryChanged(s?.toString() ?: "")
-                }
-
-                override fun afterTextChanged(s: Editable?) {}
-            }
-        )
-
-        binding.eqAutoeqSearch.setOnFocusChangeListener { _, hasFocus ->
-            if (hasFocus) {
-                binding.eqCardAutoeq.post {
-                    binding.eqScroll.smoothScrollTo(0, binding.eqCardAutoeq.top - 16)
-                }
-            }
+    /** Opens [AutoEqBrowserDialog] when the user taps Browse Presets. */
+    private fun setupAutoEqBrowse(binding: FragmentEqualizerBinding) {
+        binding.eqBtnAutoeqBrowse.setOnClickListener {
+            AutoEqBrowserDialog().show(childFragmentManager, AutoEqBrowserDialog.TAG)
         }
     }
 
@@ -241,8 +210,6 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         binding.eqSwitch.isChecked = enabled
         seekBars.forEach { it?.isEnabled = enabled }
         binding.eqPresetSpinner.isEnabled = enabled
-        // NOTE: eqAutoeqSearch is intentionally NOT disabled when EQ is off.
-        // Searching is always available; applying a profile auto-enables the EQ.
     }
 
     private fun onBandsChanged(bands: FloatArray) {
@@ -264,49 +231,6 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         }
     }
 
-    private fun onSearchStateChanged(binding: FragmentEqualizerBinding, state: AutoEqSearchState) {
-        when (state) {
-            is AutoEqSearchState.Idle -> {
-                binding.eqAutoeqProgress.visibility = View.GONE
-                binding.eqAutoeqStatus.visibility = View.GONE
-                hideResults(binding)
-            }
-            is AutoEqSearchState.Loading -> {
-                binding.eqAutoeqProgress.visibility = View.VISIBLE
-                binding.eqAutoeqStatus.visibility = View.GONE
-                hideResults(binding)
-            }
-            is AutoEqSearchState.Results -> {
-                binding.eqAutoeqProgress.visibility = View.GONE
-                binding.eqAutoeqStatus.visibility = View.GONE
-                showResults(binding, state.items)
-            }
-            is AutoEqSearchState.NoResults -> {
-                binding.eqAutoeqProgress.visibility = View.GONE
-                binding.eqAutoeqStatus.text = getString(R.string.lbl_autoeq_no_results)
-                binding.eqAutoeqStatus.visibility = View.VISIBLE
-                hideResults(binding)
-            }
-            is AutoEqSearchState.Error -> {
-                binding.eqAutoeqProgress.visibility = View.GONE
-                binding.eqAutoeqStatus.text = getString(R.string.lbl_autoeq_error)
-                binding.eqAutoeqStatus.visibility = View.VISIBLE
-                hideResults(binding)
-            }
-        }
-    }
-
-    private fun onApplyingProfileChanged(binding: FragmentEqualizerBinding, applying: Boolean) {
-        if (applying) {
-            binding.eqAutoeqProgress.visibility = View.VISIBLE
-            binding.eqAutoeqSearch.isEnabled = false
-        } else {
-            binding.eqAutoeqProgress.visibility = View.GONE
-            // Re-enable search unconditionally — it is not tied to EQ enabled state.
-            binding.eqAutoeqSearch.isEnabled = true
-        }
-    }
-
     private fun onProfileLabelChanged(
         binding: FragmentEqualizerBinding,
         name: String?,
@@ -320,87 +244,5 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
             if (modified) getString(R.string.lbl_autoeq_modified, name)
             else getString(R.string.lbl_autoeq_profile, name)
         binding.eqAutoeqProfileLabel.visibility = View.VISIBLE
-    }
-
-    // ---- Results display ----
-
-    private fun showResults(binding: FragmentEqualizerBinding, results: List<AutoEqResult>) {
-        // Cancel any in-progress animation to avoid race conditions where
-        // a delayed hide callback would set visibility back to GONE after we show.
-        binding.eqAutoeqResults.animate().cancel()
-        binding.eqAutoeqResults.removeAllViews()
-
-        for ((index, result) in results.withIndex()) {
-            val btn =
-                Button(requireContext()).apply {
-                    text = buildResultLabel(result)
-                    isAllCaps = false
-                    textSize = 13f
-                    gravity = Gravity.START or Gravity.CENTER_VERTICAL
-                    layoutParams =
-                        LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                        )
-                    alpha = 0f
-                    translationY = (8 * resources.displayMetrics.density)
-                    setOnClickListener {
-                        viewModel.applyAutoEqProfile(result)
-                        binding.eqAutoeqSearch.text?.clear()
-                        binding.eqAutoeqSearch.clearFocus()
-                        hideKeyboard(binding.eqAutoeqSearch)
-                    }
-                }
-
-            binding.eqAutoeqResults.addView(btn)
-            btn.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setDuration(180)
-                .setStartDelay((index * 40).toLong())
-                .setInterpolator(DecelerateInterpolator())
-                .start()
-        }
-
-        // Set visible immediately BEFORE animating to avoid race with hideResults.
-        binding.eqAutoeqResults.alpha = 0f
-        binding.eqAutoeqResults.visibility = View.VISIBLE
-        binding.eqAutoeqResults
-            .animate()
-            .alpha(1f)
-            .setDuration(180)
-            .setInterpolator(DecelerateInterpolator())
-            .start()
-
-        binding.eqAutoeqResults.postDelayed(
-            { if (isAdded) binding.eqScroll.smoothScrollTo(0, binding.eqCardAutoeq.bottom + 32) },
-            220,
-        )
-    }
-
-    /**
-     * Hides the results list immediately without animation. Avoiding a withEndAction-based approach
-     * prevents race conditions where the end callback fires after showResults has already set
-     * visibility to VISIBLE.
-     */
-    private fun hideResults(binding: FragmentEqualizerBinding) {
-        // Cancel any in-progress show animation first.
-        binding.eqAutoeqResults.animate().cancel()
-        binding.eqAutoeqResults.visibility = View.GONE
-        binding.eqAutoeqResults.alpha = 1f
-        binding.eqAutoeqResults.removeAllViews()
-    }
-
-    private fun buildResultLabel(result: AutoEqResult): String {
-        return if (result.source.isNotBlank()) "${result.name}  —  ${result.source}"
-        else result.name
-    }
-
-    // ---- Util ----
-
-    private fun hideKeyboard(view: View) {
-        requireContext()
-            .getSystemService(InputMethodManager::class.java)
-            .hideSoftInputFromWindow(view.windowToken, 0)
     }
 }

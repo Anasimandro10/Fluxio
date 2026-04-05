@@ -27,21 +27,31 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-/** UI state for the AutoEQ headphone search. */
+/** UI state for the full AutoEQ profile index download. */
+sealed class AllProfilesState {
+    /** Not yet requested. */
+    object Idle : AllProfilesState()
+
+    /** Download in progress. */
+    object Loading : AllProfilesState()
+
+    /** Full list available for local filtering. */
+    data class Ready(val profiles: List<AutoEqResult>) : AllProfilesState()
+
+    /** Network error — index could not be downloaded. */
+    object Error : AllProfilesState()
+}
+
+/** UI state for the AutoEQ headphone search (kept for backward compatibility). */
 sealed class AutoEqSearchState {
-    /** No query entered yet, or results were cleared. */
     object Idle : AutoEqSearchState()
 
-    /** Query entered; waiting for API response. */
     object Loading : AutoEqSearchState()
 
-    /** Results ready to display. */
     data class Results(val items: List<AutoEqResult>) : AutoEqSearchState()
 
-    /** Query returned no matching headphones. */
     object NoResults : AutoEqSearchState()
 
-    /** The AutoEQ API could not be reached. */
     object Error : AutoEqSearchState()
 }
 
@@ -66,13 +76,15 @@ constructor(
     private val _searchState = MutableStateFlow<AutoEqSearchState>(AutoEqSearchState.Idle)
     val searchState: StateFlow<AutoEqSearchState> = _searchState
 
+    private val _allProfilesState = MutableStateFlow<AllProfilesState>(AllProfilesState.Idle)
+    val allProfilesState: StateFlow<AllProfilesState> = _allProfilesState
+
     private val _autoEqProfileName = MutableStateFlow(autoEqRepository.getCachedHeadphoneName())
     val autoEqProfileName: StateFlow<String?> = _autoEqProfileName
 
     private val _isModifiedFromProfile = MutableStateFlow(false)
     val isModifiedFromProfile: StateFlow<Boolean> = _isModifiedFromProfile
 
-    /** True while a selected profile is being downloaded and applied. */
     private val _isApplyingProfile = MutableStateFlow(false)
     val isApplyingProfile: StateFlow<Boolean> = _isApplyingProfile
 
@@ -114,11 +126,6 @@ constructor(
         autoEqRepository.clearProfileCache()
     }
 
-    /**
-     * Re-reads all EQ state from [EqualizerSettings] and pushes it to the UI flows. Called when the
-     * EQ screen enters STARTED, so changes applied by [AudioDeviceListener] in the background are
-     * reflected immediately.
-     */
     fun refreshFromSettings() {
         val bands = equalizerSettings.getBands()
         val preset = equalizerSettings.activePreset
@@ -133,15 +140,45 @@ constructor(
         }
     }
 
-    // ---- AutoEQ search ----
+    // ---- All-profiles index ----
 
     /**
-     * Called whenever the search field text changes. After a 300 ms debounce, hits GET
-     * /results/search/{query} on the AutoEQ API and emits results.
-     *
-     * The spinner ([AutoEqSearchState.Loading]) is shown only after the debounce expires, so it
-     * never flickers during fast typing.
+     * Downloads the complete AutoEQ profile index if not already cached. Safe to call multiple
+     * times — subsequent calls while [AllProfilesState.Ready] are no-ops.
      */
+    fun loadAllProfiles() {
+        if (_allProfilesState.value is AllProfilesState.Ready) return
+        viewModelScope.launch {
+            _allProfilesState.value = AllProfilesState.Loading
+            val list = autoEqRepository.loadAllProfiles()
+            _allProfilesState.value =
+                if (list != null) AllProfilesState.Ready(list) else AllProfilesState.Error
+        }
+    }
+
+    /**
+     * Filters the in-memory profile list by [query] (case-insensitive match on name and source).
+     * Returns the first [MAX_DISPLAY] matches. If [query] is blank returns the first
+     * [MAX_DISPLAY] profiles alphabetically. Returns an empty list if the index is not yet ready.
+     */
+    fun filterProfiles(query: String): List<AutoEqResult> {
+        val state = _allProfilesState.value
+        if (state !is AllProfilesState.Ready) return emptyList()
+        val q = query.trim()
+        return if (q.isBlank()) {
+            state.profiles.take(MAX_DISPLAY)
+        } else {
+            state.profiles
+                .filter {
+                    it.name.contains(q, ignoreCase = true) ||
+                        it.source.contains(q, ignoreCase = true)
+                }
+                .take(MAX_DISPLAY)
+        }
+    }
+
+    // ---- AutoEQ search (API-based, kept for compatibility) ----
+
     fun onQueryChanged(query: String) {
         searchJob?.cancel()
         val trimmed = query.trim()
@@ -163,25 +200,17 @@ constructor(
             }
     }
 
-    /** Clears search results and resets to idle state. */
     fun clearSearch() {
         searchJob?.cancel()
         _searchState.value = AutoEqSearchState.Idle
     }
 
-    /**
-     * Downloads and applies the EQ profile for [result] via GET /results/{id}. Runs on the Main
-     * dispatcher; IO happens inside [AutoEqRepository.fetchProfile]. Automatically enables the EQ
-     * if it was off.
-     */
     fun applyAutoEqProfile(result: AutoEqResult) {
         viewModelScope.launch {
             _isApplyingProfile.value = true
             _searchState.value = AutoEqSearchState.Idle
-            // fetchProfile suspends internally with withContext(Dispatchers.IO)
             val gains = autoEqRepository.fetchProfile(result)
             if (gains != null) {
-                // Auto-enable EQ when a profile is applied
                 if (!_enabled.value) {
                     _enabled.value = true
                     equalizerSettings.enabled = true
@@ -200,5 +229,8 @@ constructor(
 
     companion object {
         private const val DEBOUNCE_MS = 300L
+
+        /** Maximum number of results shown at once to avoid rendering thousands of buttons. */
+        private const val MAX_DISPLAY = 30
     }
 }
