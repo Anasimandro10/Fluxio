@@ -85,9 +85,6 @@ private constructor(
                 }
             }
 
-            // Collect all files and track unique directories
-            val allFiles = mutableListOf<File>()
-
             context.contentResolverSafe.useQuery(
                 AOSPMediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                 projection,
@@ -115,12 +112,10 @@ private constructor(
                         )
                     val mimeType = cursor.getStringOrNull(mimeTypeIndex) ?: "audio/*"
                     val size = cursor.getLong(sizeIndex)
-                    val dateAdded = cursor.getLong(dateAddedIndex) * 1000 // Convert to milliseconds
-                    val dateModified =
-                        cursor.getLong(dateModifiedIndex) * 1000 // Convert to milliseconds
+                    val dateAdded = cursor.getLong(dateAddedIndex) * 1000
+                    val dateModified = cursor.getLong(dateModifiedIndex) * 1000
 
-                    // Create file with empty deferred parent
-                    val deviceFile =
+                    it.send(
                         File(
                             uri = uri,
                             path = path,
@@ -130,9 +125,7 @@ private constructor(
                             addedMs = ForwardDateAdded(dateAdded),
                             parent = null,
                         )
-
-                    allFiles.add(deviceFile)
-                    it.send(deviceFile)
+                    )
                 }
             }
         }
