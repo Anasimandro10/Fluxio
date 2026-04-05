@@ -21,7 +21,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -116,9 +115,9 @@ constructor(
     }
 
     /**
-     * Re-reads all EQ state from [EqualizerSettings] and pushes it to the UI flows. Called when the
-     * EQ screen enters STARTED, so changes applied by [AudioDeviceListener] in the background are
-     * reflected immediately.
+     * Re-reads all EQ state from [EqualizerSettings] and pushes it to the UI flows.
+     * Called when the EQ screen enters STARTED, so changes applied by [AudioDeviceListener]
+     * in the background are reflected immediately.
      */
     fun refreshFromSettings() {
         val bands = equalizerSettings.getBands()
@@ -137,12 +136,11 @@ constructor(
     // ---- AutoEQ search ----
 
     /**
-     * Called whenever the search field text changes. After a 300 ms debounce, hits GET
-     * /results/search/{query} on the AutoEQ API and emits results.
+     * Called whenever the search field text changes. After a 300 ms debounce, hits
+     * GET /results/search/{query} on the AutoEQ API and emits results.
      *
-     * The spinner ([AutoEqSearchState.Loading]) is shown only after the debounce expires, so it
-     * never flickers during fast typing. Sets [AutoEqSearchState.Error] if the network request
-     * fails, or [AutoEqSearchState.NoResults] if the API returned an empty list.
+     * The spinner ([AutoEqSearchState.Loading]) is shown only after the debounce expires,
+     * so it never flickers during fast typing.
      */
     fun onQueryChanged(query: String) {
         searchJob?.cancel()
@@ -154,7 +152,6 @@ constructor(
         searchJob =
             viewModelScope.launch {
                 delay(DEBOUNCE_MS)
-                // Debounce passed — user stopped typing. Show spinner now.
                 _searchState.value = AutoEqSearchState.Loading
                 val results = autoEqRepository.search(trimmed)
                 _searchState.value =
@@ -173,20 +170,27 @@ constructor(
     }
 
     /**
-     * Downloads and applies the EQ profile for [result] via GET /results/{id}. Disables search
-     * interaction while downloading via [isApplyingProfile].
+     * Downloads and applies the EQ profile for [result] via GET /results/{id}.
+     * Runs on the Main dispatcher; IO happens inside [AutoEqRepository.fetchProfile].
+     * Automatically enables the EQ if it was off.
      */
     fun applyAutoEqProfile(result: AutoEqResult) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             _isApplyingProfile.value = true
             _searchState.value = AutoEqSearchState.Idle
+            // fetchProfile suspends internally with withContext(Dispatchers.IO)
             val gains = autoEqRepository.fetchProfile(result)
             if (gains != null) {
+                // Auto-enable EQ when a profile is applied
+                if (!_enabled.value) {
+                    _enabled.value = true
+                    equalizerSettings.enabled = true
+                }
                 _bands.value = gains
                 _activePreset.value = EqualizerSettings.PRESET_CUSTOM
                 equalizerSettings.activePreset = EqualizerSettings.PRESET_CUSTOM
                 equalizerSettings.saveBands(gains)
-                equalizerProcessor.setBands(gains, _enabled.value)
+                equalizerProcessor.setBands(gains, true)
                 _autoEqProfileName.value = result.name
                 _isModifiedFromProfile.value = false
             }

@@ -23,7 +23,6 @@ import android.text.TextWatcher
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
-import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.view.inputmethod.InputMethodManager
 import android.widget.AdapterView
@@ -242,7 +241,8 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         binding.eqSwitch.isChecked = enabled
         seekBars.forEach { it?.isEnabled = enabled }
         binding.eqPresetSpinner.isEnabled = enabled
-        binding.eqAutoeqSearch.isEnabled = enabled
+        // NOTE: eqAutoeqSearch is intentionally NOT disabled when EQ is off.
+        // Searching is always available; applying a profile auto-enables the EQ.
     }
 
     private fun onBandsChanged(bands: FloatArray) {
@@ -302,7 +302,8 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
             binding.eqAutoeqSearch.isEnabled = false
         } else {
             binding.eqAutoeqProgress.visibility = View.GONE
-            binding.eqAutoeqSearch.isEnabled = viewModel.enabled.value
+            // Re-enable search unconditionally — it is not tied to EQ enabled state.
+            binding.eqAutoeqSearch.isEnabled = true
         }
     }
 
@@ -324,6 +325,9 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
     // ---- Results display ----
 
     private fun showResults(binding: FragmentEqualizerBinding, results: List<AutoEqResult>) {
+        // Cancel any in-progress animation to avoid race conditions where
+        // a delayed hide callback would set visibility back to GONE after we show.
+        binding.eqAutoeqResults.animate().cancel()
         binding.eqAutoeqResults.removeAllViews()
 
         for ((index, result) in results.withIndex()) {
@@ -358,35 +362,33 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
                 .start()
         }
 
-        if (binding.eqAutoeqResults.visibility != View.VISIBLE) {
-            binding.eqAutoeqResults.alpha = 0f
-            binding.eqAutoeqResults.visibility = View.VISIBLE
-            binding.eqAutoeqResults
-                .animate()
-                .alpha(1f)
-                .setDuration(180)
-                .setInterpolator(DecelerateInterpolator())
-                .start()
-        }
+        // Set visible immediately BEFORE animating to avoid race with hideResults.
+        binding.eqAutoeqResults.alpha = 0f
+        binding.eqAutoeqResults.visibility = View.VISIBLE
+        binding.eqAutoeqResults
+            .animate()
+            .alpha(1f)
+            .setDuration(180)
+            .setInterpolator(DecelerateInterpolator())
+            .start()
+
         binding.eqAutoeqResults.postDelayed(
             { if (isAdded) binding.eqScroll.smoothScrollTo(0, binding.eqCardAutoeq.bottom + 32) },
             220,
         )
     }
 
+    /**
+     * Hides the results list immediately without animation.
+     * Avoiding a withEndAction-based approach prevents race conditions where
+     * the end callback fires after showResults has already set visibility to VISIBLE.
+     */
     private fun hideResults(binding: FragmentEqualizerBinding) {
-        val results = binding.eqAutoeqResults
-        if (results.visibility == View.GONE) return
-        results
-            .animate()
-            .alpha(0f)
-            .setDuration(120)
-            .setInterpolator(AccelerateInterpolator())
-            .withEndAction {
-                results.visibility = View.GONE
-                results.removeAllViews()
-            }
-            .start()
+        // Cancel any in-progress show animation first.
+        binding.eqAutoeqResults.animate().cancel()
+        binding.eqAutoeqResults.visibility = View.GONE
+        binding.eqAutoeqResults.alpha = 1f
+        binding.eqAutoeqResults.removeAllViews()
     }
 
     private fun buildResultLabel(result: AutoEqResult): String {
