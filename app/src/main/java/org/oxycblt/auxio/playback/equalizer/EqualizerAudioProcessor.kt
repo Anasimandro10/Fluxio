@@ -38,8 +38,8 @@ import kotlin.math.sin
  *
  * Thread safety: [enabled], [gains], [coeffs], [sampleRate], [channelCount] and [state] are
  * [@Volatile]. [setBands] runs on the UI thread; [onConfigure], [onFlush], [onReset] and
- * [queueInput] run on the ExoPlayer audio thread. Assignments of new array objects are atomic
- * (JVM guarantee).
+ * [queueInput] run on the ExoPlayer audio thread. Assignments of new array objects are atomic (JVM
+ * guarantee).
  */
 @Singleton
 class EqualizerAudioProcessor @Inject constructor(equalizerSettings: EqualizerSettings) :

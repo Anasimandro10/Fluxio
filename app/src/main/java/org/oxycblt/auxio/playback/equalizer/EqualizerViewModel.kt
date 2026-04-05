@@ -116,9 +116,9 @@ constructor(
     }
 
     /**
-     * Re-reads all EQ state from [EqualizerSettings] and pushes it to the UI flows. Called when
-     * the EQ screen enters STARTED, so changes applied by [AudioDeviceListener] in the background
-     * are reflected immediately.
+     * Re-reads all EQ state from [EqualizerSettings] and pushes it to the UI flows. Called when the
+     * EQ screen enters STARTED, so changes applied by [AudioDeviceListener] in the background are
+     * reflected immediately.
      */
     fun refreshFromSettings() {
         val bands = equalizerSettings.getBands()
