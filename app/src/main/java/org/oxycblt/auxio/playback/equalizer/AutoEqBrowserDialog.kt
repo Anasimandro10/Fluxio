@@ -20,66 +20,68 @@ package org.oxycblt.auxio.playback.equalizer
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.view.Gravity
 import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.view.animation.DecelerateInterpolator
 import android.view.inputmethod.InputMethodManager
-import android.widget.Button
-import android.widget.LinearLayout
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.databinding.DialogAutoeqBrowserBinding
+import org.oxycblt.auxio.ui.ViewBindingBottomSheetDialogFragment
 
 /**
- * Bottom sheet that displays the full AutoEQ profile index and filters it locally as the user
- * types. Profiles are loaded from the API once per session and cached in memory.
+ * Bottom sheet that displays the full AutoEQ headphone profile index and filters it locally as
+ * the user types. Profiles are downloaded from the API once per process lifetime and cached in
+ * memory. Extends [ViewBindingBottomSheetDialogFragment] to use the project's backport sheet.
  */
 @AndroidEntryPoint
-class AutoEqBrowserDialog : BottomSheetDialogFragment() {
+class AutoEqBrowserDialog :
+    ViewBindingBottomSheetDialogFragment<DialogAutoeqBrowserBinding>() {
 
-    private var _binding: DialogAutoeqBrowserBinding? = null
-    private val binding
-        get() = _binding!!
-
-    // Retrieves the EqualizerViewModel instance owned by EqualizerFragment.
+    // ViewModel owned by EqualizerFragment — shared so applyAutoEqProfile reaches the EQ.
     private val viewModel: EqualizerViewModel by viewModels({ requireParentFragment() })
 
-    /** Current text in the search field — used to re-filter after the index loads. */
+    private lateinit var resultsAdapter: AutoEqResultAdapter
     private var currentQuery = ""
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?,
-    ): View {
-        _binding = DialogAutoeqBrowserBinding.inflate(inflater, container, false)
-        return binding.root
-    }
+    // ---- ViewBindingBottomSheetDialogFragment ----
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        setupSearch()
+    override fun onCreateBinding(inflater: LayoutInflater) =
+        DialogAutoeqBrowserBinding.inflate(inflater)
+
+    override fun onBindingCreated(
+        binding: DialogAutoeqBrowserBinding,
+        savedInstanceState: Bundle?,
+    ) {
+        resultsAdapter = AutoEqResultAdapter { result ->
+            viewModel.applyAutoEqProfile(result)
+            hideKeyboard()
+            dismiss()
+        }
+
+        binding.autoeqBrowserResults.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = resultsAdapter
+            setHasFixedSize(false)
+        }
+
+        setupSearch(binding)
         collectState()
-        // Trigger the index download (no-op if already loaded or loading).
+        // Start the index download (no-op when already loading or ready).
         viewModel.loadAllProfiles()
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+    override fun onDestroyBinding(binding: DialogAutoeqBrowserBinding) {
+        binding.autoeqBrowserResults.adapter = null
     }
 
-    // ---- Setup ----
+    // ---- Search setup ----
 
-    private fun setupSearch() {
+    private fun setupSearch(binding: DialogAutoeqBrowserBinding) {
         binding.autoeqBrowserSearch.addTextChangedListener(
             object : TextWatcher {
                 override fun beforeTextChanged(
@@ -89,16 +91,22 @@ class AutoEqBrowserDialog : BottomSheetDialogFragment() {
                     after: Int,
                 ) {}
 
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                override fun onTextChanged(
+                    s: CharSequence?,
+                    start: Int,
+                    before: Int,
+                    count: Int,
+                ) {
                     currentQuery = s?.toString() ?: ""
-                    // Filter is instant because it works on the in-memory list.
-                    showFiltered()
+                    applyFilter()
                 }
 
                 override fun afterTextChanged(s: Editable?) {}
             }
         )
     }
+
+    // ---- State collection ----
 
     private fun collectState() {
         viewLifecycleOwner.lifecycleScope.launch {
@@ -112,107 +120,70 @@ class AutoEqBrowserDialog : BottomSheetDialogFragment() {
     // ---- State handlers ----
 
     private fun onAllProfilesStateChanged(state: AllProfilesState) {
+        val binding = requireBinding()
         when (state) {
             is AllProfilesState.Idle,
             is AllProfilesState.Loading -> {
-                binding.autoeqBrowserProgress.visibility = View.VISIBLE
-                binding.autoeqBrowserCount.visibility = View.GONE
-                binding.autoeqBrowserStatus.visibility = View.GONE
-                clearResults()
+                binding.autoeqBrowserProgress.visibility = android.view.View.VISIBLE
+                binding.autoeqBrowserCount.visibility = android.view.View.GONE
+                binding.autoeqBrowserStatus.visibility = android.view.View.GONE
+                binding.autoeqBrowserResults.visibility = android.view.View.GONE
+                resultsAdapter.submitList(null)
             }
             is AllProfilesState.Ready -> {
-                binding.autoeqBrowserProgress.visibility = View.GONE
+                binding.autoeqBrowserProgress.visibility = android.view.View.GONE
                 binding.autoeqBrowserCount.text =
                     getString(R.string.lbl_autoeq_count, state.profiles.size)
-                binding.autoeqBrowserCount.visibility = View.VISIBLE
-                binding.autoeqBrowserStatus.visibility = View.GONE
-                // Re-apply any query that was typed while the index was loading.
-                showFiltered()
+                binding.autoeqBrowserCount.visibility = android.view.View.VISIBLE
+                binding.autoeqBrowserStatus.visibility = android.view.View.GONE
+                // Apply any query typed while the index was loading.
+                applyFilter()
             }
             is AllProfilesState.Error -> {
-                binding.autoeqBrowserProgress.visibility = View.GONE
-                binding.autoeqBrowserCount.visibility = View.GONE
+                binding.autoeqBrowserProgress.visibility = android.view.View.GONE
+                binding.autoeqBrowserCount.visibility = android.view.View.GONE
                 binding.autoeqBrowserStatus.text = getString(R.string.lbl_autoeq_error)
-                binding.autoeqBrowserStatus.visibility = View.VISIBLE
-                clearResults()
+                binding.autoeqBrowserStatus.visibility = android.view.View.VISIBLE
+                binding.autoeqBrowserResults.visibility = android.view.View.GONE
+                resultsAdapter.submitList(null)
             }
         }
     }
 
     private fun onApplyingChanged(applying: Boolean) {
+        val binding = requireBinding()
         binding.autoeqBrowserSearch.isEnabled = !applying
-        binding.autoeqBrowserProgress.visibility = if (applying) View.VISIBLE else View.GONE
+        if (applying) {
+            binding.autoeqBrowserProgress.visibility = android.view.View.VISIBLE
+        }
     }
 
     // ---- Filtering ----
 
-    /**
-     * Asks the ViewModel to filter the in-memory list by [currentQuery] and renders the result.
-     * Does nothing if the index is not yet ready.
-     */
-    private fun showFiltered() {
+    /** Filters the in-memory profile list and updates the RecyclerView. */
+    private fun applyFilter() {
+        val binding = requireBinding()
         val state = viewModel.allProfilesState.value
         if (state !is AllProfilesState.Ready) return
 
         val results = viewModel.filterProfiles(currentQuery)
+
         if (results.isEmpty() && currentQuery.isNotBlank()) {
-            clearResults()
             binding.autoeqBrowserStatus.text = getString(R.string.lbl_autoeq_no_results)
-            binding.autoeqBrowserStatus.visibility = View.VISIBLE
+            binding.autoeqBrowserStatus.visibility = android.view.View.VISIBLE
+            binding.autoeqBrowserResults.visibility = android.view.View.GONE
+            resultsAdapter.submitList(null)
         } else {
-            binding.autoeqBrowserStatus.visibility = View.GONE
-            showResults(results)
+            binding.autoeqBrowserStatus.visibility = android.view.View.GONE
+            binding.autoeqBrowserResults.visibility = android.view.View.VISIBLE
+            resultsAdapter.submitList(results)
         }
     }
 
-    // ---- Results rendering ----
-
-    private fun showResults(results: List<AutoEqResult>) {
-        binding.autoeqBrowserResults.removeAllViews()
-
-        for ((index, result) in results.withIndex()) {
-            val btn =
-                Button(requireContext()).apply {
-                    text = buildLabel(result)
-                    isAllCaps = false
-                    textSize = 14f
-                    gravity = Gravity.START or Gravity.CENTER_VERTICAL
-                    layoutParams =
-                        LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                        )
-                    alpha = 0f
-                    translationY = 8f * resources.displayMetrics.density
-                    setOnClickListener {
-                        viewModel.applyAutoEqProfile(result)
-                        hideKeyboard()
-                        dismiss()
-                    }
-                }
-
-            binding.autoeqBrowserResults.addView(btn)
-            btn.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setDuration(180)
-                .setStartDelay((index * 30).toLong())
-                .setInterpolator(DecelerateInterpolator())
-                .start()
-        }
-
-        binding.autoeqBrowserResults.visibility = View.VISIBLE
-    }
-
-    private fun clearResults() {
-        binding.autoeqBrowserResults.removeAllViews()
-        binding.autoeqBrowserResults.visibility = View.GONE
-    }
-
-    private fun buildLabel(result: AutoEqResult): String =
-        if (result.source.isNotBlank()) "${result.name}  —  ${result.source}" else result.name
+    // ---- Keyboard ----
 
     private fun hideKeyboard() {
+        val binding = binding ?: return
         val imm = requireContext().getSystemService(InputMethodManager::class.java)
         imm.hideSoftInputFromWindow(binding.autoeqBrowserSearch.windowToken, 0)
     }
