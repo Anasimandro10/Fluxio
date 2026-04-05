@@ -34,13 +34,12 @@ import org.oxycblt.auxio.databinding.DialogAutoeqBrowserBinding
 import org.oxycblt.auxio.ui.ViewBindingBottomSheetDialogFragment
 
 /**
- * Bottom sheet that displays the full AutoEQ headphone profile index and filters it locally as
- * the user types. Profiles are downloaded from the API once per process lifetime and cached in
- * memory. Extends [ViewBindingBottomSheetDialogFragment] to use the project's backport sheet.
+ * Bottom sheet that displays the full AutoEQ headphone profile index and filters it locally as the
+ * user types. Profiles are downloaded from the API once per process lifetime and cached in memory.
+ * Extends [ViewBindingBottomSheetDialogFragment] to use the project's backport sheet.
  */
 @AndroidEntryPoint
-class AutoEqBrowserDialog :
-    ViewBindingBottomSheetDialogFragment<DialogAutoeqBrowserBinding>() {
+class AutoEqBrowserDialog : ViewBindingBottomSheetDialogFragment<DialogAutoeqBrowserBinding>() {
 
     // ViewModel owned by EqualizerFragment — shared so applyAutoEqProfile reaches the EQ.
     private val viewModel: EqualizerViewModel by viewModels({ requireParentFragment() })
@@ -91,12 +90,7 @@ class AutoEqBrowserDialog :
                     after: Int,
                 ) {}
 
-                override fun onTextChanged(
-                    s: CharSequence?,
-                    start: Int,
-                    before: Int,
-                    count: Int,
-                ) {
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                     currentQuery = s?.toString() ?: ""
                     applyFilter()
                 }
