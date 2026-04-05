@@ -63,12 +63,13 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
      * memory so subsequent calls return immediately. Returns null if the network request failed.
      */
     suspend fun loadAllProfiles(): List<AutoEqResult>? {
-        allProfilesCache?.let { return it }
+        allProfilesCache?.let {
+            return it
+        }
         return withContext(Dispatchers.IO) {
             try {
                 val body =
-                    downloadRaw("$BASE_URL/results", acceptJson = true)
-                        ?: return@withContext null
+                    downloadRaw("$BASE_URL/results", acceptJson = true) ?: return@withContext null
                 val list = parseSearchResponse(body)
                 if (list.isEmpty()) return@withContext null
                 allProfilesCache = list

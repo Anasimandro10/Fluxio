@@ -46,7 +46,8 @@ import org.oxycblt.auxio.databinding.DialogAutoeqBrowserBinding
 class AutoEqBrowserDialog : BottomSheetDialogFragment() {
 
     private var _binding: DialogAutoeqBrowserBinding? = null
-    private val binding get() = _binding!!
+    private val binding
+        get() = _binding!!
 
     // Retrieves the EqualizerViewModel instance owned by EqualizerFragment.
     private val viewModel: EqualizerViewModel by viewModels({ requireParentFragment() })
@@ -140,8 +141,7 @@ class AutoEqBrowserDialog : BottomSheetDialogFragment() {
 
     private fun onApplyingChanged(applying: Boolean) {
         binding.autoeqBrowserSearch.isEnabled = !applying
-        binding.autoeqBrowserProgress.visibility =
-            if (applying) View.VISIBLE else View.GONE
+        binding.autoeqBrowserProgress.visibility = if (applying) View.VISIBLE else View.GONE
     }
 
     // ---- Filtering ----

@@ -158,8 +158,8 @@ constructor(
 
     /**
      * Filters the in-memory profile list by [query] (case-insensitive match on name and source).
-     * Returns the first [MAX_DISPLAY] matches. If [query] is blank returns the first
-     * [MAX_DISPLAY] profiles alphabetically. Returns an empty list if the index is not yet ready.
+     * Returns the first [MAX_DISPLAY] matches. If [query] is blank returns the first [MAX_DISPLAY]
+     * profiles alphabetically. Returns an empty list if the index is not yet ready.
      */
     fun filterProfiles(query: String): List<AutoEqResult> {
         val state = _allProfilesState.value
