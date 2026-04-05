@@ -379,9 +379,9 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
     }
 
     /**
-     * Hides the results list immediately without animation.
-     * Avoiding a withEndAction-based approach prevents race conditions where
-     * the end callback fires after showResults has already set visibility to VISIBLE.
+     * Hides the results list immediately without animation. Avoiding a withEndAction-based approach
+     * prevents race conditions where the end callback fires after showResults has already set
+     * visibility to VISIBLE.
      */
     private fun hideResults(binding: FragmentEqualizerBinding) {
         // Cancel any in-progress show animation first.

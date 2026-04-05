@@ -115,9 +115,9 @@ constructor(
     }
 
     /**
-     * Re-reads all EQ state from [EqualizerSettings] and pushes it to the UI flows.
-     * Called when the EQ screen enters STARTED, so changes applied by [AudioDeviceListener]
-     * in the background are reflected immediately.
+     * Re-reads all EQ state from [EqualizerSettings] and pushes it to the UI flows. Called when the
+     * EQ screen enters STARTED, so changes applied by [AudioDeviceListener] in the background are
+     * reflected immediately.
      */
     fun refreshFromSettings() {
         val bands = equalizerSettings.getBands()
@@ -136,11 +136,11 @@ constructor(
     // ---- AutoEQ search ----
 
     /**
-     * Called whenever the search field text changes. After a 300 ms debounce, hits
-     * GET /results/search/{query} on the AutoEQ API and emits results.
+     * Called whenever the search field text changes. After a 300 ms debounce, hits GET
+     * /results/search/{query} on the AutoEQ API and emits results.
      *
-     * The spinner ([AutoEqSearchState.Loading]) is shown only after the debounce expires,
-     * so it never flickers during fast typing.
+     * The spinner ([AutoEqSearchState.Loading]) is shown only after the debounce expires, so it
+     * never flickers during fast typing.
      */
     fun onQueryChanged(query: String) {
         searchJob?.cancel()
@@ -170,9 +170,9 @@ constructor(
     }
 
     /**
-     * Downloads and applies the EQ profile for [result] via GET /results/{id}.
-     * Runs on the Main dispatcher; IO happens inside [AutoEqRepository.fetchProfile].
-     * Automatically enables the EQ if it was off.
+     * Downloads and applies the EQ profile for [result] via GET /results/{id}. Runs on the Main
+     * dispatcher; IO happens inside [AutoEqRepository.fetchProfile]. Automatically enables the EQ
+     * if it was off.
      */
     fun applyAutoEqProfile(result: AutoEqResult) {
         viewModelScope.launch {

@@ -35,16 +35,14 @@ import timber.log.Timber as L
 /**
  * Repository for downloading headphone EQ profiles from the AutoEQ API on demand.
  *
- * Endpoints (base = https://autoeq.app/api):
- *   Search  → GET /results/search/{query}
- *   Response: JSON array — fields can be short (n/s/i/r) or long (name/source/id/rank).
- *   Profile → GET /results/{id}
- *   Response: plain text "GraphicEQ: freq gain; freq gain; …"
+ * Endpoints (base = https://autoeq.app/api): Search → GET /results/search/{query} Response: JSON
+ * array — fields can be short (n/s/i/r) or long (name/source/id/rank). Profile → GET /results/{id}
+ * Response: plain text "GraphicEQ: freq gain; freq gain; …"
  *
  * No full index is downloaded. Only the selected profile is cached in SharedPreferences.
  *
- * API by Jaakko Pasanen (https://autoeq.app), MIT License.
- * See assets/licenses/autoeq_license.txt for attribution.
+ * API by Jaakko Pasanen (https://autoeq.app), MIT License. See assets/licenses/autoeq_license.txt
+ * for attribution.
  */
 @Singleton
 class AutoEqRepository @Inject constructor(@ApplicationContext private val context: Context) {
@@ -59,8 +57,8 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     /**
      * Searches for headphones matching [query] via GET /results/search/{query}.
      *
-     * Returns null if the network request failed.
-     * Returns an empty list if the API succeeded but no headphones matched.
+     * Returns null if the network request failed. Returns an empty list if the API succeeded but no
+     * headphones matched.
      */
     suspend fun search(query: String): List<AutoEqResult>? =
         withContext(Dispatchers.IO) {
@@ -77,9 +75,8 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
         }
 
     /**
-     * Downloads the 10-band EQ profile for [result] via GET /results/{id}.
-     * Response is plain text: "GraphicEQ: freq gain; freq gain; …"
-     * Returns null on failure.
+     * Downloads the 10-band EQ profile for [result] via GET /results/{id}. Response is plain text:
+     * "GraphicEQ: freq gain; freq gain; …" Returns null on failure.
      */
     suspend fun fetchProfile(result: AutoEqResult): FloatArray? =
         withContext(Dispatchers.IO) {
@@ -125,8 +122,8 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     // -------------------------------------------------------------------------
 
     /**
-     * Downloads the body of [urlStr] as a String.
-     * Returns null on any network error or non-200 response.
+     * Downloads the body of [urlStr] as a String. Returns null on any network error or non-200
+     * response.
      */
     private fun downloadRaw(urlStr: String, acceptJson: Boolean): String? {
         var connection: HttpURLConnection? = null
@@ -157,9 +154,8 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     }
 
     /**
-     * Parses the search JSON response.
-     * Accepts both compact field names (n/s/i/r) and full names (name/source/id/rank),
-     * and handles both top-level array and wrapped object responses.
+     * Parses the search JSON response. Accepts both compact field names (n/s/i/r) and full names
+     * (name/source/id/rank), and handles both top-level array and wrapped object responses.
      */
     private fun parseSearchResponse(json: String): List<AutoEqResult> {
         return try {
@@ -192,9 +188,7 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
                         obj.optString("s").ifBlank { null }
                             ?: obj.optString("source").ifBlank { "" }
                     val rank =
-                        obj.optInt("r", 0).let { r ->
-                            if (r != 0) r else obj.optInt("rank", 0)
-                        }
+                        obj.optInt("r", 0).let { r -> if (r != 0) r else obj.optInt("rank", 0) }
                     AutoEqResult(id = id, name = name, source = source, rank = rank)
                 } catch (_: Exception) {
                     null
@@ -207,8 +201,7 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     }
 
     /**
-     * Parses the plain-text GraphicEQ response.
-     * Expected: "GraphicEQ: 31 -1.5; 63 0.2; 125 2.1; …"
+     * Parses the plain-text GraphicEQ response. Expected: "GraphicEQ: 31 -1.5; 63 0.2; 125 2.1; …"
      * Interpolates to the 10 target frequencies.
      */
     private fun parseGraphicEq(raw: String): FloatArray? {
