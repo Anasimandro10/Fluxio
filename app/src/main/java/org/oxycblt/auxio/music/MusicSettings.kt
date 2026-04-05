@@ -42,6 +42,12 @@ interface MusicSettings : Settings<MusicSettings.Listener> {
     /** The current library revision. */
     var revision: UUID?
 
+    /**
+     * The last MediaStore version token saved after a successful scan. Used to skip unnecessary
+     * re-scans on startup when the library has not changed.
+     */
+    var lastMediaStoreVersion: String?
+
     /** The mode for loading music locations (SAF or System database). */
     var locationMode: LocationMode
 
@@ -88,6 +94,15 @@ class MusicSettingsImpl @Inject constructor(@ApplicationContext private val cont
         set(value) {
             sharedPreferences.edit {
                 putString(getString(R.string.set_key_library_revision), value.toString())
+                apply()
+            }
+        }
+
+    override var lastMediaStoreVersion: String?
+        get() = sharedPreferences.getString(KEY_LAST_MS_VERSION, null)
+        set(value) {
+            sharedPreferences.edit {
+                putString(KEY_LAST_MS_VERSION, value)
                 apply()
             }
         }
@@ -238,6 +253,7 @@ class MusicSettingsImpl @Inject constructor(@ApplicationContext private val cont
                 L.d("Dispatching observing setting change")
                 listener.onObservingChanged()
             }
+            // KEY_LAST_MS_VERSION is internal state — intentionally not dispatched to listeners.
         }
     }
 
@@ -287,5 +303,13 @@ class MusicSettingsImpl @Inject constructor(@ApplicationContext private val cont
         }
 
         return split
+    }
+
+    private companion object {
+        /**
+         * SharedPreferences key for the last known MediaStore version token. Not user-visible —
+         * never dispatched to [MusicSettings.Listener].
+         */
+        const val KEY_LAST_MS_VERSION = "fluxio_last_ms_version"
     }
 }

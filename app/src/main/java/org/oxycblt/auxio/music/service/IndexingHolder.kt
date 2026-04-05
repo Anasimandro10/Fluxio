@@ -19,6 +19,7 @@ package org.oxycblt.auxio.music.service
 
 import android.content.Context
 import android.os.PowerManager
+import android.provider.MediaStore as SystemMediaStore
 import coil3.ImageLoader
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -102,9 +103,26 @@ private constructor(
     }
 
     fun start() {
-        if (musicRepository.indexingState == null) {
-            requestIndex(true)
+        if (musicRepository.indexingState != null) {
+            // Already indexing — nothing to do.
+            return
         }
+
+        // Fast path: if the library is already loaded in memory and the MediaStore version
+        // token matches what we saved after the last successful scan, nothing has changed on
+        // disk. Skip the pipeline entirely so the app shows the library instantly.
+        val currentVersion = currentMediaStoreVersion()
+        if (musicRepository.library != null &&
+            currentVersion == musicSettings.lastMediaStoreVersion) {
+            L.d("MediaStore version unchanged ($currentVersion), skipping index")
+            return
+        }
+
+        L.d(
+            "MediaStore version changed or library absent, starting index " +
+                "[saved=${musicSettings.lastMediaStoreVersion}, current=$currentVersion]"
+        )
+        requestIndex(true)
     }
 
     fun createNotification(post: (ForegroundServiceNotification?) -> Unit) {
@@ -145,6 +163,14 @@ private constructor(
             wakeLock.acquireSafe()
         } else {
             wakeLock.releaseSafe()
+            // After a clean, error-free scan, persist the current MediaStore version.
+            // Next time start() runs it will compare this token and skip the scan when
+            // nothing has changed.
+            if (state is IndexingState.Completed && state.error == null) {
+                val version = currentMediaStoreVersion()
+                L.d("Scan completed cleanly — saving MediaStore version: $version")
+                musicSettings.lastMediaStoreVersion = version
+            }
         }
     }
 
@@ -186,12 +212,18 @@ private constructor(
 
     override fun onMusicLocationsChanged() {
         super.onMusicLocationsChanged()
+        // Invalidate the saved version so that the next start() always runs the pipeline
+        // with the new location settings, even if the MediaStore token happened to be the same.
+        musicSettings.lastMediaStoreVersion = null
         startTracking()
         musicRepository.requestIndex(true)
     }
 
     override fun onIndexingSettingChanged() {
         super.onIndexingSettingChanged()
+        // Invalidate saved version — sorting or separator settings changed, library must
+        // be rebuilt even if no files changed on disk.
+        musicSettings.lastMediaStoreVersion = null
         musicRepository.requestIndex(true)
     }
 
@@ -206,6 +238,12 @@ private constructor(
             foregroundListener.updateForeground(ForegroundListener.Change.INDEXER)
         }
     }
+
+    /**
+     * Returns the current MediaStore version token. This token changes whenever any audio file is
+     * added, removed, or modified on the device.
+     */
+    private fun currentMediaStoreVersion(): String = SystemMediaStore.getVersion(workerContext)
 
     /** Utility to safely acquire a [PowerManager.WakeLock] without crashes/inefficiency. */
     private fun PowerManager.WakeLock.acquireSafe() {
