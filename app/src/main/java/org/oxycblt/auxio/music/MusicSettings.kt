@@ -253,7 +253,7 @@ class MusicSettingsImpl @Inject constructor(@ApplicationContext private val cont
                 L.d("Dispatching observing setting change")
                 listener.onObservingChanged()
             }
-            // KEY_LAST_MS_VERSION is internal state — intentionally not dispatched to listeners.
+        // KEY_LAST_MS_VERSION is internal state — intentionally not dispatched to listeners.
         }
     }
 

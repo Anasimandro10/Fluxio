@@ -112,8 +112,9 @@ private constructor(
         // token matches what we saved after the last successful scan, nothing has changed on
         // disk. Skip the pipeline entirely so the app shows the library instantly.
         val currentVersion = currentMediaStoreVersion()
-        if (musicRepository.library != null &&
-            currentVersion == musicSettings.lastMediaStoreVersion) {
+        if (
+            musicRepository.library != null && currentVersion == musicSettings.lastMediaStoreVersion
+        ) {
             L.d("MediaStore version unchanged ($currentVersion), skipping index")
             return
         }
