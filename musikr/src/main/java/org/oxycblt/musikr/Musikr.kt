@@ -69,7 +69,7 @@ interface Musikr {
                 config,
                 ExploreStep.from(context, config),
                 ExtractStep.from(context, config),
-                EvaluateStep.new(context, config, config.interpretation),
+                EvaluateStep.new(config, config.interpretation),
             )
     }
 }
@@ -115,16 +115,30 @@ private class MusikrImpl(
     override suspend fun run(onProgress: suspend (IndexingProgress) -> Unit) = coroutineScope {
         onProgress(IndexingProgress.Songs(0, 0))
         val start = System.currentTimeMillis()
+
+        // Pre-load the entire cache mapping into memory before the pipeline starts.
+        // Without this, the first extraction coroutine triggers the DB load and all
+        // other parallel extraction coroutines block on the Mutex waiting for it.
+        // With this, the load completes before any coroutines compete for resources.
+        val preloadStart = System.currentTimeMillis()
+        config.storage.cache.preload()
+        Log.d("Musikr", "Cache preloaded in ${System.currentTimeMillis() - preloadStart}ms")
+
         var explored = 0
         var loaded = 0
         val exploredChannel = Channel<Explored>(Channel.UNLIMITED)
         val exploredTask = exploreStep.explore(this, exploredChannel)
         val trackedExploredChannel = Channel<Explored>(Channel.UNLIMITED)
+        // Run on Default instead of Main: these loops are hot (one iteration per song)
+        // and only do counting + forwarding. Posting to Main on every item causes
+        // hundreds of unnecessary thread switches on large libraries.
         val trackedExploredTask =
-            tryAsyncWith(trackedExploredChannel, Dispatchers.Main) {
+            tryAsyncWith(trackedExploredChannel, Dispatchers.Default) {
                 for (item in exploredChannel) {
                     explored++
-                    onProgress(IndexingProgress.Songs(loaded, explored))
+                    if (explored % PROGRESS_REPORT_INTERVAL == 0) {
+                        onProgress(IndexingProgress.Songs(loaded, explored))
+                    }
                     trackedExploredChannel.send(item)
                 }
             }
@@ -132,10 +146,12 @@ private class MusikrImpl(
         val extractedTask = extractStep.extract(this, trackedExploredChannel, extractedChannel)
         val trackedExtractedChannel = Channel<Extracted>(Channel.UNLIMITED)
         val trackedExtractedTask =
-            tryAsyncWith(trackedExtractedChannel, Dispatchers.Main) {
+            tryAsyncWith(trackedExtractedChannel, Dispatchers.Default) {
                 for (item in extractedChannel) {
                     loaded++
-                    onProgress(IndexingProgress.Songs(loaded, explored))
+                    if (loaded % PROGRESS_REPORT_INTERVAL == 0) {
+                        onProgress(IndexingProgress.Songs(loaded, explored))
+                    }
                     trackedExtractedChannel.send(item)
                 }
                 onProgress(IndexingProgress.Indeterminate)
@@ -144,6 +160,11 @@ private class MusikrImpl(
         merge(exploredTask, extractedTask, trackedExploredTask, trackedExtractedTask).await()
         Log.d("Musikr", "Indexing took ${System.currentTimeMillis() - start}ms")
         LibraryResultImpl(config, library)
+    }
+
+    private companion object {
+        /** Report progress at most once every N songs to reduce callback overhead. */
+        const val PROGRESS_REPORT_INTERVAL = 10
     }
 }
 

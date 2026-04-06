@@ -121,12 +121,25 @@ private class ExtractStepImpl(
         val finalizedTask =
             scope.tryAsyncWith(extracted, Dispatchers.IO) {
                 val exclude = mutableListOf<CachedFile>()
+                // Batch new songs and write them in groups to avoid N individual DB transactions.
+                val pendingWrites = mutableListOf<CachedFile>()
+
+                suspend fun flushPendingWrites() {
+                    if (pendingWrites.isNotEmpty()) {
+                        cache.writeBatch(pendingWrites.toList())
+                        pendingWrites.clear()
+                    }
+                }
+
                 for (item in parsed) {
                     val result =
                         when (item) {
                             is Finalized -> item
                             is NeedsCaching -> {
-                                cache.write(item.rawSong.toCachedFile())
+                                pendingWrites.add(item.rawSong.toCachedFile())
+                                if (pendingWrites.size >= WRITE_BATCH_SIZE) {
+                                    flushPendingWrites()
+                                }
                                 Finalized(item.rawSong)
                             }
                         }
@@ -135,6 +148,8 @@ private class ExtractStepImpl(
                     }
                     it.send(result.extracted)
                 }
+                // Flush any remaining songs that didn't fill a full batch.
+                flushPendingWrites()
                 cache.cleanup(exclude)
             }
 
@@ -157,5 +172,6 @@ private class ExtractStepImpl(
 
     private companion object {
         const val PARALLELISM = 8
+        const val WRITE_BATCH_SIZE = 50
     }
 }

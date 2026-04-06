@@ -39,6 +39,20 @@ class DBCache private constructor(private val readDao: CacheReadDao) : Cache {
     private var mapping: Map<Uri, CachedFileData>? = null
     private val mappingLock = Mutex()
 
+    /**
+     * Eagerly loads all cached songs into memory. Call this before the pipeline starts to avoid
+     * blocking extraction coroutines on the first [read] call.
+     *
+     * If the mapping is already loaded this is a no-op.
+     */
+    override suspend fun preload() {
+        mappingLock.withLock {
+            if (mapping == null) {
+                mapping = readDao.selectAllSongs().associateBy { it.uri }
+            }
+        }
+    }
+
     override suspend fun read(file: File): CacheResult {
         val currentMapping =
             mappingLock.withLock {
@@ -114,46 +128,59 @@ class DBCache private constructor(private val readDao: CacheReadDao) : Cache {
 class MutableDBCache
 private constructor(private val inner: DBCache, private val writeDao: CacheWriteDao) :
     MutableCache {
+    override suspend fun preload() = inner.preload()
+
     override suspend fun read(file: File) = inner.read(file)
 
     override suspend fun write(cachedFile: CachedFile) {
-        val dbSong =
-            CachedFileData(
-                uri = cachedFile.file.uri,
-                modifiedMs = cachedFile.file.modifiedMs,
-                addedMs = cachedFile.addedMs,
-                mimeType = cachedFile.audio?.properties?.mimeType,
-                durationMs = cachedFile.audio?.properties?.durationMs,
-                bitrateKbps = cachedFile.audio?.properties?.bitrateKbps,
-                sampleRateHz = cachedFile.audio?.properties?.sampleRateHz,
-                musicBrainzId = cachedFile.audio?.tags?.musicBrainzId,
-                name = cachedFile.audio?.tags?.name,
-                sortName = cachedFile.audio?.tags?.sortName,
-                track = cachedFile.audio?.tags?.track,
-                disc = cachedFile.audio?.tags?.disc,
-                subtitle = cachedFile.audio?.tags?.subtitle,
-                date = cachedFile.audio?.tags?.date,
-                albumMusicBrainzId = cachedFile.audio?.tags?.albumMusicBrainzId,
-                albumName = cachedFile.audio?.tags?.albumName,
-                albumSortName = cachedFile.audio?.tags?.albumSortName,
-                releaseTypes = cachedFile.audio?.tags?.releaseTypes,
-                artistMusicBrainzIds = cachedFile.audio?.tags?.artistMusicBrainzIds,
-                artistNames = cachedFile.audio?.tags?.artistNames,
-                artistSortNames = cachedFile.audio?.tags?.artistSortNames,
-                albumArtistMusicBrainzIds = cachedFile.audio?.tags?.albumArtistMusicBrainzIds,
-                albumArtistNames = cachedFile.audio?.tags?.albumArtistNames,
-                albumArtistSortNames = cachedFile.audio?.tags?.albumArtistSortNames,
-                genreNames = cachedFile.audio?.tags?.genreNames,
-                replayGainTrackAdjustment = cachedFile.audio?.tags?.replayGainTrackAdjustment,
-                replayGainAlbumAdjustment = cachedFile.audio?.tags?.replayGainAlbumAdjustment,
-                coverId = cachedFile.audio?.coverId,
-            )
-        writeDao.updateSong(dbSong)
+        writeDao.updateSong(cachedFile.toCachedFileData())
+    }
+
+    /**
+     * Writes all given [cachedFiles] in a single Room insert, avoiding N individual transactions.
+     * Skips the call entirely if the list is empty.
+     */
+    override suspend fun writeBatch(cachedFiles: List<CachedFile>) {
+        if (cachedFiles.isEmpty()) return
+        writeDao.updateSongs(cachedFiles.map { it.toCachedFileData() })
     }
 
     override suspend fun cleanup(excluding: List<CachedFile>) {
         writeDao.deleteExcludingUris(excluding.mapTo(mutableSetOf()) { it.file.uri.toString() })
     }
+
+    /** Converts a [CachedFile] to its Room entity representation. */
+    private fun CachedFile.toCachedFileData() =
+        CachedFileData(
+            uri = file.uri,
+            modifiedMs = file.modifiedMs,
+            addedMs = addedMs,
+            mimeType = audio?.properties?.mimeType,
+            durationMs = audio?.properties?.durationMs,
+            bitrateKbps = audio?.properties?.bitrateKbps,
+            sampleRateHz = audio?.properties?.sampleRateHz,
+            musicBrainzId = audio?.tags?.musicBrainzId,
+            name = audio?.tags?.name,
+            sortName = audio?.tags?.sortName,
+            track = audio?.tags?.track,
+            disc = audio?.tags?.disc,
+            subtitle = audio?.tags?.subtitle,
+            date = audio?.tags?.date,
+            albumMusicBrainzId = audio?.tags?.albumMusicBrainzId,
+            albumName = audio?.tags?.albumName,
+            albumSortName = audio?.tags?.albumSortName,
+            releaseTypes = audio?.tags?.releaseTypes,
+            artistMusicBrainzIds = audio?.tags?.artistMusicBrainzIds,
+            artistNames = audio?.tags?.artistNames,
+            artistSortNames = audio?.tags?.artistSortNames,
+            albumArtistMusicBrainzIds = audio?.tags?.albumArtistMusicBrainzIds,
+            albumArtistNames = audio?.tags?.albumArtistNames,
+            albumArtistSortNames = audio?.tags?.albumArtistSortNames,
+            genreNames = audio?.tags?.genreNames,
+            replayGainTrackAdjustment = audio?.tags?.replayGainTrackAdjustment,
+            replayGainAlbumAdjustment = audio?.tags?.replayGainAlbumAdjustment,
+            coverId = audio?.coverId,
+        )
 
     companion object {
         /**

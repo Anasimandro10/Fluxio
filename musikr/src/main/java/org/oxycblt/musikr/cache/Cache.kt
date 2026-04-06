@@ -24,7 +24,7 @@ import org.oxycblt.musikr.tag.parse.ParsedTags
 /**
  * An immutable repository for cached song metadata.
  *
- * Since file opening and metadata extraction sends to be quite slow on Android, a cache allows
+ * Since file opening and metadata extraction tends to be quite slow on Android, a cache allows
  * up-to-date metadata to be read from a local database, which tends to be far faster.
  *
  * This is a read-only interface for reading cached metadata and isn't expected by Musikr's public
@@ -32,6 +32,15 @@ import org.oxycblt.musikr.tag.parse.ParsedTags
  * see [MutableCache].
  */
 interface Cache {
+    /**
+     * Pre-loads cached data into memory before the pipeline starts.
+     *
+     * Calling this before the pipeline begins ensures that subsequent [read] calls are served
+     * from an in-memory map rather than hitting the database on the first lookup. Implementations
+     * that benefit from eager loading should override this. The default implementation is a no-op.
+     */
+    suspend fun preload() {}
+
     /**
      * Read a [CachedFile] corresponding to the given [file] from the cache. This can result in
      * several outcomes represented by [CacheResult].
@@ -45,7 +54,7 @@ interface Cache {
 /**
  * A mutable repository for cached song metadata.
  *
- * Since file opening and metadata extraction sends to be quite slow on Android, a cache allows
+ * Since file opening and metadata extraction tends to be quite slow on Android, a cache allows
  * up-to-date metadata to be saved to a local database, which tends to be far faster.
  *
  * This is required by Musikr's public API for proper function.
@@ -60,6 +69,21 @@ interface MutableCache : Cache {
      * @param cachedFile the [CachedFile] to write to the cache
      */
     suspend fun write(cachedFile: CachedFile)
+
+    /**
+     * Write multiple [CachedFile]s to the cache in a single batch operation.
+     *
+     * Implementations should override this to perform a more efficient batch write where possible
+     * (e.g. a single Room transaction instead of N individual inserts). The default implementation
+     * calls [write] for each file individually and is correct but not optimal.
+     *
+     * @param cachedFiles the list of [CachedFile]s to write.
+     */
+    suspend fun writeBatch(cachedFiles: List<CachedFile>) {
+        for (cachedFile in cachedFiles) {
+            write(cachedFile)
+        }
+    }
 
     /**
      * Cleanup the cache by removing all [CachedFile]s that are not in the provided [excluding]
