@@ -35,9 +35,9 @@ interface Cache {
     /**
      * Pre-loads cached data into memory before the pipeline starts.
      *
-     * Calling this before the pipeline begins ensures that subsequent [read] calls are served
-     * from an in-memory map rather than hitting the database on the first lookup. Implementations
-     * that benefit from eager loading should override this. The default implementation is a no-op.
+     * Calling this before the pipeline begins ensures that subsequent [read] calls are served from
+     * an in-memory map rather than hitting the database on the first lookup. Implementations that
+     * benefit from eager loading should override this. The default implementation is a no-op.
      */
     suspend fun preload() {}
 
