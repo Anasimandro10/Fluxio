@@ -29,18 +29,18 @@ import kotlin.math.log10
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
-import org.json.JSONObject
+import android.net.Uri
+import org.json.JSONArray
 import timber.log.Timber as L
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
- * Repository for downloading headphone EQ profiles from the AutoEQ API on demand.
+ * Repository for downloading headphone EQ profiles from the AutoEQ GitHub repository.
  *
- * Endpoints (base = https://autoeq.app/api): All profiles → GET /results Response: JSON array.
- * Search → GET /results/search/{query} Response: JSON array. Profile → GET /results/{id} Response:
- * plain text "GraphicEQ: freq gain; freq gain; …"
- *
- * The full profile index is cached in memory for the session lifetime. Only the selected profile's
- * EQ bands are persisted to SharedPreferences.
+ * It uses the raw githubusercontent to access INDEX.md which contains a markdown list
+ * of all ~9000 headphone profiles, and parses it in-memory.
+ * Then it fetches the GraphicEQ.txt directly using the parsed path.
  *
  * API by Jaakko Pasanen (https://autoeq.app), MIT License. See assets/licenses/autoeq_license.txt
  * for attribution.
@@ -59,7 +59,7 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     // -------------------------------------------------------------------------
 
     /**
-     * Downloads the complete list of headphone profiles via GET /results. The result is cached in
+     * Downloads the complete list of headphone profiles via GitHub's INDEX.md. The result is cached in
      * memory so subsequent calls return immediately. Returns null if the network request failed.
      */
     suspend fun loadAllProfiles(): List<AutoEqResult>? {
@@ -69,8 +69,8 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
         return withContext(Dispatchers.IO) {
             try {
                 val body =
-                    downloadRaw("$BASE_URL/results", acceptJson = true) ?: return@withContext null
-                val list = parseSearchResponse(body)
+                    downloadRaw("$BASE_URL/INDEX.md", acceptJson = false) ?: return@withContext null
+                val list = parseIndexResponse(body)
                 if (list.isEmpty()) return@withContext null
                 allProfilesCache = list
                 list
@@ -82,35 +82,25 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     }
 
     /**
-     * Searches for headphones matching [query] via GET /results/search/{query}. Used as fallback
-     * when loadAllProfiles is unavailable. Returns null if the network request failed.
-     */
-    suspend fun search(query: String): List<AutoEqResult>? =
-        withContext(Dispatchers.IO) {
-            try {
-                val encoded = URLEncoder.encode(query.trim(), "UTF-8").replace("+", "%20")
-                val body =
-                    downloadRaw("$BASE_URL/results/search/$encoded", acceptJson = true)
-                        ?: return@withContext null
-                parseSearchResponse(body)
-            } catch (e: Exception) {
-                L.e("AutoEQ search failed: ${e.message}")
-                null
-            }
-        }
-
-    /**
-     * Downloads the 10-band EQ profile for [result] via GET /results/{id}. Response is plain text:
+     * Downloads the 10-band EQ profile for [result] via GitHub Raw. Response is plain text:
      * "GraphicEQ: freq gain; freq gain; …" Returns null on failure.
      */
     suspend fun fetchProfile(result: AutoEqResult): FloatArray? =
         withContext(Dispatchers.IO) {
             try {
-                val body =
-                    downloadRaw("$BASE_URL/results/${result.id}", acceptJson = false)
-                        ?: return@withContext null
+                // The markdown path is like "./crinacle/711 in-ear/Apple AirPods Pro 2"
+                // We need to construct: BASE_URL + "/crinacle/711 in-ear/Apple AirPods Pro 2/Apple AirPods Pro 2 GraphicEQ.txt"
+                val pathClean = result.path.removePrefix("./")
+                // URL encode path segments manually to handle spaces but keep slashes
+                val pathEncoded = pathClean.split("/").joinToString("/") { Uri.encode(it) }
+                val fileEncoded = Uri.encode("${result.name} GraphicEQ.txt")
+                
+                val url = "$BASE_URL/$pathEncoded/$fileEncoded"
+                
+                val body = downloadRaw(url, acceptJson = false) ?: return@withContext null
                 val gains = parseGraphicEq(body) ?: return@withContext null
                 saveToCache(result.name, result.source, gains)
+                addRecentProfile(result)
                 gains
             } catch (e: Exception) {
                 L.e("AutoEQ fetchProfile failed: ${e.message}")
@@ -140,6 +130,43 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
             .remove(KEY_HEADPHONE_SOURCE)
             .remove(KEY_BANDS_JSON)
             .apply()
+    }
+    
+    fun getRecentProfiles(): List<AutoEqResult> {
+        val json = prefs.getString(KEY_RECENT_PROFILES, null) ?: return emptyList()
+        return try {
+            val arr = JSONArray(json)
+            (0 until arr.length()).mapNotNull { i ->
+                val obj = arr.getJSONObject(i)
+                val name = obj.optString("name").takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                val path = obj.optString("path").takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                val source = obj.optString("source")
+                AutoEqResult(name = name, path = path, source = source)
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+    
+    private fun addRecentProfile(result: AutoEqResult) {
+        val current = getRecentProfiles().toMutableList()
+        current.removeAll { it.path == result.path }
+        current.add(0, result)
+        if (current.size > 5) {
+            current.removeAt(current.size - 1)
+        }
+        
+        try {
+            val arr = JSONArray()
+            current.forEach { 
+                val obj = org.json.JSONObject()
+                obj.put("name", it.name)
+                obj.put("path", it.path)
+                obj.put("source", it.source)
+                arr.put(obj)
+            }
+            prefs.edit().putString(KEY_RECENT_PROFILES, arr.toString()).apply()
+        } catch (_: Exception) {}
     }
 
     // -------------------------------------------------------------------------
@@ -174,44 +201,25 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
         }
     }
 
-    private fun parseSearchResponse(json: String): List<AutoEqResult> {
+    private fun parseIndexResponse(markdown: String): List<AutoEqResult> {
         return try {
-            val trimmed = json.trim()
-            val array: JSONArray =
-                if (trimmed.startsWith("[")) {
-                    JSONArray(trimmed)
-                } else {
-                    val obj = JSONObject(trimmed)
-                    obj.optJSONArray("results")
-                        ?: obj.optJSONArray("data")
-                        ?: obj.optJSONArray("items")
-                        ?: return emptyList()
-                }
-
-            (0 until array.length()).mapNotNull { i ->
-                try {
-                    val obj = array.getJSONObject(i)
-                    val name =
-                        obj.optString("n").takeIf { it.isNotBlank() }
-                            ?: obj.optString("name").takeIf { it.isNotBlank() }
-                            ?: return@mapNotNull null
-                    val id =
-                        obj.optLong("i", -1L).let { short ->
-                            if (short >= 0L) short else obj.optLong("id", -1L)
-                        }
-                    if (id < 0L) return@mapNotNull null
-                    val source =
-                        obj.optString("s").ifBlank { null }
-                            ?: obj.optString("source").ifBlank { "" }
-                    val rank =
-                        obj.optInt("r", 0).let { r -> if (r != 0) r else obj.optInt("rank", 0) }
-                    AutoEqResult(id = id, name = name, source = source, rank = rank)
-                } catch (_: Exception) {
-                    null
+            val lines = markdown.lines()
+            val resultList = mutableListOf<AutoEqResult>()
+            // Example line: - [1Custom SA02](./crinacle/711 in-ear/1Custom SA02) by crinacle on 711
+            val regex = Regex("""^- \[([^\]]+)]\(([^)]+)\)\s+by\s+(.+)$""")
+            
+            for (line in lines) {
+                val match = regex.find(line.trim())
+                if (match != null) {
+                    val name = match.groupValues[1].trim()
+                    val path = match.groupValues[2].trim()
+                    val source = match.groupValues[3].trim()
+                    resultList.add(AutoEqResult(name = name, path = path, source = source))
                 }
             }
+            resultList
         } catch (e: Exception) {
-            L.w("AutoEQ parseSearchResponse failed: ${e.message} — body: ${json.take(300)}")
+            L.w("AutoEQ parseIndexResponse failed: ${e.message}")
             emptyList()
         }
     }
@@ -272,8 +280,9 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
         private const val KEY_HEADPHONE_NAME = "autoeq_headphone_name"
         private const val KEY_HEADPHONE_SOURCE = "autoeq_headphone_source"
         private const val KEY_BANDS_JSON = "autoeq_bands_json"
+        private const val KEY_RECENT_PROFILES = "autoeq_recent_profiles"
         private const val BAND_COUNT = 10
-        private const val BASE_URL = "https://autoeq.app/api"
+        private const val BASE_URL = "https://raw.githubusercontent.com/jaakkopasanen/AutoEq/master/results"
         private const val TIMEOUT_MS = 15_000
         private const val MAX_GAIN_DB = 12f
         private const val APP_VERSION = "4.0.10"
@@ -282,5 +291,5 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     }
 }
 
-/** A headphone model returned by the AutoEQ search API. */
-data class AutoEqResult(val id: Long, val name: String, val source: String, val rank: Int = 0)
+/** A headphone model parsed from the AutoEQ github repository. */
+data class AutoEqResult(val name: String, val path: String, val source: String, val rank: Int = 0)

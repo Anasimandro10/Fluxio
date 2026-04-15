@@ -62,6 +62,10 @@ class AutoEqBrowserDialog : ViewBindingBottomSheetDialogFragment<DialogAutoeqBro
             dismiss()
         }
 
+        binding.autoeqBrowserRetryButton.setOnClickListener {
+            viewModel.loadAllProfiles()
+        }
+
         binding.autoeqBrowserResults.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = resultsAdapter
@@ -107,6 +111,7 @@ class AutoEqBrowserDialog : ViewBindingBottomSheetDialogFragment<DialogAutoeqBro
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch { viewModel.allProfilesState.collect { onAllProfilesStateChanged(it) } }
                 launch { viewModel.isApplyingProfile.collect { onApplyingChanged(it) } }
+                launch { viewModel.recentProfiles.collect { applyFilter() } }
             }
         }
     }
@@ -120,8 +125,9 @@ class AutoEqBrowserDialog : ViewBindingBottomSheetDialogFragment<DialogAutoeqBro
             is AllProfilesState.Loading -> {
                 binding.autoeqBrowserProgress.visibility = android.view.View.VISIBLE
                 binding.autoeqBrowserCount.visibility = android.view.View.GONE
-                binding.autoeqBrowserStatus.visibility = android.view.View.GONE
+                binding.autoeqBrowserErrorLayout.visibility = android.view.View.GONE
                 binding.autoeqBrowserResults.visibility = android.view.View.GONE
+                binding.autoeqBrowserRecentLabel.visibility = android.view.View.GONE
                 resultsAdapter.submitList(null)
             }
             is AllProfilesState.Ready -> {
@@ -129,7 +135,7 @@ class AutoEqBrowserDialog : ViewBindingBottomSheetDialogFragment<DialogAutoeqBro
                 binding.autoeqBrowserCount.text =
                     getString(R.string.lbl_autoeq_count, state.profiles.size)
                 binding.autoeqBrowserCount.visibility = android.view.View.VISIBLE
-                binding.autoeqBrowserStatus.visibility = android.view.View.GONE
+                binding.autoeqBrowserErrorLayout.visibility = android.view.View.GONE
                 // Apply any query typed while the index was loading.
                 applyFilter()
             }
@@ -137,8 +143,9 @@ class AutoEqBrowserDialog : ViewBindingBottomSheetDialogFragment<DialogAutoeqBro
                 binding.autoeqBrowserProgress.visibility = android.view.View.GONE
                 binding.autoeqBrowserCount.visibility = android.view.View.GONE
                 binding.autoeqBrowserStatus.text = getString(R.string.lbl_autoeq_error)
-                binding.autoeqBrowserStatus.visibility = android.view.View.VISIBLE
+                binding.autoeqBrowserErrorLayout.visibility = android.view.View.VISIBLE
                 binding.autoeqBrowserResults.visibility = android.view.View.GONE
+                binding.autoeqBrowserRecentLabel.visibility = android.view.View.GONE
                 resultsAdapter.submitList(null)
             }
         }
@@ -160,15 +167,33 @@ class AutoEqBrowserDialog : ViewBindingBottomSheetDialogFragment<DialogAutoeqBro
         val state = viewModel.allProfilesState.value
         if (state !is AllProfilesState.Ready) return
 
+        if (currentQuery.isBlank()) {
+            val recents = viewModel.recentProfiles.value
+            if (recents.isNotEmpty()) {
+                binding.autoeqBrowserRecentLabel.visibility = android.view.View.VISIBLE
+                binding.autoeqBrowserResults.visibility = android.view.View.VISIBLE
+                binding.autoeqBrowserErrorLayout.visibility = android.view.View.GONE
+                resultsAdapter.submitList(recents)
+            } else {
+                binding.autoeqBrowserRecentLabel.visibility = android.view.View.GONE
+                binding.autoeqBrowserResults.visibility = android.view.View.VISIBLE
+                binding.autoeqBrowserErrorLayout.visibility = android.view.View.GONE
+                resultsAdapter.submitList(viewModel.filterProfiles(""))
+            }
+            return
+        }
+
+        binding.autoeqBrowserRecentLabel.visibility = android.view.View.GONE
         val results = viewModel.filterProfiles(currentQuery)
 
-        if (results.isEmpty() && currentQuery.isNotBlank()) {
+        if (results.isEmpty()) {
             binding.autoeqBrowserStatus.text = getString(R.string.lbl_autoeq_no_results)
-            binding.autoeqBrowserStatus.visibility = android.view.View.VISIBLE
+            binding.autoeqBrowserErrorLayout.visibility = android.view.View.VISIBLE
+            binding.autoeqBrowserRetryButton.visibility = android.view.View.GONE
             binding.autoeqBrowserResults.visibility = android.view.View.GONE
             resultsAdapter.submitList(null)
         } else {
-            binding.autoeqBrowserStatus.visibility = android.view.View.GONE
+            binding.autoeqBrowserErrorLayout.visibility = android.view.View.GONE
             binding.autoeqBrowserResults.visibility = android.view.View.VISIBLE
             resultsAdapter.submitList(results)
         }

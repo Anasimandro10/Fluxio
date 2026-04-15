@@ -46,9 +46,10 @@ class AutoEqResultAdapter(private val onItemClick: (AutoEqResult) -> Unit) :
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(result: AutoEqResult) {
-            binding.autoeqResultName.text =
-                if (result.source.isNotBlank()) "${result.name}  ·  ${result.source}"
-                else result.name
+            binding.autoeqResultName.text = result.name
+            binding.autoeqResultSource.text = result.source.ifBlank { "Unknown source" }
+            
+            // Adjust margin for better look without source if it's completely empty but we put Unknown source anyway
             binding.root.setOnClickListener { onItemClick(result) }
         }
     }
@@ -57,7 +58,7 @@ class AutoEqResultAdapter(private val onItemClick: (AutoEqResult) -> Unit) :
         val DIFF_CALLBACK =
             object : DiffUtil.ItemCallback<AutoEqResult>() {
                 override fun areItemsTheSame(oldItem: AutoEqResult, newItem: AutoEqResult) =
-                    oldItem.id == newItem.id
+                    oldItem.path == newItem.path
 
                 override fun areContentsTheSame(oldItem: AutoEqResult, newItem: AutoEqResult) =
                     oldItem == newItem

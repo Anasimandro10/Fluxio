@@ -1,8 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:text="@string/lbl_autoeq_title"
+        android:textAppearance="?attr/textAppearanceTitleMedium" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/autoeq_browser_search_layout"
@@ -11,7 +21,8 @@
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
-        android:hint="@string/hint_autoeq_search">
+        android:hint="@string/hint_autoeq_search"
+        app:endIconMode="clear_text">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/autoeq_browser_search"
@@ -31,6 +42,17 @@
         android:layout_marginTop="4dp"
         android:textAppearance="?attr/textAppearanceCaption"
         android:visibility="gone" />
+        
+    <TextView
+        android:id="@+id/autoeq_browser_recent_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:text="@string/lbl_autoeq_recent"
+        android:textAppearance="?attr/textAppearanceLabelMedium"
+        android:textColor="?android:attr/textColorSecondary"
+        android:visibility="gone" />
 
     <ProgressBar
         android:id="@+id/autoeq_browser_progress"
@@ -41,16 +63,32 @@
         android:indeterminate="true"
         android:visibility="gone" />
 
-    <TextView
-        android:id="@+id/autoeq_browser_status"
+    <LinearLayout
+        android:id="@+id/autoeq_browser_error_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
+        android:orientation="vertical"
         android:gravity="center"
-        android:textAppearance="?attr/textAppearanceBody2"
-        android:visibility="gone" />
+        android:layout_marginTop="16dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/autoeq_browser_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:gravity="center"
+            android:textAppearance="?attr/textAppearanceBody2" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/autoeq_browser_retry_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/lbl_autoeq_retry"
+            style="@style/Widget.Material3.Button.TextButton" />
+    </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/autoeq_browser_results"

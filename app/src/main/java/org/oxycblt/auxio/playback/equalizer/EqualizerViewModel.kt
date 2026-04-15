@@ -42,19 +42,6 @@ sealed class AllProfilesState {
     object Error : AllProfilesState()
 }
 
-/** UI state for the AutoEQ headphone search (kept for backward compatibility). */
-sealed class AutoEqSearchState {
-    object Idle : AutoEqSearchState()
-
-    object Loading : AutoEqSearchState()
-
-    data class Results(val items: List<AutoEqResult>) : AutoEqSearchState()
-
-    object NoResults : AutoEqSearchState()
-
-    object Error : AutoEqSearchState()
-}
-
 @HiltViewModel
 class EqualizerViewModel
 @Inject
@@ -73,8 +60,8 @@ constructor(
     private val _enabled = MutableStateFlow(equalizerSettings.enabled)
     val enabled: StateFlow<Boolean> = _enabled
 
-    private val _searchState = MutableStateFlow<AutoEqSearchState>(AutoEqSearchState.Idle)
-    val searchState: StateFlow<AutoEqSearchState> = _searchState
+    private val _recentProfiles = MutableStateFlow<List<AutoEqResult>>(emptyList())
+    val recentProfiles: StateFlow<List<AutoEqResult>> = _recentProfiles
 
     private val _allProfilesState = MutableStateFlow<AllProfilesState>(AllProfilesState.Idle)
     val allProfilesState: StateFlow<AllProfilesState> = _allProfilesState
@@ -88,10 +75,9 @@ constructor(
     private val _isApplyingProfile = MutableStateFlow(false)
     val isApplyingProfile: StateFlow<Boolean> = _isApplyingProfile
 
-    private var searchJob: Job? = null
-
     init {
         equalizerProcessor.setBands(_bands.value, _enabled.value)
+        _recentProfiles.value = autoEqRepository.getRecentProfiles()
     }
 
     // ---- EQ controls ----
@@ -158,7 +144,7 @@ constructor(
 
     /**
      * Filters the in-memory profile list by [query] (case-insensitive match on name and source).
-     * Returns the first [MAX_DISPLAY] matches. If [query] is blank returns the first [MAX_DISPLAY]
+     * Returns the first [MAX_DISPLAY] matches sorted by relevance (starts-with first). If [query] is blank returns the first [MAX_DISPLAY]
      * profiles alphabetically. Returns an empty list if the index is not yet ready.
      */
     fun filterProfiles(query: String): List<AutoEqResult> {
@@ -173,42 +159,16 @@ constructor(
                     it.name.contains(q, ignoreCase = true) ||
                         it.source.contains(q, ignoreCase = true)
                 }
+                .sortedBy { 
+                    if (it.name.startsWith(q, ignoreCase = true)) 0 else 1 
+                }
                 .take(MAX_DISPLAY)
         }
-    }
-
-    // ---- AutoEQ search (API-based, kept for compatibility) ----
-
-    fun onQueryChanged(query: String) {
-        searchJob?.cancel()
-        val trimmed = query.trim()
-        if (trimmed.length < 2) {
-            _searchState.value = AutoEqSearchState.Idle
-            return
-        }
-        searchJob =
-            viewModelScope.launch {
-                delay(DEBOUNCE_MS)
-                _searchState.value = AutoEqSearchState.Loading
-                val results = autoEqRepository.search(trimmed)
-                _searchState.value =
-                    when {
-                        results == null -> AutoEqSearchState.Error
-                        results.isEmpty() -> AutoEqSearchState.NoResults
-                        else -> AutoEqSearchState.Results(results)
-                    }
-            }
-    }
-
-    fun clearSearch() {
-        searchJob?.cancel()
-        _searchState.value = AutoEqSearchState.Idle
     }
 
     fun applyAutoEqProfile(result: AutoEqResult) {
         viewModelScope.launch {
             _isApplyingProfile.value = true
-            _searchState.value = AutoEqSearchState.Idle
             val gains = autoEqRepository.fetchProfile(result)
             if (gains != null) {
                 if (!_enabled.value) {
@@ -224,12 +184,11 @@ constructor(
                 _isModifiedFromProfile.value = false
             }
             _isApplyingProfile.value = false
+            _recentProfiles.value = autoEqRepository.getRecentProfiles()
         }
     }
 
     companion object {
-        private const val DEBOUNCE_MS = 300L
-
         /** Maximum number of results shown at once to avoid rendering thousands of buttons. */
         private const val MAX_DISPLAY = 30
     }
