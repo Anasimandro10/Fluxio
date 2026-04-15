@@ -142,6 +142,7 @@ class AutoEqBrowserDialog : ViewBindingBottomSheetDialogFragment<DialogAutoeqBro
                 binding.autoeqBrowserCount.visibility = android.view.View.GONE
                 binding.autoeqBrowserStatus.text = getString(R.string.lbl_autoeq_error)
                 binding.autoeqBrowserErrorLayout.visibility = android.view.View.VISIBLE
+                binding.autoeqBrowserRetryButton.visibility = android.view.View.VISIBLE
                 binding.autoeqBrowserResults.visibility = android.view.View.GONE
                 binding.autoeqBrowserRecentLabel.visibility = android.view.View.GONE
                 resultsAdapter.submitList(null)

@@ -34,9 +34,9 @@ import timber.log.Timber as L
 /**
  * Repository for downloading headphone EQ profiles from the AutoEQ GitHub repository.
  *
- * It uses the raw githubusercontent to access INDEX.md which contains a markdown list of all ~9000
- * headphone profiles, and parses it in-memory. Then it fetches the GraphicEQ.txt directly using the
- * parsed path.
+ * It uses the raw githubusercontent to access INDEX.md which contains a markdown list
+ * of all ~9000 headphone profiles, and parses it in-memory.
+ * Then it fetches the GraphicEQ.txt directly using the parsed path.
  *
  * API by Jaakko Pasanen (https://autoeq.app), MIT License. See assets/licenses/autoeq_license.txt
  * for attribution.
@@ -55,8 +55,8 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     // -------------------------------------------------------------------------
 
     /**
-     * Downloads the complete list of headphone profiles via GitHub's INDEX.md. The result is cached
-     * in memory so subsequent calls return immediately. Returns null if the network request failed.
+     * Downloads the complete list of headphone profiles via GitHub's INDEX.md. The result is cached in
+     * memory so subsequent calls return immediately. Returns null if the network request failed.
      */
     suspend fun loadAllProfiles(): List<AutoEqResult>? {
         allProfilesCache?.let {
@@ -84,16 +84,15 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
     suspend fun fetchProfile(result: AutoEqResult): FloatArray? =
         withContext(Dispatchers.IO) {
             try {
-                // The markdown path is like "./crinacle/711 in-ear/Apple AirPods Pro 2"
-                // We need to construct: BASE_URL + "/crinacle/711 in-ear/Apple AirPods Pro 2/Apple
-                // AirPods Pro 2 GraphicEQ.txt"
+                // The path from INDEX.md is already URL-encoded (spaces → %20, etc.)
+                // e.g. "./crinacle/711%20in-ear/Apple%20AirPods%20Pro%202"
+                // We just strip the "./" prefix and use it directly — do NOT re-encode.
                 val pathClean = result.path.removePrefix("./")
-                // URL encode path segments manually to handle spaces but keep slashes
-                val pathEncoded = pathClean.split("/").joinToString("/") { Uri.encode(it) }
+                // The filename is built from the un-encoded display name, so we encode it.
                 val fileEncoded = Uri.encode("${result.name} GraphicEQ.txt")
-
-                val url = "$BASE_URL/$pathEncoded/$fileEncoded"
-
+                
+                val url = "$BASE_URL/$pathClean/$fileEncoded"
+                
                 val body = downloadRaw(url, acceptJson = false) ?: return@withContext null
                 val gains = parseGraphicEq(body) ?: return@withContext null
                 saveToCache(result.name, result.source, gains)
@@ -128,17 +127,15 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
             .remove(KEY_BANDS_JSON)
             .apply()
     }
-
+    
     fun getRecentProfiles(): List<AutoEqResult> {
         val json = prefs.getString(KEY_RECENT_PROFILES, null) ?: return emptyList()
         return try {
             val arr = JSONArray(json)
             (0 until arr.length()).mapNotNull { i ->
                 val obj = arr.getJSONObject(i)
-                val name =
-                    obj.optString("name").takeIf { it.isNotBlank() } ?: return@mapNotNull null
-                val path =
-                    obj.optString("path").takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                val name = obj.optString("name").takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                val path = obj.optString("path").takeIf { it.isNotBlank() } ?: return@mapNotNull null
                 val source = obj.optString("source")
                 AutoEqResult(name = name, path = path, source = source)
             }
@@ -146,7 +143,7 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
             emptyList()
         }
     }
-
+    
     private fun addRecentProfile(result: AutoEqResult) {
         val current = getRecentProfiles().toMutableList()
         current.removeAll { it.path == result.path }
@@ -154,10 +151,10 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
         if (current.size > 5) {
             current.removeAt(current.size - 1)
         }
-
+        
         try {
             val arr = JSONArray()
-            current.forEach {
+            current.forEach { 
                 val obj = org.json.JSONObject()
                 obj.put("name", it.name)
                 obj.put("path", it.path)
@@ -204,9 +201,13 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
         return try {
             val lines = markdown.lines()
             val resultList = mutableListOf<AutoEqResult>()
-            // Example line: - [1Custom SA02](./crinacle/711 in-ear/1Custom SA02) by crinacle on 711
-            val regex = Regex("""^- \[([^\]]+)]\(([^)]+)\)\s+by\s+(.+)$""")
-
+            // Example lines from INDEX.md:
+            //   - [1Custom SA02](./crinacle/711%20in-ear/1Custom%20SA02) by crinacle on 711
+            //   - [1MORE Aero (ANC Off)](./HypetheSonics/GRAS%20RA0045%20in-ear/1MORE%20Aero%20(ANC%20Off)) by HypetheSonics on GRAS RA0045
+            // Note: names/paths may contain parentheses, so we use greedy (.+) for the
+            // path group and let the engine backtrack to the last ") by " boundary.
+            val regex = Regex("""^- \[([^\]]+)]\((.+)\)\s+by\s+(.+)$""")
+            
             for (line in lines) {
                 val match = regex.find(line.trim())
                 if (match != null) {
@@ -281,8 +282,7 @@ class AutoEqRepository @Inject constructor(@ApplicationContext private val conte
         private const val KEY_BANDS_JSON = "autoeq_bands_json"
         private const val KEY_RECENT_PROFILES = "autoeq_recent_profiles"
         private const val BAND_COUNT = 10
-        private const val BASE_URL =
-            "https://raw.githubusercontent.com/jaakkopasanen/AutoEq/master/results"
+        private const val BASE_URL = "https://raw.githubusercontent.com/jaakkopasanen/AutoEq/master/results"
         private const val TIMEOUT_MS = 15_000
         private const val MAX_GAIN_DB = 12f
         private const val APP_VERSION = "4.0.10"
