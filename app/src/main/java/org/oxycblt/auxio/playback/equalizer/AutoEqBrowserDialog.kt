@@ -62,9 +62,7 @@ class AutoEqBrowserDialog : ViewBindingBottomSheetDialogFragment<DialogAutoeqBro
             dismiss()
         }
 
-        binding.autoeqBrowserRetryButton.setOnClickListener {
-            viewModel.loadAllProfiles()
-        }
+        binding.autoeqBrowserRetryButton.setOnClickListener { viewModel.loadAllProfiles() }
 
         binding.autoeqBrowserResults.apply {
             layoutManager = LinearLayoutManager(requireContext())

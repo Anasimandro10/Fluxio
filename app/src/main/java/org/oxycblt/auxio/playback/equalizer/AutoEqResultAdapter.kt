@@ -48,8 +48,9 @@ class AutoEqResultAdapter(private val onItemClick: (AutoEqResult) -> Unit) :
         fun bind(result: AutoEqResult) {
             binding.autoeqResultName.text = result.name
             binding.autoeqResultSource.text = result.source.ifBlank { "Unknown source" }
-            
-            // Adjust margin for better look without source if it's completely empty but we put Unknown source anyway
+
+            // Adjust margin for better look without source if it's completely empty but we put
+            // Unknown source anyway
             binding.root.setOnClickListener { onItemClick(result) }
         }
     }

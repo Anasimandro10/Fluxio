@@ -21,8 +21,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -144,8 +142,9 @@ constructor(
 
     /**
      * Filters the in-memory profile list by [query] (case-insensitive match on name and source).
-     * Returns the first [MAX_DISPLAY] matches sorted by relevance (starts-with first). If [query] is blank returns the first [MAX_DISPLAY]
-     * profiles alphabetically. Returns an empty list if the index is not yet ready.
+     * Returns the first [MAX_DISPLAY] matches sorted by relevance (starts-with first). If [query]
+     * is blank returns the first [MAX_DISPLAY] profiles alphabetically. Returns an empty list if
+     * the index is not yet ready.
      */
     fun filterProfiles(query: String): List<AutoEqResult> {
         val state = _allProfilesState.value
@@ -159,9 +158,7 @@ constructor(
                     it.name.contains(q, ignoreCase = true) ||
                         it.source.contains(q, ignoreCase = true)
                 }
-                .sortedBy { 
-                    if (it.name.startsWith(q, ignoreCase = true)) 0 else 1 
-                }
+                .sortedBy { if (it.name.startsWith(q, ignoreCase = true)) 0 else 1 }
                 .take(MAX_DISPLAY)
         }
     }
