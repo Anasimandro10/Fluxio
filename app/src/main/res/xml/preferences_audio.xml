@@ -50,4 +50,14 @@
             app:title="@string/set_pre_amp" />
 
     </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/set_device_profiles">
+
+        <org.oxycblt.auxio.settings.ui.WrappedDialogPreference
+            app:key="@string/set_key_device_profiles"
+            app:summary="@string/set_device_profiles_desc"
+            app:title="@string/set_device_profiles" />
+
+    </PreferenceCategory>
+
 </PreferenceScreen>
