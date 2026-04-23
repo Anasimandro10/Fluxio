@@ -550,10 +550,17 @@
     <string name="lbl_eq_bands">Bands</string>
     <string name="lbl_eq_custom">Custom</string>
     <string name="desc_equalizer">10-band equalizer with presets</string>
+
     <!-- Device EQ profiles — used by preferences_audio.xml and fragment_equalizer.xml -->
     <string name="set_device_profiles">Auto EQ by device</string>
     <string name="desc_device_profiles">Apply an EQ preset automatically when headphones connect</string>
     <string name="set_device_profiles_bt">Bluetooth preset</string>
     <string name="set_device_profiles_wired">Wired headset preset</string>
     <string name="set_device_profiles_no_change">No change</string>
+
+    <!-- Crossfade settings -->
+    <string name="set_crossfade">Crossfade</string>
+    <string name="set_crossfade_desc">Blend audio between tracks</string>
+    <string name="set_crossfade_duration">Duration (seconds)</string>
+
 </resources>

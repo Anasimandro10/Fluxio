@@ -199,4 +199,8 @@
     <!-- Device EQ profile settings key -->
     <string name="set_key_device_profiles" translatable="false">fluxio_device_profiles</string>
 
+    <!-- Crossfade settings keys -->
+    <string name="set_key_crossfade_enabled" translatable="false">fluxio_crossfade_enabled</string>
+    <string name="set_key_crossfade_duration" translatable="false">fluxio_crossfade_duration</string>
+
 </resources>
