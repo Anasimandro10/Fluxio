@@ -49,6 +49,7 @@ import kotlinx.coroutines.yield
 import org.oxycblt.auxio.image.ImageSettings
 import org.oxycblt.auxio.music.MusicRepository
 import org.oxycblt.auxio.playback.PlaybackSettings
+import org.oxycblt.auxio.playback.crossfade.CrossfadeProcessor
 import org.oxycblt.auxio.playback.equalizer.EqualizerAudioProcessor
 import org.oxycblt.auxio.playback.persist.PersistenceRepository
 import org.oxycblt.auxio.playback.replaygain.ReplayGainAudioProcessor
@@ -75,6 +76,7 @@ class ExoPlaybackStateHolder(
     private val commandFactory: PlaybackCommand.Factory,
     private val replayGainProcessor: ReplayGainAudioProcessor,
     private val equalizerProcessor: EqualizerAudioProcessor,
+    private val crossfadeProcessor: CrossfadeProcessor,
     private val musicRepository: MusicRepository,
     private val imageSettings: ImageSettings,
     private val audioDeviceListener: AudioDeviceListener,
@@ -88,6 +90,7 @@ class ExoPlaybackStateHolder(
     private val saveScope = CoroutineScope(Dispatchers.IO + saveJob)
     private val restoreScope = CoroutineScope(Dispatchers.IO + saveJob)
     private var currentSaveJob: Job? = null
+    private var currentCrossfadeJob: Job? = null
     private var openAudioEffectSession = false
 
     var sessionOngoing = false
@@ -105,6 +108,7 @@ class ExoPlaybackStateHolder(
 
     fun release() {
         saveJob.cancel()
+        currentCrossfadeJob?.cancel()
         playbackManager.unregisterStateHolder(this)
         musicRepository.removeUpdateListener(this)
         player.removeListener(this)
@@ -264,6 +268,7 @@ class ExoPlaybackStateHolder(
         player.seekTo(target, C.TIME_UNSET)
         player.prepare()
         player.play()
+        startFadeOutTracker()
         playbackManager.ack(this, StateAck.NewPlayback)
         deferSave()
     }
@@ -508,6 +513,13 @@ class ExoPlaybackStateHolder(
         ) {
             playbackManager.ack(this, StateAck.IndexMoved)
         }
+
+        // Crossfade: fade-in the incoming track and start tracking position for fade-out.
+        // Only on AUTO (natural end-of-track advance), not on REPEAT or manual seeks.
+        if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) {
+            crossfadeProcessor.notifyTrackStart()
+            startFadeOutTracker()
+        }
     }
 
     override fun onEvents(player: Player, events: Player.Events) {
@@ -544,6 +556,40 @@ class ExoPlaybackStateHolder(
                 .putExtra(AudioEffect.EXTRA_AUDIO_SESSION, audioSessionId)
                 .putExtra(AudioEffect.EXTRA_CONTENT_TYPE, AudioEffect.CONTENT_TYPE_MUSIC)
         )
+    }
+
+    // --- CROSSFADE ---
+
+    /**
+     * Launches a coroutine that polls the current track position every 100 ms. When the remaining
+     * time falls within [CrossfadeProcessor.crossfadeDurationMs], it triggers a fade-out.
+     *
+     * Is a no-op when crossfade is disabled or duration is 0 — no coroutine is launched.
+     */
+    private fun startFadeOutTracker() {
+        currentCrossfadeJob?.cancel()
+        if (!crossfadeProcessor.enabled || crossfadeProcessor.crossfadeDurationMs <= 0L) return
+        val durationMs = crossfadeProcessor.crossfadeDurationMs
+        currentCrossfadeJob = saveScope.launch {
+            while (true) {
+                delay(100L)
+                val timeLeft: Long =
+                    withContext(Dispatchers.Main) {
+                        val trackDuration =
+                            player.currentMediaItem
+                                ?.mediaMetadata
+                                ?.extras
+                                ?.getLong("durationMs")
+                                ?: return@withContext Long.MAX_VALUE
+                        trackDuration - player.currentPosition
+                    }
+                if (timeLeft == Long.MAX_VALUE) break
+                if (timeLeft <= durationMs) {
+                    crossfadeProcessor.notifyTrackEndingSoon()
+                    break
+                }
+            }
+        }
     }
 
     // --- MUSICREPOSITORY METHODS ---
@@ -658,13 +704,15 @@ class ExoPlaybackStateHolder(
         private val mediaSourceFactory: MediaSource.Factory,
         private val replayGainProcessor: ReplayGainAudioProcessor,
         private val equalizerProcessor: EqualizerAudioProcessor,
+        private val crossfadeProcessor: CrossfadeProcessor,
         private val musicRepository: MusicRepository,
         private val imageSettings: ImageSettings,
         private val audioDeviceListener: AudioDeviceListener,
     ) {
         fun create(): ExoPlaybackStateHolder {
             // Since Auxio is a music player, only specify an audio renderer to save
-            // battery/apk size/cache size
+            // battery/apk size/cache size.
+            // Processor order: ReplayGain → EQ → Crossfade.
             val audioRenderer = RenderersFactory { handler, _, audioListener, _, _ ->
                 arrayOf(
                     FfmpegAudioRenderer(
@@ -672,6 +720,7 @@ class ExoPlaybackStateHolder(
                         audioListener,
                         replayGainProcessor,
                         equalizerProcessor,
+                        crossfadeProcessor,
                     ),
                     MediaCodecAudioRenderer(
                         context,
@@ -679,7 +728,13 @@ class ExoPlaybackStateHolder(
                         handler,
                         audioListener,
                         DefaultAudioSink.Builder(context)
-                            .setAudioProcessors(arrayOf(replayGainProcessor, equalizerProcessor))
+                            .setAudioProcessors(
+                                arrayOf(
+                                    replayGainProcessor,
+                                    equalizerProcessor,
+                                    crossfadeProcessor,
+                                )
+                            )
                             .build(),
                     ),
                 )
@@ -722,6 +777,7 @@ class ExoPlaybackStateHolder(
                 commandFactory,
                 replayGainProcessor,
                 equalizerProcessor,
+                crossfadeProcessor,
                 musicRepository,
                 imageSettings,
                 audioDeviceListener,
