@@ -26,8 +26,8 @@ Z" />
                 android:translateY="114">
                 <path
                     android:fillColor="@android:color/transparent"
-                    android:pathData="M13 4l4 4m-4-4v13m0 0l-3 3-3-3 3-3"
-                    android:strokeWidth="2"
+                    android:pathData="M2,14 C4,10 6,8 8.5,8 C11,8 12,12 14,14 C16,16 18,16 20,14 C21,13 22,11.5 22,10 C22,11.8 21,13.5 20,14.8 C18,17 16,17.5 14,15.5 C12,13.5 11,9.5 8.5,9.5 C6,9.5 4,11.5 2,14Z"
+                    android:strokeWidth="0"
                     android:strokeColor="#80808080"
                     android:strokeLineCap="round"
                     android:strokeLineJoin="round" />
@@ -39,11 +39,11 @@ Z" />
                 android:translateX="114"
                 android:translateY="114">
                 <path
-                    android:name="base"
+                    android:name="wave_bottom"
                     android:fillColor="@android:color/transparent"
-                    android:pathData="m 13,17 -3,3 -3,-3 3,-3"
+                    android:pathData="M2,14 C4,10 6,8 8.5,8 C11,8 12,12 14,14 C16,16 18,16 20,14 C21,13 22,11.5 22,10 C22,11.8 21,13.5 20,14.8 C18,17 16,17.5 14,15.5 C12,13.5 11,9.5 8.5,9.5 C6,9.5 4,11.5 2,14Z"
                     android:strokeWidth="0"
-                    android:strokeColor="#004894"
+                    android:strokeColor="#CC3333"
                     android:strokeLineCap="round"
                     android:strokeLineJoin="round" />
             </group>
@@ -53,13 +53,12 @@ Z" />
                 android:scaleY="8.5"
                 android:translateX="114"
                 android:translateY="114">
-
                 <path
-                    android:name="lower_stem"
+                    android:name="wave_top"
                     android:fillColor="@android:color/transparent"
-                    android:pathData="M 13,10.5 V 17"
+                    android:pathData="M2,14 C4,10 6,8 8.5,8 C11,8 12,12 14,14 C16,16 18,16 20,14 C21,13 22,11.5 22,10 C22,11.8 21,13.5 20,14.8 C18,17 16,17.5 14,15.5 C12,13.5 11,9.5 8.5,9.5 C6,9.5 4,11.5 2,14Z"
                     android:strokeWidth="0"
-                    android:strokeColor="#1a61ae"
+                    android:strokeColor="#E84040"
                     android:strokeLineCap="round"
                     android:strokeLineJoin="round" />
             </group>
@@ -69,29 +68,12 @@ Z" />
                 android:scaleY="8.5"
                 android:translateX="114"
                 android:translateY="114">
-
                 <path
-                    android:name="upper_stem"
-                    android:fillColor="@android:color/transparent"
-                    android:pathData="m 13,4v 6.5"
+                    android:name="wave_fill"
+                    android:fillColor="#00000000"
+                    android:pathData="M2,14 C4,10 6,8 8.5,8 C11,8 12,12 14,14 C16,16 18,16 20,14 C21,13 22,11.5 22,10 C22,11.8 21,13.5 20,14.8 C18,17 16,17.5 14,15.5 C12,13.5 11,9.5 8.5,9.5 C6,9.5 4,11.5 2,14Z"
                     android:strokeWidth="0"
-                    android:strokeColor="#357ac9"
-                    android:strokeLineCap="round"
-                    android:strokeLineJoin="round" />
-            </group>
-
-            <group
-                android:scaleX="8.5"
-                android:scaleY="8.5"
-                android:translateX="114"
-                android:translateY="114">
-
-                <path
-                    android:name="tail"
-                    android:fillColor="@android:color/transparent"
-                    android:pathData="m 13,4 4,4"
-                    android:strokeWidth="0"
-                    android:strokeColor="#5093e4"
+                    android:strokeColor="#FF4444"
                     android:strokeLineCap="round"
                     android:strokeLineJoin="round" />
             </group>
@@ -102,62 +84,46 @@ Z" />
             <set />
         </aapt:attr>
     </target>
-    <target android:name="tail">
+    <target android:name="wave_fill">
+        <aapt:attr name="android:animation">
+            <set>
+                <objectAnimator
+                    android:duration="850"
+                    android:interpolator="@interpolator/m3_sys_motion_easing_emphasized_decelerate"
+                    android:propertyName="fillColor"
+                    android:startOffset="150"
+                    android:valueFrom="#00FF4444"
+                    android:valueTo="#FFFF4444"
+                    android:valueType="colorType"
+                    tools:ignore="PrivateResource" />
+            </set>
+        </aapt:attr>
+    </target>
+    <target android:name="wave_top">
         <aapt:attr name="android:animation">
             <set>
                 <objectAnimator
                     android:duration="850"
                     android:interpolator="@interpolator/m3_sys_motion_easing_emphasized_decelerate"
                     android:propertyName="strokeWidth"
-                    android:startOffset="150"
+                    android:startOffset="100"
                     android:valueFrom="0"
-                    android:valueTo="2"
+                    android:valueTo="1.5"
                     android:valueType="floatType"
                     tools:ignore="PrivateResource" />
             </set>
         </aapt:attr>
     </target>
-    <target android:name="upper_stem">
+    <target android:name="wave_bottom">
         <aapt:attr name="android:animation">
             <set>
                 <objectAnimator
                     android:duration="850"
                     android:interpolator="@interpolator/m3_sys_motion_easing_emphasized_decelerate"
                     android:propertyName="strokeWidth"
-                    android:startOffset="150"
+                    android:startOffset="200"
                     android:valueFrom="0"
-                    android:valueTo="2"
-                    android:valueType="floatType"
-                    tools:ignore="PrivateResource" />
-            </set>
-        </aapt:attr>
-    </target>
-
-    <target android:name="lower_stem">
-        <aapt:attr name="android:animation">
-            <set>
-                <objectAnimator
-                    android:duration="850"
-                    android:interpolator="@interpolator/m3_sys_motion_easing_emphasized_decelerate"
-                    android:propertyName="strokeWidth"
-                    android:startOffset="150"
-                    android:valueFrom="0"
-                    android:valueTo="2"
-                    android:valueType="floatType"
-                    tools:ignore="PrivateResource" />
-            </set>
-        </aapt:attr>
-    </target>
-    <target android:name="base">
-        <aapt:attr name="android:animation">
-            <set>
-                <objectAnimator
-                    android:duration="850"
-                    android:interpolator="@interpolator/m3_sys_motion_easing_emphasized_decelerate"
-                    android:propertyName="strokeWidth"
-                    android:startOffset="150"
-                    android:valueFrom="0"
-                    android:valueTo="2"
+                    android:valueTo="1"
                     android:valueType="floatType"
                     tools:ignore="PrivateResource" />
             </set>
