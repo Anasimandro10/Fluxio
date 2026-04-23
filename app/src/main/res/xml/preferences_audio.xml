@@ -55,7 +55,7 @@
 
         <org.oxycblt.auxio.settings.ui.WrappedDialogPreference
             app:key="@string/set_key_device_profiles"
-            app:summary="@string/set_device_profiles_desc"
+            app:summary="@string/desc_device_profiles"
             app:title="@string/set_device_profiles" />
 
     </PreferenceCategory>
