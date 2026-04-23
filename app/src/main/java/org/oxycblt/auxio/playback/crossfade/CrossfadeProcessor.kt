@@ -30,13 +30,13 @@ import javax.inject.Singleton
  * effect at track transitions.
  *
  * Only handles [C.ENCODING_PCM_16BIT]. Any other encoding returns
- * [AudioProcessor.AudioFormat.NOT_SET] so the processor is silently bypassed without errors —
- * same contract as [ReplayGainAudioProcessor] and [EqualizerAudioProcessor].
+ * [AudioProcessor.AudioFormat.NOT_SET] so the processor is silently bypassed without errors — same
+ * contract as [ReplayGainAudioProcessor] and [EqualizerAudioProcessor].
  *
  * Thread safety: [enabled] and [crossfadeDurationMs] are @Volatile. [notifyTrackStart] and
  * [notifyTrackEndingSoon] are called from the main thread; [queueInput], [onConfigure], [onFlush]
- * and [onReset] run on the ExoPlayer audio thread. [fadeSamplesRemaining] is an [AtomicInteger]
- * so the main-thread write (set) and audio-thread write (decrementAndGet) do not race.
+ * and [onReset] run on the ExoPlayer audio thread. [fadeSamplesRemaining] is an [AtomicInteger] so
+ * the main-thread write (set) and audio-thread write (decrementAndGet) do not race.
  */
 @Singleton
 class CrossfadeProcessor @Inject constructor() : BaseAudioProcessor() {

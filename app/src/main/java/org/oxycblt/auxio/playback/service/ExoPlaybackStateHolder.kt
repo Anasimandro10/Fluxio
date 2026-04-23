@@ -570,26 +570,26 @@ class ExoPlaybackStateHolder(
         currentCrossfadeJob?.cancel()
         if (!crossfadeProcessor.enabled || crossfadeProcessor.crossfadeDurationMs <= 0L) return
         val durationMs = crossfadeProcessor.crossfadeDurationMs
-        currentCrossfadeJob = saveScope.launch {
-            while (true) {
-                delay(100L)
-                val timeLeft: Long =
-                    withContext(Dispatchers.Main) {
-                        val trackDuration =
-                            player.currentMediaItem
-                                ?.mediaMetadata
-                                ?.extras
-                                ?.getLong("durationMs")
-                                ?: return@withContext Long.MAX_VALUE
-                        trackDuration - player.currentPosition
+        currentCrossfadeJob =
+            saveScope.launch {
+                while (true) {
+                    delay(100L)
+                    val timeLeft: Long =
+                        withContext(Dispatchers.Main) {
+                            val trackDuration =
+                                player.currentMediaItem
+                                    ?.mediaMetadata
+                                    ?.extras
+                                    ?.getLong("durationMs") ?: return@withContext Long.MAX_VALUE
+                            trackDuration - player.currentPosition
+                        }
+                    if (timeLeft == Long.MAX_VALUE) break
+                    if (timeLeft <= durationMs) {
+                        crossfadeProcessor.notifyTrackEndingSoon()
+                        break
                     }
-                if (timeLeft == Long.MAX_VALUE) break
-                if (timeLeft <= durationMs) {
-                    crossfadeProcessor.notifyTrackEndingSoon()
-                    break
                 }
             }
-        }
     }
 
     // --- MUSICREPOSITORY METHODS ---
@@ -729,11 +729,7 @@ class ExoPlaybackStateHolder(
                         audioListener,
                         DefaultAudioSink.Builder(context)
                             .setAudioProcessors(
-                                arrayOf(
-                                    replayGainProcessor,
-                                    equalizerProcessor,
-                                    crossfadeProcessor,
-                                )
+                                arrayOf(replayGainProcessor, equalizerProcessor, crossfadeProcessor)
                             )
                             .build(),
                     ),
