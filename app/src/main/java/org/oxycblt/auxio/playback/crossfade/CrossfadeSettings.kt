@@ -30,18 +30,14 @@ import javax.inject.Singleton
  * (SeekBarPreference / SwitchPreferenceCompat) and this class read from the same store.
  *
  * On startup the [init] block pushes the persisted values into the processor. At runtime
- * [AudioPreferenceFragment] calls [setEnabled] / [setDuration] via
- * OnPreferenceChangeListener so the processor is updated immediately without needing a
- * singleton listener — avoiding the single-listener constraint documented in the project
- * lessons.
+ * [AudioPreferenceFragment] calls [setEnabled] / [setDuration] via OnPreferenceChangeListener so
+ * the processor is updated immediately without needing a singleton listener — avoiding the
+ * single-listener constraint documented in the project lessons.
  */
 @Singleton
 class CrossfadeSettings
 @Inject
-constructor(
-    @ApplicationContext context: Context,
-    private val processor: CrossfadeProcessor,
-) {
+constructor(@ApplicationContext context: Context, private val processor: CrossfadeProcessor) {
     private val prefs = PreferenceManager.getDefaultSharedPreferences(context)
 
     companion object {
@@ -66,9 +62,9 @@ constructor(
     /**
      * Pushes a new enabled state to [CrossfadeProcessor].
      *
-     * The Preference framework has already persisted [value] to SharedPreferences before
-     * this is called (OnPreferenceChangeListener returns true), so [enabled] will reflect
-     * [value] on the next read.
+     * The Preference framework has already persisted [value] to SharedPreferences before this is
+     * called (OnPreferenceChangeListener returns true), so [enabled] will reflect [value] on the
+     * next read.
      */
     fun setEnabled(value: Boolean) {
         processor.enabled = value
