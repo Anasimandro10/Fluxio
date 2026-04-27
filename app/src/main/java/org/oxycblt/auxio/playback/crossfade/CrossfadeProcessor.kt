@@ -30,22 +30,21 @@ import kotlin.math.sin
 
 /**
  * An [AudioProcessor] that applies an equal-power (sinusoidal) fade envelope to produce a
- * professional crossfade effect at track transitions — the same curve shape used by Spotify
- * and other pro audio players.
+ * professional crossfade effect at track transitions — the same curve shape used by Spotify and
+ * other pro audio players.
  *
  * Equal-power crossfade maintains constant perceived loudness across the transition by using
- * `sin(t * π/2)` for fade-in and `cos(t * π/2)` for fade-out, where `t` is the normalized
- * progress `[0..1]`. This avoids the −6 dB "dip" in the middle that linear fading produces.
+ * `sin(t * π/2)` for fade-in and `cos(t * π/2)` for fade-out, where `t` is the normalized progress
+ * `[0..1]`. This avoids the −6 dB "dip" in the middle that linear fading produces.
  *
- * Supports [C.ENCODING_PCM_16BIT], [C.ENCODING_PCM_FLOAT], and [C.ENCODING_PCM_32BIT].
- * Any other encoding returns [AudioProcessor.AudioFormat.NOT_SET] so the processor is silently
- * bypassed without errors.
+ * Supports [C.ENCODING_PCM_16BIT], [C.ENCODING_PCM_FLOAT], and [C.ENCODING_PCM_32BIT]. Any other
+ * encoding returns [AudioProcessor.AudioFormat.NOT_SET] so the processor is silently bypassed
+ * without errors.
  *
  * Thread safety: All mutable fade state is held in an immutable [FadeState] snapshot swapped
- * atomically via [AtomicReference]. [notifyTrackStart] and [notifyTrackEndingSoon] are called
- * from the main thread; [queueInput], [onConfigure], [onFlush] and [onReset] run on the
- * ExoPlayer audio thread. The atomic snapshot guarantees a consistent view across threads
- * without locks.
+ * atomically via [AtomicReference]. [notifyTrackStart] and [notifyTrackEndingSoon] are called from
+ * the main thread; [queueInput], [onConfigure], [onFlush] and [onReset] run on the ExoPlayer audio
+ * thread. The atomic snapshot guarantees a consistent view across threads without locks.
  */
 @Singleton
 class CrossfadeProcessor @Inject constructor() : BaseAudioProcessor() {
@@ -58,11 +57,15 @@ class CrossfadeProcessor @Inject constructor() : BaseAudioProcessor() {
 
     // ── Fade state machine ──────────────────────────────────────────────
 
-    private enum class FadeDirection { NONE, IN, OUT }
+    private enum class FadeDirection {
+        NONE,
+        IN,
+        OUT,
+    }
 
     /**
-     * Immutable snapshot of the fade state. Swapped atomically so the audio thread always sees
-     * a consistent {direction, remaining, total} triple — no partial writes possible.
+     * Immutable snapshot of the fade state. Swapped atomically so the audio thread always sees a
+     * consistent {direction, remaining, total} triple — no partial writes possible.
      */
     private data class FadeState(
         val direction: FadeDirection = FadeDirection.NONE,
@@ -190,10 +193,11 @@ class CrossfadeProcessor @Inject constructor() : BaseAudioProcessor() {
 
             for (c in 0 until ch) {
                 val sample = input.getShort(i)
-                val scaled = (sample * gain)
-                    .toInt()
-                    .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
-                    .toShort()
+                val scaled =
+                    (sample * gain)
+                        .toInt()
+                        .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
+                        .toShort()
                 output.putShort(scaled)
                 i += 2
             }
@@ -306,12 +310,11 @@ class CrossfadeProcessor @Inject constructor() : BaseAudioProcessor() {
 
     /**
      * Computes the gain factor using an equal-power (sinusoidal) curve.
-     *
      * - **Fade-in**: `sin(progress * π/2)` — starts at 0, reaches 1
      * - **Fade-out**: `sin(progress * π/2)` where progress counts down — starts at 1, reaches 0
      *
-     * At the crossover point (50%), both tracks are at `sin(π/4) ≈ 0.707` (−3 dB each),
-     * summing to constant power — no perceived volume dip.
+     * At the crossover point (50%), both tracks are at `sin(π/4) ≈ 0.707` (−3 dB each), summing to
+     * constant power — no perceived volume dip.
      */
     private fun computeGain(direction: FadeDirection, remaining: Int, total: Float): Float {
         if (total <= 0f) return 1f

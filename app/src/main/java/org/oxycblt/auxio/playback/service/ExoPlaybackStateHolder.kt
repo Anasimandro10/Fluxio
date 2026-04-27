@@ -571,12 +571,12 @@ class ExoPlaybackStateHolder(
     // --- CROSSFADE ---
 
     /**
-     * Starts a [Handler]-based position monitor on the main looper that checks the remaining
-     * track time every 200 ms. When the remaining time falls within
+     * Starts a [Handler]-based position monitor on the main looper that checks the remaining track
+     * time every 200 ms. When the remaining time falls within
      * [CrossfadeProcessor.crossfadeDurationMs], it triggers a fade-out exactly once per track.
      *
-     * Runs entirely on the main thread — no coroutine context switching overhead.
-     * Uses [fadeOutTriggered] to prevent double-firing if the runnable executes slightly late.
+     * Runs entirely on the main thread — no coroutine context switching overhead. Uses
+     * [fadeOutTriggered] to prevent double-firing if the runnable executes slightly late.
      *
      * Is a no-op when crossfade is disabled or duration is 0.
      */
@@ -585,28 +585,29 @@ class ExoPlaybackStateHolder(
         if (!crossfadeProcessor.enabled || crossfadeProcessor.crossfadeDurationMs <= 0L) return
         val durationMs = crossfadeProcessor.crossfadeDurationMs
 
-        val runnable = object : Runnable {
-            override fun run() {
-                if (fadeOutTriggered) return
-                if (!crossfadeProcessor.enabled) return
+        val runnable =
+            object : Runnable {
+                override fun run() {
+                    if (fadeOutTriggered) return
+                    if (!crossfadeProcessor.enabled) return
 
-                val trackDuration = player.currentMediaItem
-                    ?.mediaMetadata
-                    ?.extras
-                    ?.getLong("durationMs") ?: return
-                val timeLeft = trackDuration - player.currentPosition
+                    val trackDuration =
+                        player.currentMediaItem?.mediaMetadata?.extras?.getLong("durationMs")
+                            ?: return
+                    val timeLeft = trackDuration - player.currentPosition
 
-                if (timeLeft <= durationMs) {
-                    fadeOutTriggered = true
-                    crossfadeProcessor.notifyTrackEndingSoon()
-                    return
+                    if (timeLeft <= durationMs) {
+                        fadeOutTriggered = true
+                        crossfadeProcessor.notifyTrackEndingSoon()
+                        return
+                    }
+
+                    // Re-schedule: use adaptive interval — poll faster as we approach the fade
+                    // zone.
+                    val interval = if (timeLeft - durationMs < 1000L) 50L else 200L
+                    fadeOutHandler.postDelayed(this, interval)
                 }
-
-                // Re-schedule: use adaptive interval — poll faster as we approach the fade zone.
-                val interval = if (timeLeft - durationMs < 1000L) 50L else 200L
-                fadeOutHandler.postDelayed(this, interval)
             }
-        }
         fadeOutRunnable = runnable
         fadeOutHandler.postDelayed(runnable, 200L)
     }
