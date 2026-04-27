@@ -20,6 +20,8 @@ package org.oxycblt.auxio.playback.service
 import android.content.Context
 import android.content.Intent
 import android.media.audiofx.AudioEffect
+import android.os.Handler
+import android.os.Looper
 import android.provider.OpenableColumns
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
@@ -90,8 +92,12 @@ class ExoPlaybackStateHolder(
     private val saveScope = CoroutineScope(Dispatchers.IO + saveJob)
     private val restoreScope = CoroutineScope(Dispatchers.IO + saveJob)
     private var currentSaveJob: Job? = null
-    private var currentCrossfadeJob: Job? = null
     private var openAudioEffectSession = false
+
+    // --- Crossfade fade-out tracking (runs on main looper, no context switching) ---
+    private val fadeOutHandler = Handler(Looper.getMainLooper())
+    private var fadeOutRunnable: Runnable? = null
+    private var fadeOutTriggered = false
 
     var sessionOngoing = false
         private set
@@ -108,7 +114,7 @@ class ExoPlaybackStateHolder(
 
     fun release() {
         saveJob.cancel()
-        currentCrossfadeJob?.cancel()
+        stopFadeOutTracker()
         playbackManager.unregisterStateHolder(this)
         musicRepository.removeUpdateListener(this)
         player.removeListener(this)
@@ -237,6 +243,9 @@ class ExoPlaybackStateHolder(
 
     override fun seekTo(positionMs: Long) {
         player.seekTo(positionMs)
+        // Restart fade-out tracker after seek in case the user seeked past/before the fade zone.
+        fadeOutTriggered = false
+        startFadeOutTracker()
         deferSave()
         // Ack handled w/ExoPlayer events
     }
@@ -518,6 +527,7 @@ class ExoPlaybackStateHolder(
         // Only on AUTO (natural end-of-track advance), not on REPEAT or manual seeks.
         if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) {
             crossfadeProcessor.notifyTrackStart()
+            fadeOutTriggered = false
             startFadeOutTracker()
         }
     }
@@ -561,35 +571,50 @@ class ExoPlaybackStateHolder(
     // --- CROSSFADE ---
 
     /**
-     * Launches a coroutine that polls the current track position every 100 ms. When the remaining
-     * time falls within [CrossfadeProcessor.crossfadeDurationMs], it triggers a fade-out.
+     * Starts a [Handler]-based position monitor on the main looper that checks the remaining
+     * track time every 200 ms. When the remaining time falls within
+     * [CrossfadeProcessor.crossfadeDurationMs], it triggers a fade-out exactly once per track.
      *
-     * Is a no-op when crossfade is disabled or duration is 0 — no coroutine is launched.
+     * Runs entirely on the main thread — no coroutine context switching overhead.
+     * Uses [fadeOutTriggered] to prevent double-firing if the runnable executes slightly late.
+     *
+     * Is a no-op when crossfade is disabled or duration is 0.
      */
     private fun startFadeOutTracker() {
-        currentCrossfadeJob?.cancel()
+        stopFadeOutTracker()
         if (!crossfadeProcessor.enabled || crossfadeProcessor.crossfadeDurationMs <= 0L) return
         val durationMs = crossfadeProcessor.crossfadeDurationMs
-        currentCrossfadeJob =
-            saveScope.launch {
-                while (true) {
-                    delay(100L)
-                    val timeLeft: Long =
-                        withContext(Dispatchers.Main) {
-                            val trackDuration =
-                                player.currentMediaItem
-                                    ?.mediaMetadata
-                                    ?.extras
-                                    ?.getLong("durationMs") ?: return@withContext Long.MAX_VALUE
-                            trackDuration - player.currentPosition
-                        }
-                    if (timeLeft == Long.MAX_VALUE) break
-                    if (timeLeft <= durationMs) {
-                        crossfadeProcessor.notifyTrackEndingSoon()
-                        break
-                    }
+
+        val runnable = object : Runnable {
+            override fun run() {
+                if (fadeOutTriggered) return
+                if (!crossfadeProcessor.enabled) return
+
+                val trackDuration = player.currentMediaItem
+                    ?.mediaMetadata
+                    ?.extras
+                    ?.getLong("durationMs") ?: return
+                val timeLeft = trackDuration - player.currentPosition
+
+                if (timeLeft <= durationMs) {
+                    fadeOutTriggered = true
+                    crossfadeProcessor.notifyTrackEndingSoon()
+                    return
                 }
+
+                // Re-schedule: use adaptive interval — poll faster as we approach the fade zone.
+                val interval = if (timeLeft - durationMs < 1000L) 50L else 200L
+                fadeOutHandler.postDelayed(this, interval)
             }
+        }
+        fadeOutRunnable = runnable
+        fadeOutHandler.postDelayed(runnable, 200L)
+    }
+
+    /** Cancels the fade-out position monitor if running. */
+    private fun stopFadeOutTracker() {
+        fadeOutRunnable?.let { fadeOutHandler.removeCallbacks(it) }
+        fadeOutRunnable = null
     }
 
     // --- MUSICREPOSITORY METHODS ---
