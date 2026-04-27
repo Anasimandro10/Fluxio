@@ -72,7 +72,7 @@
             app:defaultValue="3"
             app:dependency="fluxio_crossfade_enabled"
             app:key="@string/set_key_crossfade_duration"
-            app:max="12"
+            android:max="12"
             app:min="0"
             app:showSeekBarValue="true"
             app:title="@string/set_crossfade_duration" />
