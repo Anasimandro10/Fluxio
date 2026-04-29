@@ -47,6 +47,7 @@ constructor(
     private val equalizerSettings: EqualizerSettings,
     private val equalizerProcessor: EqualizerAudioProcessor,
     private val autoEqRepository: AutoEqRepository,
+    private val listeningModeManager: ListeningModeManager,
 ) : ViewModel() {
 
     private val _bands = MutableStateFlow(equalizerSettings.getBands())
@@ -72,6 +73,9 @@ constructor(
 
     private val _isApplyingProfile = MutableStateFlow(false)
     val isApplyingProfile: StateFlow<Boolean> = _isApplyingProfile
+
+    private val _listeningModes = MutableStateFlow(listeningModeManager.getModes())
+    val listeningModes: StateFlow<List<ListeningMode>> = _listeningModes
 
     init {
         equalizerProcessor.setBands(_bands.value, _enabled.value)
@@ -183,6 +187,53 @@ constructor(
             _isApplyingProfile.value = false
             _recentProfiles.value = autoEqRepository.getRecentProfiles()
         }
+    }
+
+    // ---- Listening modes ----
+
+    /** True when the user can still save a new mode (fewer than [ListeningModeManager.MAX_MODES]). */
+    fun canSaveListeningMode(): Boolean = _listeningModes.value.size < ListeningModeManager.MAX_MODES
+
+    /**
+     * Captures the current EQ state as a new listening mode named [name]. The AutoEQ profile name
+     * is only embedded when the user has not manually moved any band since the profile was applied.
+     *
+     * @return true if saved, false when the slot limit has been reached.
+     */
+    fun saveCurrentAsListeningMode(name: String): Boolean {
+        val saved =
+            listeningModeManager.saveMode(
+                name = name,
+                enabled = _enabled.value,
+                preset = _activePreset.value,
+                bands = _bands.value,
+                autoEqName = if (!_isModifiedFromProfile.value) _autoEqProfileName.value else null,
+            )
+        if (saved != null) _listeningModes.value = listeningModeManager.getModes()
+        return saved != null
+    }
+
+    /**
+     * Restores [mode], pushing every field to both the audio processor and persisted settings so
+     * the state survives a process restart.
+     */
+    fun applyListeningMode(mode: ListeningMode) {
+        val gains = mode.bands.copyOf()
+        _enabled.value = mode.enabled
+        _activePreset.value = mode.preset
+        _bands.value = gains
+        _autoEqProfileName.value = mode.autoEqName
+        _isModifiedFromProfile.value = false
+        equalizerSettings.enabled = mode.enabled
+        equalizerSettings.activePreset = mode.preset
+        equalizerSettings.saveBands(gains)
+        equalizerProcessor.setBands(gains, mode.enabled)
+    }
+
+    /** Permanently removes [mode] from storage. */
+    fun deleteListeningMode(mode: ListeningMode) {
+        listeningModeManager.deleteMode(mode.id)
+        _listeningModes.value = listeningModeManager.getModes()
     }
 
     companion object {

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lbl_listening_modes">Listening Modes</string>
+    <!-- Shown when no modes have been saved yet -->
+    <string name="lbl_listening_modes_empty">No modes saved yet — tap Save to capture the current EQ settings.</string>
+    <!-- Title of the dialog that names a new listening mode -->
+    <string name="lbl_save_listening_mode">Save listening mode</string>
+    <!-- Hint text inside the name input field -->
+    <string name="hint_listening_mode_name">Mode name</string>
+    <!-- Confirmation message before deleting a listening mode -->
+    <string name="lbl_confirm_delete_mode">Delete this listening mode?</string>
+</resources>

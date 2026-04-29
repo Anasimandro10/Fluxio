@@ -18,11 +18,13 @@
 package org.oxycblt.auxio.playback.equalizer
 
 import android.os.Bundle
+import android.text.InputType
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.SeekBar
@@ -34,6 +36,8 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.google.android.material.chip.Chip
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
@@ -64,6 +68,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         setupSwitch(binding)
         setupAutoEqBrowse(binding)
         setupDeviceProfilesButton(binding)
+        setupListeningModes(binding)
 
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -82,6 +87,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
                             onProfileLabelChanged(binding, name, modified)
                         }
                 }
+                launch { viewModel.listeningModes.collect { onListeningModesChanged(binding, it) } }
             }
         }
     }
@@ -204,6 +210,14 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         }
     }
 
+    /** Wires the Save button to show a name dialog; chips are rendered in [onListeningModesChanged]. */
+    private fun setupListeningModes(binding: FragmentEqualizerBinding) {
+        binding.eqBtnSaveMode.setOnClickListener {
+            if (!viewModel.canSaveListeningMode()) return@setOnClickListener
+            showSaveModeDialog()
+        }
+    }
+
     // ---- State handlers ----
 
     private fun onEnabledChanged(binding: FragmentEqualizerBinding, enabled: Boolean) {
@@ -244,5 +258,68 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
             if (modified) getString(R.string.lbl_autoeq_modified, name)
             else getString(R.string.lbl_autoeq_profile, name)
         binding.eqAutoeqProfileLabel.visibility = View.VISIBLE
+    }
+
+    private fun onListeningModesChanged(
+        binding: FragmentEqualizerBinding,
+        modes: List<ListeningMode>,
+    ) {
+        // Update Save button: disabled at capacity so the user never hits a silent failure.
+        binding.eqBtnSaveMode.isEnabled = modes.size < ListeningModeManager.MAX_MODES
+
+        val chipGroup = binding.eqListeningModesChips
+        chipGroup.removeAllViews()
+
+        if (modes.isEmpty()) {
+            chipGroup.visibility = View.GONE
+            binding.eqListeningModesEmpty.visibility = View.VISIBLE
+            return
+        }
+
+        binding.eqListeningModesEmpty.visibility = View.GONE
+        chipGroup.visibility = View.VISIBLE
+
+        modes.forEach { mode ->
+            val chip =
+                Chip(requireContext()).apply {
+                    text = mode.name
+                    isCheckable = false
+                    isCloseIconVisible = true
+                    setOnClickListener { viewModel.applyListeningMode(mode) }
+                    setOnCloseIconClickListener { showDeleteModeDialog(mode) }
+                }
+            chipGroup.addView(chip)
+        }
+    }
+
+    // ---- Dialogs ----
+
+    private fun showSaveModeDialog() {
+        val paddingPx = (16 * resources.displayMetrics.density).toInt()
+        val editText =
+            EditText(requireContext()).apply {
+                hint = getString(R.string.hint_listening_mode_name)
+                inputType =
+                    InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+                setPadding(paddingPx, paddingPx / 2, paddingPx, paddingPx / 2)
+            }
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.lbl_save_listening_mode)
+            .setView(editText)
+            .setPositiveButton(R.string.lbl_save) { _, _ ->
+                val name = editText.text.toString().trim()
+                if (name.isNotEmpty()) viewModel.saveCurrentAsListeningMode(name)
+            }
+            .setNegativeButton(R.string.lbl_cancel, null)
+            .show()
+    }
+
+    private fun showDeleteModeDialog(mode: ListeningMode) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(mode.name)
+            .setMessage(R.string.lbl_confirm_delete_mode)
+            .setPositiveButton(R.string.lbl_delete) { _, _ -> viewModel.deleteListeningMode(mode) }
+            .setNegativeButton(R.string.lbl_cancel, null)
+            .show()
     }
 }
