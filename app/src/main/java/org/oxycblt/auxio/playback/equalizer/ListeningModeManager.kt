@@ -26,8 +26,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * A named snapshot of the complete equalizer state, saved by the user as a reusable listening
- * mode.
+ * A named snapshot of the complete equalizer state, saved by the user as a reusable listening mode.
  *
  * @param id Unique identifier (Unix timestamp in milliseconds at creation time).
  * @param name User-provided display name.
@@ -71,10 +70,10 @@ data class ListeningMode(
 /**
  * Persists and restores named EQ snapshots ("listening modes") in SharedPreferences.
  *
- * Each mode captures the complete equalizer state at the moment of saving: the enabled flag,
- * active preset index, per-band gains, and the AutoEQ profile name (only if the profile was
- * applied and the user has not moved any slider since then). Modes are stored as a JSON array.
- * Up to [MAX_MODES] modes can coexist.
+ * Each mode captures the complete equalizer state at the moment of saving: the enabled flag, active
+ * preset index, per-band gains, and the AutoEQ profile name (only if the profile was applied and
+ * the user has not moved any slider since then). Modes are stored as a JSON array. Up to
+ * [MAX_MODES] modes can coexist.
  */
 @Singleton
 class ListeningModeManager @Inject constructor(@ApplicationContext context: Context) {

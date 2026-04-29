@@ -210,7 +210,9 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         }
     }
 
-    /** Wires the Save button to show a name dialog; chips are rendered in [onListeningModesChanged]. */
+    /**
+     * Wires the Save button to show a name dialog; chips are rendered in [onListeningModesChanged].
+     */
     private fun setupListeningModes(binding: FragmentEqualizerBinding) {
         binding.eqBtnSaveMode.setOnClickListener {
             if (!viewModel.canSaveListeningMode()) return@setOnClickListener
@@ -299,8 +301,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         val editText =
             EditText(requireContext()).apply {
                 hint = getString(R.string.hint_listening_mode_name)
-                inputType =
-                    InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+                inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
                 setPadding(paddingPx, paddingPx / 2, paddingPx, paddingPx / 2)
             }
         MaterialAlertDialogBuilder(requireContext())

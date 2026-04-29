@@ -191,8 +191,11 @@ constructor(
 
     // ---- Listening modes ----
 
-    /** True when the user can still save a new mode (fewer than [ListeningModeManager.MAX_MODES]). */
-    fun canSaveListeningMode(): Boolean = _listeningModes.value.size < ListeningModeManager.MAX_MODES
+    /**
+     * True when the user can still save a new mode (fewer than [ListeningModeManager.MAX_MODES]).
+     */
+    fun canSaveListeningMode(): Boolean =
+        _listeningModes.value.size < ListeningModeManager.MAX_MODES
 
     /**
      * Captures the current EQ state as a new listening mode named [name]. The AutoEQ profile name
