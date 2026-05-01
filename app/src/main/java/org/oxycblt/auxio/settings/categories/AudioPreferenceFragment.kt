@@ -17,9 +17,13 @@
  */
 package org.oxycblt.auxio.settings.categories
 
+import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.navigation.fragment.findNavController
 import androidx.preference.Preference
+import androidx.preference.PreferenceCategory
 import androidx.preference.SeekBarPreference
 import androidx.preference.SwitchPreferenceCompat
 import dagger.hilt.android.AndroidEntryPoint
@@ -70,6 +74,37 @@ class AudioPreferenceFragment : BasePreferenceFragment(R.xml.preferences_audio) 
         findPreference<SeekBarPreference>(getString(R.string.set_key_stereo_widening))
             ?.setOnPreferenceChangeListener { _, newValue ->
                 stereoWideningSettings.setAmount(newValue as Int)
+                true
+            }
+
+        setupSpatializer()
+    }
+
+    /**
+     * Hides the Spatializer category on devices running Android 11 or earlier, where the system
+     * does not expose a spatial audio settings panel. On Android 12+ (API 31), tapping the entry
+     * opens the system Sound settings page which contains the Spatializer controls.
+     *
+     * Fluxio owns no audio processor here — the Spatializer is managed entirely by Android.
+     */
+    private fun setupSpatializer() {
+        val category =
+            findPreference<PreferenceCategory>("fluxio_spatializer_category") ?: return
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            // Spatial audio UI did not exist before Android 12; hide the whole section.
+            category.isVisible = false
+            return
+        }
+
+        findPreference<Preference>(getString(R.string.set_key_spatializer))
+            ?.setOnPreferenceClickListener {
+                val intent = Intent(Settings.ACTION_SOUND_SETTINGS)
+                // Guard against devices that may not resolve this intent (very unlikely for
+                // SOUND_SETTINGS, but a crashed settings app should never take Fluxio down).
+                if (intent.resolveActivity(requireContext().packageManager) != null) {
+                    startActivity(intent)
+                }
                 true
             }
     }

@@ -92,4 +92,20 @@
 
     </PreferenceCategory>
 
+    <!--
+        Spatializer category — hidden on API < 31 by AudioPreferenceFragment.
+        On Android 12+ the system sound settings include a Spatializer panel.
+        Fluxio has no audio processor here: the system owns this entirely.
+    -->
+    <PreferenceCategory
+        android:key="fluxio_spatializer_category"
+        android:title="@string/set_spatializer">
+
+        <Preference
+            android:key="@string/set_key_spatializer"
+            android:title="@string/set_spatializer_open"
+            android:summary="@string/set_spatializer_desc" />
+
+    </PreferenceCategory>
+
 </PreferenceScreen>

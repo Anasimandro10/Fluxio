@@ -206,4 +206,7 @@
     <!-- Stereo widening settings key -->
     <string name="set_key_stereo_widening" translatable="false">fluxio_stereo_widening</string>
 
+    <!-- Spatializer settings key (Android 12+) -->
+    <string name="set_key_spatializer" translatable="false">fluxio_spatializer</string>
+
 </resources>

@@ -569,4 +569,10 @@
     <string name="set_stereo_widening_desc">Expand the stereo image using Mid-Side processing</string>
     <string name="set_stereo_widening_amount">Intensity (%)</string>
 
+    <!-- Spatializer settings (Android 12+) -->
+    <string name="set_spatializer">Spatializer</string>
+    <!-- Opens the system sound settings panel where the user can enable spatial audio -->
+    <string name="set_spatializer_open">Open system spatial audio settings</string>
+    <string name="set_spatializer_desc">Configure spatial audio and head tracking in system settings</string>
+
 </resources>
