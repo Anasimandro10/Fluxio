@@ -56,7 +56,8 @@ class StereoWideningProcessor @Inject constructor() : BaseAudioProcessor() {
      * - `1.0` = maximum widening (Side doubled).
      *
      * Written by [StereoWideningSettings] on the UI thread; read by [queueInput] on the audio
-     * thread. JVM guarantees atomic writes for `Float` (32-bit), and [@Volatile] ensures visibility.
+     * thread. JVM guarantees atomic writes for `Float` (32-bit), and [@Volatile] ensures
+     * visibility.
      */
     @Volatile var amount: Float = 0f
 
@@ -133,10 +134,7 @@ class StereoWideningProcessor @Inject constructor() : BaseAudioProcessor() {
 
             // Clamp to Short range and write as little-endian.
             outputBuffer.putLeShort(
-                newLeft
-                    .toInt()
-                    .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
-                    .toShort()
+                newLeft.toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
             )
             outputBuffer.putLeShort(
                 newRight

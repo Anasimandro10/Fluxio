@@ -39,10 +39,7 @@ import javax.inject.Singleton
 @Singleton
 class StereoWideningSettings
 @Inject
-constructor(
-    @ApplicationContext context: Context,
-    private val processor: StereoWideningProcessor,
-) {
+constructor(@ApplicationContext context: Context, private val processor: StereoWideningProcessor) {
     private val prefs = PreferenceManager.getDefaultSharedPreferences(context)
 
     companion object {

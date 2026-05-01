@@ -55,7 +55,6 @@ import org.oxycblt.auxio.playback.crossfade.CrossfadeProcessor
 import org.oxycblt.auxio.playback.equalizer.EqualizerAudioProcessor
 import org.oxycblt.auxio.playback.persist.PersistenceRepository
 import org.oxycblt.auxio.playback.replaygain.ReplayGainAudioProcessor
-import org.oxycblt.auxio.playback.stereowidening.StereoWideningProcessor
 import org.oxycblt.auxio.playback.state.DeferredPlayback
 import org.oxycblt.auxio.playback.state.PlaybackCommand
 import org.oxycblt.auxio.playback.state.PlaybackStateHolder
@@ -65,6 +64,7 @@ import org.oxycblt.auxio.playback.state.RawQueue
 import org.oxycblt.auxio.playback.state.RepeatMode
 import org.oxycblt.auxio.playback.state.ShuffleMode
 import org.oxycblt.auxio.playback.state.StateAck
+import org.oxycblt.auxio.playback.stereowidening.StereoWideningProcessor
 import org.oxycblt.musikr.MusicParent
 import org.oxycblt.musikr.Song
 import timber.log.Timber as L
