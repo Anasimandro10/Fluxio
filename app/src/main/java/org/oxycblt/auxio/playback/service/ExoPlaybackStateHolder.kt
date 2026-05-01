@@ -29,6 +29,7 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.decoder.ffmpeg.FfmpegAudioRenderer
 import androidx.media3.exoplayer.DefaultLoadControl
@@ -797,6 +798,20 @@ class ExoPlaybackStateHolder(
                             .build(),
                         true,
                     )
+                    .build()
+
+            // Enable Audio Offload for massive battery savings (Paso 28)
+            // ExoPlayer will automatically disable this if AudioProcessors (like EQ) are active.
+            val audioOffloadPreferences =
+                TrackSelectionParameters.AudioOffloadPreferences.Builder()
+                    .setAudioOffloadMode(TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_ENABLED)
+                    .setIsGaplessSupportRequired(true)
+                    .build()
+
+            exoPlayer.trackSelectionParameters =
+                exoPlayer.trackSelectionParameters
+                    .buildUpon()
+                    .setAudioOffloadPreferences(audioOffloadPreferences)
                     .build()
 
             return ExoPlaybackStateHolder(
