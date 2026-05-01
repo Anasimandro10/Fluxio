@@ -79,4 +79,17 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="@string/set_stereo_widening">
+
+        <androidx.preference.SeekBarPreference
+            app:defaultValue="0"
+            app:key="@string/set_key_stereo_widening"
+            android:max="100"
+            app:min="0"
+            app:showSeekBarValue="true"
+            app:summary="@string/set_stereo_widening_desc"
+            app:title="@string/set_stereo_widening_amount" />
+
+    </PreferenceCategory>
+
 </PreferenceScreen>

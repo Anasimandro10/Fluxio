@@ -203,4 +203,7 @@
     <string name="set_key_crossfade_enabled" translatable="false">fluxio_crossfade_enabled</string>
     <string name="set_key_crossfade_duration" translatable="false">fluxio_crossfade_duration</string>
 
+    <!-- Stereo widening settings key -->
+    <string name="set_key_stereo_widening" translatable="false">fluxio_stereo_widening</string>
+
 </resources>

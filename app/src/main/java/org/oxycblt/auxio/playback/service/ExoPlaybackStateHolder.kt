@@ -55,6 +55,7 @@ import org.oxycblt.auxio.playback.crossfade.CrossfadeProcessor
 import org.oxycblt.auxio.playback.equalizer.EqualizerAudioProcessor
 import org.oxycblt.auxio.playback.persist.PersistenceRepository
 import org.oxycblt.auxio.playback.replaygain.ReplayGainAudioProcessor
+import org.oxycblt.auxio.playback.stereowidening.StereoWideningProcessor
 import org.oxycblt.auxio.playback.state.DeferredPlayback
 import org.oxycblt.auxio.playback.state.PlaybackCommand
 import org.oxycblt.auxio.playback.state.PlaybackStateHolder
@@ -78,6 +79,7 @@ class ExoPlaybackStateHolder(
     private val commandFactory: PlaybackCommand.Factory,
     private val replayGainProcessor: ReplayGainAudioProcessor,
     private val equalizerProcessor: EqualizerAudioProcessor,
+    private val stereoWideningProcessor: StereoWideningProcessor,
     private val crossfadeProcessor: CrossfadeProcessor,
     private val musicRepository: MusicRepository,
     private val imageSettings: ImageSettings,
@@ -730,6 +732,7 @@ class ExoPlaybackStateHolder(
         private val mediaSourceFactory: MediaSource.Factory,
         private val replayGainProcessor: ReplayGainAudioProcessor,
         private val equalizerProcessor: EqualizerAudioProcessor,
+        private val stereoWideningProcessor: StereoWideningProcessor,
         private val crossfadeProcessor: CrossfadeProcessor,
         private val musicRepository: MusicRepository,
         private val imageSettings: ImageSettings,
@@ -738,7 +741,7 @@ class ExoPlaybackStateHolder(
         fun create(): ExoPlaybackStateHolder {
             // Since Auxio is a music player, only specify an audio renderer to save
             // battery/apk size/cache size.
-            // Processor order: ReplayGain → EQ → Crossfade.
+            // Processor order: ReplayGain → EQ → StereoWidening → Crossfade.
             val audioRenderer = RenderersFactory { handler, _, audioListener, _, _ ->
                 arrayOf(
                     FfmpegAudioRenderer(
@@ -746,6 +749,7 @@ class ExoPlaybackStateHolder(
                         audioListener,
                         replayGainProcessor,
                         equalizerProcessor,
+                        stereoWideningProcessor,
                         crossfadeProcessor,
                     ),
                     MediaCodecAudioRenderer(
@@ -755,7 +759,12 @@ class ExoPlaybackStateHolder(
                         audioListener,
                         DefaultAudioSink.Builder(context)
                             .setAudioProcessors(
-                                arrayOf(replayGainProcessor, equalizerProcessor, crossfadeProcessor)
+                                arrayOf(
+                                    replayGainProcessor,
+                                    equalizerProcessor,
+                                    stereoWideningProcessor,
+                                    crossfadeProcessor,
+                                )
                             )
                             .build(),
                     ),
@@ -799,6 +808,7 @@ class ExoPlaybackStateHolder(
                 commandFactory,
                 replayGainProcessor,
                 equalizerProcessor,
+                stereoWideningProcessor,
                 crossfadeProcessor,
                 musicRepository,
                 imageSettings,

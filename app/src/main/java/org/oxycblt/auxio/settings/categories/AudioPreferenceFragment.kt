@@ -26,6 +26,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.playback.crossfade.CrossfadeSettings
+import org.oxycblt.auxio.playback.stereowidening.StereoWideningSettings
 import org.oxycblt.auxio.settings.BasePreferenceFragment
 import org.oxycblt.auxio.settings.ui.WrappedDialogPreference
 import org.oxycblt.auxio.util.navigateSafe
@@ -35,6 +36,7 @@ import org.oxycblt.auxio.util.navigateSafe
 class AudioPreferenceFragment : BasePreferenceFragment(R.xml.preferences_audio) {
 
     @Inject lateinit var crossfadeSettings: CrossfadeSettings
+    @Inject lateinit var stereoWideningSettings: StereoWideningSettings
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         super.onCreatePreferences(savedInstanceState, rootKey)
@@ -60,6 +62,14 @@ class AudioPreferenceFragment : BasePreferenceFragment(R.xml.preferences_audio) 
         findPreference<SeekBarPreference>(getString(R.string.set_key_crossfade_duration))
             ?.setOnPreferenceChangeListener { _, newValue ->
                 crossfadeSettings.setDuration(newValue as Int)
+                true
+            }
+
+        // Push stereo widening intensity to the processor immediately when the slider moves.
+        // newValue is the raw Int from SeekBarPreference [0–100].
+        findPreference<SeekBarPreference>(getString(R.string.set_key_stereo_widening))
+            ?.setOnPreferenceChangeListener { _, newValue ->
+                stereoWideningSettings.setAmount(newValue as Int)
                 true
             }
     }

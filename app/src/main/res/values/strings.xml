@@ -563,4 +563,10 @@
     <string name="set_crossfade_desc">Blend audio between tracks</string>
     <string name="set_crossfade_duration">Duration (seconds)</string>
 
+    <!-- Stereo widening settings -->
+    <string name="set_stereo_widening">Stereo Widening</string>
+    <string name="set_stereo_widening_title">Stereo widening</string>
+    <string name="set_stereo_widening_desc">Expand the stereo image using Mid-Side processing</string>
+    <string name="set_stereo_widening_amount">Intensity (%)</string>
+
 </resources>
