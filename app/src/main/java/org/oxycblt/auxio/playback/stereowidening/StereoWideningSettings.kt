@@ -79,17 +79,18 @@ constructor(@ApplicationContext context: Context, private val processor: StereoW
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val spatializer = audioManager.spatializer
             processor.spatializerBypass = spatializer.isEnabled && spatializer.isAvailable
-            
+
             spatializer.addOnSpatializerStateChangedListener(
                 { command -> command.run() }, // Executor
                 object : Spatializer.OnSpatializerStateChangedListener {
                     override fun onSpatializerEnabledChanged(s: Spatializer, enabled: Boolean) {
                         processor.spatializerBypass = enabled && s.isAvailable
                     }
+
                     override fun onSpatializerAvailableChanged(s: Spatializer, available: Boolean) {
                         processor.spatializerBypass = s.isEnabled && available
                     }
-                }
+                },
             )
         }
     }

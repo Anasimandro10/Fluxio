@@ -62,9 +62,8 @@ class StereoWideningProcessor @Inject constructor() : BaseAudioProcessor() {
     @Volatile var amount: Float = 0f
 
     /**
-     * Set to true if the Android system Spatializer is active.
-     * When true, widening is bypassed to avoid phase distortion conflicts.
-     * Written by [StereoWideningSettings] on UI/Executor threads.
+     * Set to true if the Android system Spatializer is active. When true, widening is bypassed to
+     * avoid phase distortion conflicts. Written by [StereoWideningSettings] on UI/Executor threads.
      */
     @Volatile var spatializerBypass: Boolean = false
 
