@@ -88,8 +88,7 @@ class AudioPreferenceFragment : BasePreferenceFragment(R.xml.preferences_audio) 
      * Fluxio owns no audio processor here — the Spatializer is managed entirely by Android.
      */
     private fun setupSpatializer() {
-        val category =
-            findPreference<PreferenceCategory>("fluxio_spatializer_category") ?: return
+        val category = findPreference<PreferenceCategory>("fluxio_spatializer_category") ?: return
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             // Spatial audio UI did not exist before Android 12; hide the whole section.
