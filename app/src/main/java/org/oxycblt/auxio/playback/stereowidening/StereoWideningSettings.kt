@@ -18,6 +18,9 @@
 package org.oxycblt.auxio.playback.stereowidening
 
 import android.content.Context
+import android.media.AudioManager
+import android.media.Spatializer
+import android.os.Build
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -41,6 +44,7 @@ class StereoWideningSettings
 @Inject
 constructor(@ApplicationContext context: Context, private val processor: StereoWideningProcessor) {
     private val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+    private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
     companion object {
         /** SharedPreferences key — must match set_key_stereo_widening in settings.xml. */
@@ -70,5 +74,23 @@ constructor(@ApplicationContext context: Context, private val processor: StereoW
     init {
         // Sync persisted value into the processor on the first injection.
         processor.amount = amountPercent / 100f
+
+        // Listen for Spatializer state changes to automatically bypass widening.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val spatializer = audioManager.spatializer
+            processor.spatializerBypass = spatializer.isEnabled && spatializer.isAvailable
+            
+            spatializer.addOnSpatializerStateChangedListener(
+                { command -> command.run() }, // Executor
+                object : Spatializer.OnSpatializerStateChangedListener {
+                    override fun onSpatializerEnabledChanged(s: Spatializer, enabled: Boolean) {
+                        processor.spatializerBypass = enabled && s.isAvailable
+                    }
+                    override fun onSpatializerAvailableChanged(s: Spatializer, available: Boolean) {
+                        processor.spatializerBypass = s.isEnabled && available
+                    }
+                }
+            )
+        }
     }
 }

@@ -61,6 +61,13 @@ class StereoWideningProcessor @Inject constructor() : BaseAudioProcessor() {
      */
     @Volatile var amount: Float = 0f
 
+    /**
+     * Set to true if the Android system Spatializer is active.
+     * When true, widening is bypassed to avoid phase distortion conflicts.
+     * Written by [StereoWideningSettings] on UI/Executor threads.
+     */
+    @Volatile var spatializerBypass: Boolean = false
+
     // ── Audio format (set on audio thread in onConfigure) ───────────────
 
     @Volatile private var channelCount = 0
@@ -102,8 +109,8 @@ class StereoWideningProcessor @Inject constructor() : BaseAudioProcessor() {
 
         val currentAmount = amount
 
-        // Fast path: amount == 0 → copy bytes unchanged (memcpy-level speed).
-        if (currentAmount <= 0f) {
+        // Fast path: amount == 0 OR bypassed by system Spatializer → copy bytes unchanged.
+        if (currentAmount <= 0f || spatializerBypass) {
             outputBuffer.put(inputBuffer.slice())
             inputBuffer.position(limit)
             outputBuffer.flip()
