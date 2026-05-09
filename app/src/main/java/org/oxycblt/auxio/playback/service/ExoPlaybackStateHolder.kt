@@ -804,7 +804,9 @@ class ExoPlaybackStateHolder(
             // ExoPlayer will automatically disable this if AudioProcessors (like EQ) are active.
             val audioOffloadPreferences =
                 TrackSelectionParameters.AudioOffloadPreferences.Builder()
-                    .setAudioOffloadMode(TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_ENABLED)
+                    .setAudioOffloadMode(
+                        TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_ENABLED
+                    )
                     .setIsGaplessSupportRequired(true)
                     .build()
 
