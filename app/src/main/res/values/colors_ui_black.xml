@@ -1,5 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
+    <!-- =====================================================================
+         Fluxio PureBlack tokens — used by Theme.Fluxio.PureBlack
+         True-black progression for OLED screens.
+         Normal dark:   bg=#0D0D0D  surface=#161618  element=#212124
+         PureBlack:     bg=#000000  surface=#0A0A0A  element=#141414
+         ===================================================================== -->
+    <color name="fluxio_black_bg">#000000</color>
+    <color name="fluxio_black_surface">#0A0A0A</color>
+    <color name="fluxio_black_element">#141414</color>
+
+    <!-- Legacy per-accent black colors (unreferenced, kept to avoid git noise) -->
     <color name="red_surface_black">#000000</color>
     <color name="red_surfaceDim_black">#000000</color>
     <color name="red_surfaceBright_black">#211b1a</color>
@@ -8,7 +20,6 @@
     <color name="red_surfaceContainer_black">#130e0e</color>
     <color name="red_surfaceContainerHigh_black">#181413</color>
     <color name="red_surfaceContainerHighest_black">#1e1918</color>
-
     <color name="pink_surface_black">#000000</color>
     <color name="pink_surfaceDim_black">#000000</color>
     <color name="pink_surfaceBright_black">#201b1b</color>
@@ -17,7 +28,6 @@
     <color name="pink_surfaceContainer_black">#130e0f</color>
     <color name="pink_surfaceContainerHigh_black">#181414</color>
     <color name="pink_surfaceContainerHighest_black">#1e1819</color>
-
     <color name="purple_surface_black">#000000</color>
     <color name="purple_surfaceDim_black">#000000</color>
     <color name="purple_surfaceBright_black">#1f1b1e</color>
@@ -26,7 +36,6 @@
     <color name="purple_surfaceContainer_black">#110e11</color>
     <color name="purple_surfaceContainerHigh_black">#171416</color>
     <color name="purple_surfaceContainerHighest_black">#1c191c</color>
-
     <color name="deep_purple_surface_black">#000000</color>
     <color name="deep_purple_surfaceDim_black">#000000</color>
     <color name="deep_purple_surfaceBright_black">#1d1c1f</color>
@@ -35,7 +44,6 @@
     <color name="deep_purple_surfaceContainer_black">#100f12</color>
     <color name="deep_purple_surfaceContainerHigh_black">#161417</color>
     <color name="deep_purple_surfaceContainerHighest_black">#1b1a1d</color>
-
     <color name="indigo_surface_black">#000000</color>
     <color name="indigo_surfaceDim_black">#000000</color>
     <color name="indigo_surfaceBright_black">#1c1c1f</color>
@@ -44,7 +52,6 @@
     <color name="indigo_surfaceContainer_black">#0f0f12</color>
     <color name="indigo_surfaceContainerHigh_black">#141417</color>
     <color name="indigo_surfaceContainerHighest_black">#1a1a1d</color>
-
     <color name="blue_surface_black">#000000</color>
     <color name="blue_surfaceDim_black">#000000</color>
     <color name="blue_surfaceBright_black">#1b1c1e</color>
@@ -53,7 +60,6 @@
     <color name="blue_surfaceContainer_black">#0e1012</color>
     <color name="blue_surfaceContainerHigh_black">#131517</color>
     <color name="blue_surfaceContainerHighest_black">#191a1c</color>
-
     <color name="deep_blue_surface_black">#000000</color>
     <color name="deep_blue_surfaceDim_black">#000000</color>
     <color name="deep_blue_surfaceBright_black">#1a1d1e</color>
@@ -62,7 +68,6 @@
     <color name="deep_blue_surfaceContainer_black">#0d1011</color>
     <color name="deep_blue_surfaceContainerHigh_black">#121517</color>
     <color name="deep_blue_surfaceContainerHighest_black">#181a1c</color>
-
     <color name="cyan_surface_black">#000000</color>
     <color name="cyan_surfaceDim_black">#000000</color>
     <color name="cyan_surfaceBright_black">#1a1d1e</color>
@@ -71,7 +76,6 @@
     <color name="cyan_surfaceContainer_black">#0d1010</color>
     <color name="cyan_surfaceContainerHigh_black">#121515</color>
     <color name="cyan_surfaceContainerHighest_black">#181b1b</color>
-
     <color name="teal_surface_black">#000000</color>
     <color name="teal_surfaceDim_black">#000000</color>
     <color name="teal_surfaceBright_black">#1a1d1c</color>
@@ -80,7 +84,6 @@
     <color name="teal_surfaceContainer_black">#0d100f</color>
     <color name="teal_surfaceContainerHigh_black">#121514</color>
     <color name="teal_surfaceContainerHighest_black">#181b1a</color>
-
     <color name="green_surface_black">#000000</color>
     <color name="green_surfaceDim_black">#000000</color>
     <color name="green_surfaceBright_black">#1b1d1a</color>
@@ -89,7 +92,6 @@
     <color name="green_surfaceContainer_black">#0e100d</color>
     <color name="green_surfaceContainerHigh_black">#131512</color>
     <color name="green_surfaceContainerHighest_black">#191b18</color>
-
     <color name="deep_green_surface_black">#000000</color>
     <color name="deep_green_surfaceDim_black">#000000</color>
     <color name="deep_green_surfaceBright_black">#1b1d19</color>
@@ -98,7 +100,6 @@
     <color name="deep_green_surfaceContainer_black">#0f100d</color>
     <color name="deep_green_surfaceContainerHigh_black">#141512</color>
     <color name="deep_green_surfaceContainerHighest_black">#191b16</color>
-
     <color name="lime_surface_black">#000000</color>
     <color name="lime_surfaceDim_black">#000000</color>
     <color name="lime_surfaceBright_black">#1c1d18</color>
@@ -107,7 +108,6 @@
     <color name="lime_surfaceContainer_black">#10100c</color>
     <color name="lime_surfaceContainerHigh_black">#141511</color>
     <color name="lime_surfaceContainerHighest_black">#1a1a16</color>
-
     <color name="yellow_surface_black">#000000</color>
     <color name="yellow_surfaceDim_black">#000000</color>
     <color name="yellow_surfaceBright_black">#1f1c17</color>
@@ -116,7 +116,6 @@
     <color name="yellow_surfaceContainer_black">#120f0b</color>
     <color name="yellow_surfaceContainerHigh_black">#171410</color>
     <color name="yellow_surfaceContainerHighest_black">#1d1a15</color>
-
     <color name="orange_surface_black">#000000</color>
     <color name="orange_surfaceDim_black">#000000</color>
     <color name="orange_surfaceBright_black">#201b18</color>
@@ -133,7 +132,6 @@
     <color name="brown_surfaceContainer_black">#110f0f</color>
     <color name="brown_surfaceContainerHigh_black">#161414</color>
     <color name="brown_surfaceContainerHighest_black">#1b1a19</color>
-
     <color name="grey_surface_black">#000000</color>
     <color name="grey_surfaceDim_black">#000000</color>
     <color name="grey_surfaceBright_black">#1d1c1c</color>
@@ -142,4 +140,5 @@
     <color name="grey_surfaceContainer_black">#100f0f</color>
     <color name="grey_surfaceContainerHigh_black">#151515</color>
     <color name="grey_surfaceContainerHighest_black">#1a1a1a</color>
+
 </resources>

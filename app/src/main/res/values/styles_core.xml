@@ -120,12 +120,12 @@
         <item name="materialButtonGroupStyle">@style/Widget.Auxio.MaterialButtonGroup</item>
     </style>
 
-    <!-- Make sure blue is the default style instead of material purple -->
-    <style name="Theme.Auxio.App" parent="@style/Theme.Auxio.Blue" />
+    <!-- App theme now uses Theme.Fluxio (System) as the active theme -->
+    <style name="Theme.Auxio.App" parent="@style/Theme.Fluxio" />
 
     <!--
     Theming widgets is technically possible below Android 12, but I *really* don't care enough
     to bother with it.
     -->
-    <style name="Theme.Auxio.Widget" parent="@style/Theme.Auxio.Blue" />
+    <style name="Theme.Auxio.Widget" parent="@style/Theme.Fluxio" />
 </resources>
