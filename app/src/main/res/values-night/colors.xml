@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright (C) 2026 Fluxio Project
+    SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<resources>
+
+    <!-- =====================================================================
+         Fluxio design-system color tokens — DARK theme (night qualifier)
+         #0D0D0D avoids screen-off effect on OLED (not pure black).
+         ===================================================================== -->
+
+    <!-- Backgrounds -->
+    <color name="fluxio_bg">#0D0D0D</color>
+    <color name="fluxio_surface">#161618</color>
+    <color name="fluxio_element">#212124</color>
+    <color name="fluxio_separator">#2A2A2A</color>
+
+    <!-- Text hierarchy -->
+    <color name="fluxio_text1">#FFFFFF</color>
+    <color name="fluxio_text2">#818181</color>
+    <color name="fluxio_text3">#4A4A4A</color>
+
+    <!-- Semantic — identical in both themes -->
+    <color name="fluxio_destructive">#FF453A</color>
+
+</resources>

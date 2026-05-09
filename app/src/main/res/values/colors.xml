@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright (C) 2026 Fluxio Project
+    SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<resources>
+
+    <!-- =====================================================================
+         Fluxio design-system color tokens — LIGHT theme (default)
+         All references go through these names; never hardcode hex elsewhere.
+         ===================================================================== -->
+
+    <!-- Backgrounds -->
+    <color name="fluxio_bg">#F2F2F7</color>
+    <color name="fluxio_surface">#FFFFFF</color>
+    <color name="fluxio_element">#E5E5EA</color>
+    <color name="fluxio_separator">#C6C6C8</color>
+
+    <!-- Text hierarchy -->
+    <color name="fluxio_text1">#000000</color>
+    <color name="fluxio_text2">#6C6C70</color>
+    <color name="fluxio_text3">#AEAEB2</color>
+
+    <!-- Semantic — identical in both themes -->
+    <color name="fluxio_destructive">#FF453A</color>
+
+</resources>
