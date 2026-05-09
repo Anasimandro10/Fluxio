@@ -1,6 +1,158 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Spacing Namespace | Dimens for padding/margin attributes -->
+
+    <!-- ═══════════════════════════════════════════════════════════
+         FLUXIO DESIGN SYSTEM — Corner Radii
+         6 / 10 / 14 / 18 / 20 / 26 dp
+    ═══════════════════════════════════════════════════════════ -->
+
+    <!-- Artwork in list items (songs, queue rows) -->
+    <dimen name="radius_artwork_list">6dp</dimen>
+    <!-- Artwork in grid, collage cells, add-to-playlist rows -->
+    <dimen name="radius_artwork_grid">10dp</dimen>
+    <!-- Large artwork in player -->
+    <dimen name="radius_artwork_player">14dp</dimen>
+    <!-- Cards, bottom sheets, play button in album detail -->
+    <dimen name="radius_card">18dp</dimen>
+    <!-- Dialogs -->
+    <dimen name="radius_dialog">20dp</dimen>
+    <!-- Search bar pill -->
+    <dimen name="radius_search_bar">26dp</dimen>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         FLUXIO DESIGN SYSTEM — Spacing
+         8 / 12 / 16 / 24 dp
+    ═══════════════════════════════════════════════════════════ -->
+
+    <!-- Base 8dp unit -->
+    <dimen name="spacing_xs">8dp</dimen>
+    <!-- Artwork-to-text gap in list items -->
+    <dimen name="spacing_sm">12dp</dimen>
+    <!-- Screen horizontal margin, list item vertical padding -->
+    <dimen name="spacing_md">16dp</dimen>
+    <!-- Player lateral padding, player section gaps, artwork-to-info gap -->
+    <dimen name="spacing_lg">24dp</dimen>
+    <!-- Title-to-subtitle gap within a list item -->
+    <dimen name="spacing_title_subtitle">4dp</dimen>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         FLUXIO DESIGN SYSTEM — Artwork Sizes
+    ═══════════════════════════════════════════════════════════ -->
+
+    <!-- Mini player artwork -->
+    <dimen name="artwork_size_mini_player">44dp</dimen>
+    <!-- List item, context menu header, queue row -->
+    <dimen name="artwork_size_list">48dp</dimen>
+    <!-- Lyrics tab mini header, add-to-playlist collage -->
+    <dimen name="artwork_size_lyrics_mini">64dp</dimen>
+    <!-- Stats podium #2 and #3 -->
+    <dimen name="artwork_size_stats_secondary">64dp</dimen>
+    <!-- Stats podium #1 -->
+    <dimen name="artwork_size_stats_primary">80dp</dimen>
+    <!-- Detail screen header (album / artist / genre / playlist) -->
+    <dimen name="artwork_size_detail_header">192dp</dimen>
+    <!-- Genre / tag / playlist collage in detail header -->
+    <dimen name="artwork_size_detail_collage">160dp</dimen>
+    <!-- Folder icon in folder detail header -->
+    <dimen name="artwork_size_folder_icon">80dp</dimen>
+    <!-- Onboarding logo -->
+    <dimen name="artwork_size_onboarding_logo">64dp</dimen>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         FLUXIO DESIGN SYSTEM — Item and Component Heights
+    ═══════════════════════════════════════════════════════════ -->
+
+    <!-- Standard list item and queue row height -->
+    <dimen name="height_list_item">72dp</dimen>
+    <!-- Mini player bar -->
+    <dimen name="height_mini_player">64dp</dimen>
+    <!-- Primary action buttons (Play, onboarding CTA) -->
+    <dimen name="height_play_button">52dp</dimen>
+    <!-- Search bar -->
+    <dimen name="height_search_bar">52dp</dimen>
+    <!-- Settings preference item -->
+    <dimen name="height_settings_item">56dp</dimen>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         FLUXIO DESIGN SYSTEM — Player Layout
+    ═══════════════════════════════════════════════════════════ -->
+
+    <!-- Horizontal padding inside the player screen -->
+    <dimen name="padding_player_horizontal">24dp</dimen>
+    <!-- Vertical gap between major player sections -->
+    <dimen name="gap_player_section">24dp</dimen>
+    <!-- Gap between artwork and the title/artist row -->
+    <dimen name="gap_artwork_to_info">24dp</dimen>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         FLUXIO DESIGN SYSTEM — Progress and Seek Bars
+    ═══════════════════════════════════════════════════════════ -->
+
+    <!-- Seek bar track height in player -->
+    <dimen name="progress_seek_track_height">4dp</dimen>
+    <!-- Seek bar thumb diameter in player -->
+    <dimen name="progress_seek_thumb_size">12dp</dimen>
+    <!-- Mini player top-edge progress strip -->
+    <dimen name="progress_mini_player_height">2dp</dimen>
+    <!-- Widget progress strip -->
+    <dimen name="progress_widget_height">2dp</dimen>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         FLUXIO DESIGN SYSTEM — Icons
+    ═══════════════════════════════════════════════════════════ -->
+
+    <!-- Standard icon size across the app -->
+    <dimen name="icon_standard">24dp</dimen>
+    <!-- Prev / Next buttons in player -->
+    <dimen name="icon_player_prev_next">32dp</dimen>
+    <!-- Play button (icon-only, no background) in mini player -->
+    <dimen name="icon_mini_player_play">28dp</dimen>
+    <!-- Next button in mini player -->
+    <dimen name="icon_mini_player_next">24dp</dimen>
+    <!-- Error state warning icon -->
+    <dimen name="icon_error_state">48dp</dimen>
+    <!-- Permission / onboarding step icon -->
+    <dimen name="icon_onboarding_step">48dp</dimen>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         FLUXIO DESIGN SYSTEM — Grid and Collage
+    ═══════════════════════════════════════════════════════════ -->
+
+    <!-- Gap between grid cells (albums, artists, genres) -->
+    <dimen name="grid_cell_gap">12dp</dimen>
+    <!-- Add-to-playlist collage thumbnail -->
+    <dimen name="collage_thumbnail_add_playlist">40dp</dimen>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         FLUXIO DESIGN SYSTEM — Context Menus and Sheets
+    ═══════════════════════════════════════════════════════════ -->
+
+    <!-- Vertical padding for menu item rows -->
+    <dimen name="menu_item_padding_vertical">20dp</dimen>
+    <!-- Horizontal padding for menu item rows -->
+    <dimen name="menu_item_padding_horizontal">16dp</dimen>
+    <!-- Sort sheet horizontal padding -->
+    <dimen name="sort_sheet_padding_horizontal">24dp</dimen>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         FLUXIO DESIGN SYSTEM — Fast-Seek Overlay
+    ═══════════════════════════════════════════════════════════ -->
+
+    <!-- Radius of the semi-transparent seek circle -->
+    <dimen name="seek_overlay_circle_radius">56dp</dimen>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         FLUXIO DESIGN SYSTEM — Scroll Thumb
+    ═══════════════════════════════════════════════════════════ -->
+
+    <dimen name="scroll_thumb_radius">8dp</dimen>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         AUXIO LEGACY — Spacing
+         Kept as-is: referenced in existing layouts and Kotlin code.
+         Do NOT remove until all layouts are migrated.
+    ═══════════════════════════════════════════════════════════ -->
+
     <dimen name="spacing_tiny">4dp</dimen>
     <dimen name="spacing_small">8dp</dimen>
     <dimen name="spacing_mid_medium">12dp</dimen>
@@ -8,7 +160,10 @@
     <dimen name="spacing_mid_large">20dp</dimen>
     <dimen name="spacing_large">24dp</dimen>
 
-    <!-- Size Namespace | Width & Heights for UI elements -->
+    <!-- ═══════════════════════════════════════════════════════════
+         AUXIO LEGACY — Touchable / Hero / Icon Sizes
+    ═══════════════════════════════════════════════════════════ -->
+
     <dimen name="size_touchable_small">48dp</dimen>
     <dimen name="size_touchable_medium">56dp</dimen>
     <dimen name="size_touchable_large">64dp</dimen>
@@ -24,10 +179,16 @@
     <dimen name="size_icon_large">40dp</dimen>
     <dimen name="size_icon_huge">48dp</dimen>
 
-    <!-- Misc -->
+    <!-- ═══════════════════════════════════════════════════════════
+         AUXIO LEGACY — Shape
+    ═══════════════════════════════════════════════════════════ -->
 
     <dimen name="m3_shape_corners_large">16dp</dimen>
     <dimen name="m3_shape_corners_full">128dp</dimen>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         AUXIO LEGACY — Text Sizes (auto-sizing track number)
+    ═══════════════════════════════════════════════════════════ -->
 
     <dimen name="text_size_track_number_min">14sp</dimen>
     <dimen name="text_size_track_number_max">22sp</dimen>
@@ -38,12 +199,20 @@
     <dimen name="padding_fast_scroll_popup_horizontal">24dp</dimen>
     <dimen name="padding_fast_scroll_popup_vertical">20dp</dimen>
 
+    <!-- ═══════════════════════════════════════════════════════════
+         AUXIO LEGACY — Slider / Progress / WavySlider
+    ═══════════════════════════════════════════════════════════ -->
+
     <dimen name="slider_track_height">4dp</dimen>
     <dimen name="slider_thumb_height">24dp</dimen>
     <dimen name="progress_stable_height">10.5dp</dimen>
     <dimen name="progress_amplitude">3dp</dimen>
     <dimen name="progress_wavelength">40dp</dimen>
     <dimen name="progress_wave_speed">20dp</dimen>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         AUXIO LEGACY — RecyclerView FAB spacing, Widget defaults, Outlines
+    ═══════════════════════════════════════════════════════════ -->
 
     <dimen name="recycler_fab_space_normal">88dp</dimen>
     <dimen name="recycler_fab_space_large">128dp</dimen>
@@ -53,4 +222,5 @@
 
     <dimen name="outline_small">1dp</dimen>
     <dimen name="outline_large">2dp</dimen>
+
 </resources>
