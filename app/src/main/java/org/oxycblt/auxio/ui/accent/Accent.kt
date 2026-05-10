@@ -44,44 +44,44 @@ private val accentNames =
 
 private val accentThemes =
     intArrayOf(
-        R.style.Theme_Auxio_Red,
-        R.style.Theme_Auxio_Pink,
-        R.style.Theme_Auxio_Purple,
-        R.style.Theme_Auxio_DeepPurple,
-        R.style.Theme_Auxio_Indigo,
-        R.style.Theme_Auxio_Blue,
-        R.style.Theme_Auxio_DeepBlue,
-        R.style.Theme_Auxio_Cyan,
-        R.style.Theme_Auxio_Teal,
-        R.style.Theme_Auxio_Green,
-        R.style.Theme_Auxio_DeepGreen,
-        R.style.Theme_Auxio_Lime,
-        R.style.Theme_Auxio_Yellow,
-        R.style.Theme_Auxio_Orange,
-        R.style.Theme_Auxio_Brown,
-        R.style.Theme_Auxio_Grey,
-        R.style.Theme_Auxio_App, // Dynamic colors are on the base theme
+        R.style.Theme_Fluxio_Red,
+        R.style.Theme_Fluxio_Pink,
+        R.style.Theme_Fluxio_Purple,
+        R.style.Theme_Fluxio_DeepPurple,
+        R.style.Theme_Fluxio_Indigo,
+        R.style.Theme_Fluxio_Blue,
+        R.style.Theme_Fluxio_DeepBlue,
+        R.style.Theme_Fluxio_Cyan,
+        R.style.Theme_Fluxio_Teal,
+        R.style.Theme_Fluxio_Green,
+        R.style.Theme_Fluxio_DeepGreen,
+        R.style.Theme_Fluxio_Lime,
+        R.style.Theme_Fluxio_Yellow,
+        R.style.Theme_Fluxio_Orange,
+        R.style.Theme_Fluxio_Brown,
+        R.style.Theme_Fluxio_Grey,
+        R.style.Theme_Fluxio_App, // Dynamic colors are on the base theme
     )
 
 private val accentBlackThemes =
     intArrayOf(
-        R.style.Theme_Auxio_Red_Black,
-        R.style.Theme_Auxio_Pink_Black,
-        R.style.Theme_Auxio_Purple_Black,
-        R.style.Theme_Auxio_DeepPurple_Black,
-        R.style.Theme_Auxio_Indigo_Black,
-        R.style.Theme_Auxio_Blue_Black,
-        R.style.Theme_Auxio_DeepBlue_Black,
-        R.style.Theme_Auxio_Cyan_Black,
-        R.style.Theme_Auxio_Teal_Black,
-        R.style.Theme_Auxio_Green_Black,
-        R.style.Theme_Auxio_DeepGreen_Black,
-        R.style.Theme_Auxio_Lime_Black,
-        R.style.Theme_Auxio_Yellow_Black,
-        R.style.Theme_Auxio_Orange_Black,
-        R.style.Theme_Auxio_Brown_Black,
-        R.style.Theme_Auxio_Grey_Black,
-        R.style.Theme_Auxio_Black, // Dynamic colors are on the base theme
+        R.style.Theme_Fluxio_Red_Black,
+        R.style.Theme_Fluxio_Pink_Black,
+        R.style.Theme_Fluxio_Purple_Black,
+        R.style.Theme_Fluxio_DeepPurple_Black,
+        R.style.Theme_Fluxio_Indigo_Black,
+        R.style.Theme_Fluxio_Blue_Black,
+        R.style.Theme_Fluxio_DeepBlue_Black,
+        R.style.Theme_Fluxio_Cyan_Black,
+        R.style.Theme_Fluxio_Teal_Black,
+        R.style.Theme_Fluxio_Green_Black,
+        R.style.Theme_Fluxio_DeepGreen_Black,
+        R.style.Theme_Fluxio_Lime_Black,
+        R.style.Theme_Fluxio_Yellow_Black,
+        R.style.Theme_Fluxio_Orange_Black,
+        R.style.Theme_Fluxio_Brown_Black,
+        R.style.Theme_Fluxio_Grey_Black,
+        R.style.Theme_Fluxio_Black, // Dynamic colors are on the base theme
     )
 
 private val accentPrimaryColors =
