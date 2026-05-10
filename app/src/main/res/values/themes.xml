@@ -3,16 +3,12 @@
 
     <!--
         =====================================================================
-        FLUXIO THEMES
+        FLUXIO THEME VARIANTS
         =====================================================================
 
-        Theme.Fluxio is the single source of truth for all color roles.
-        It uses @color/fluxio_* tokens defined in:
-          - values/colors.xml        (light, default)
-          - values-night/colors.xml  (dark)
-
-        AppCompatDelegate.setDefaultNightMode() controls which qualifier set
-        is active at runtime. The theme itself is mode-agnostic.
+        Theme.Fluxio (base) is defined in styles_core.xml as part of the
+        versioned hierarchy: Theme.Fluxio → V23 → V27 → V29 → V31 → Base.
+        Color roles are set in Theme.Fluxio.Base.
 
         Theme.Fluxio.Dark / Light are named aliases only — they exist so that
         UISettings can store and restore the user's preferred mode. The actual
@@ -23,86 +19,6 @@
         only meaningful when AppCompatDelegate is in MODE_NIGHT_YES.
         =====================================================================
     -->
-
-    <!--
-        Base / System theme.
-        All Material3 color roles are mapped to @color/fluxio_* tokens.
-        No fixed accent — colorPrimary uses text1 so M3 components stay
-        neutral. The runtime album-art accent is applied in code only on
-        the play button, progress bar and active nav icon.
-    -->
-    <style name="Theme.Fluxio" parent="Theme.Fluxio.Base">
-
-        <!-- ── Backgrounds ── -->
-        <item name="android:colorBackground">@color/fluxio_bg</item>
-        <item name="colorOnBackground">@color/fluxio_text1</item>
-
-        <!-- ── Surfaces ── -->
-        <item name="colorSurface">@color/fluxio_surface</item>
-        <item name="colorOnSurface">@color/fluxio_text1</item>
-        <item name="colorSurfaceVariant">@color/fluxio_element</item>
-        <item name="colorOnSurfaceVariant">@color/fluxio_text2</item>
-        <item name="colorSurfaceInverse">@color/fluxio_text1</item>
-        <item name="colorOnSurfaceInverse">@color/fluxio_bg</item>
-
-        <!-- ── Surface containers (M3 elevation system) ── -->
-        <item name="colorSurfaceDim">@color/fluxio_bg</item>
-        <item name="colorSurfaceBright">@color/fluxio_element</item>
-        <item name="colorSurfaceContainerLowest">@color/fluxio_bg</item>
-        <item name="colorSurfaceContainerLow">@color/fluxio_bg</item>
-        <item name="colorSurfaceContainer">@color/fluxio_surface</item>
-        <item name="colorSurfaceContainerHigh">@color/fluxio_surface</item>
-        <item name="colorSurfaceContainerHighest">@color/fluxio_element</item>
-
-        <!-- ── Outlines ── -->
-        <item name="colorOutline">@color/fluxio_separator</item>
-        <item name="colorOutlineVariant">@color/fluxio_separator</item>
-
-        <!--
-            Primary: no fixed accent.
-            text1 is used so that default M3 widgets (FABs, checkboxes, etc.)
-            fall back to a neutral on-brand color.
-            The actual album-art color is applied in code at runtime.
-        -->
-        <item name="colorPrimary">@color/fluxio_text1</item>
-        <item name="colorOnPrimary">@color/fluxio_bg</item>
-        <item name="colorPrimaryContainer">@color/fluxio_element</item>
-        <item name="colorOnPrimaryContainer">@color/fluxio_text1</item>
-        <item name="colorPrimaryInverse">@color/fluxio_bg</item>
-
-        <!-- Secondary: subdued text2 -->
-        <item name="colorSecondary">@color/fluxio_text2</item>
-        <item name="colorOnSecondary">@color/fluxio_bg</item>
-        <item name="colorSecondaryContainer">@color/fluxio_element</item>
-        <item name="colorOnSecondaryContainer">@color/fluxio_text1</item>
-
-        <!-- Tertiary: faint text3 -->
-        <item name="colorTertiary">@color/fluxio_text3</item>
-        <item name="colorOnTertiary">@color/fluxio_bg</item>
-        <item name="colorTertiaryContainer">@color/fluxio_element</item>
-        <item name="colorOnTertiaryContainer">@color/fluxio_text1</item>
-
-        <!-- Error / destructive -->
-        <item name="colorError">@color/fluxio_destructive</item>
-        <item name="colorOnError">#FFFFFF</item>
-        <item name="colorErrorContainer">@color/fluxio_element</item>
-        <item name="colorOnErrorContainer">@color/fluxio_destructive</item>
-
-        <!-- Fixed / dim variants required by M3 Expressive -->
-        <item name="colorPrimaryFixed">@color/fluxio_text1</item>
-        <item name="colorOnPrimaryFixed">@color/fluxio_bg</item>
-        <item name="colorPrimaryFixedDim">@color/fluxio_text2</item>
-        <item name="colorOnPrimaryFixedVariant">@color/fluxio_bg</item>
-        <item name="colorSecondaryFixed">@color/fluxio_text2</item>
-        <item name="colorOnSecondaryFixed">@color/fluxio_bg</item>
-        <item name="colorSecondaryFixedDim">@color/fluxio_text3</item>
-        <item name="colorOnSecondaryFixedVariant">@color/fluxio_bg</item>
-        <item name="colorTertiaryFixed">@color/fluxio_text3</item>
-        <item name="colorOnTertiaryFixed">@color/fluxio_bg</item>
-        <item name="colorTertiaryFixedDim">@color/fluxio_text3</item>
-        <item name="colorOnTertiaryFixedVariant">@color/fluxio_bg</item>
-
-    </style>
 
     <!--
         Dark / Light are named aliases only.
