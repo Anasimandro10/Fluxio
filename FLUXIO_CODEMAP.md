@@ -1,5 +1,5 @@
 # FLUXIO_CODEMAP.md
-> Commit: 2a198c4865a1  |  Generado: 2026-05-10 10:24  |  Roadmap: 4/75 completados  |  Archivos totales: 691
+> Commit: 3cb46ae6d81a  |  Generado: 2026-05-10 11:01  |  Roadmap: 5/75 completados  |  Archivos totales: 689
 > **Este archivo es el INDICE.** Fetchea la parte que necesites para ver los archivos.
 
 ---
@@ -12,8 +12,8 @@
 | 30a-2 | Foundation — Dimens | OK | `dimens.xml (rework)` |
 | 30b-1 | Foundation — Colors paleta | OK | `colors.xml (rework)` |
 | 30b-2 | Foundation — Themes | OK | `themes.xml (rework)` |
-| 30c-1 | Foundation — Eliminar CookieImageView | SIGUIENTE | `CookieImageView.kt + layouts afectados (rework)` |
-| 30c-2 | Foundation — Icon states | pendiente | `res/drawable/ic_*.xml (rework)` |
+| 30c-1 | Foundation — Eliminar CookieImageView | OK | `CookieImageView.kt + layouts afectados (rework)` |
+| 30c-2 | Foundation — Icon states | SIGUIENTE | `res/drawable/ic_*.xml (rework)` |
 | 30d-1 | Foundation — Style rename script | pendiente | `61 archivos de estilo (rework)` |
 | 30e-1 | Player — Layout XML | pendiente | `fragment_playback_panel.xml (rework)` |
 | 30e-2 | Player — Controles y datos | pendiente | `PlaybackPanelFragment.kt (rework)` |
@@ -90,25 +90,25 @@
 
 | Parte | Contenido | Archivos | Link |
 |---|---|---|---|
-| **Codigo principal** | CI & Config | Material Components | Playback & Audio DSP | Lyrics | Statistics | 85 | [CODEMAP_part1.md](https://raw.githubusercontent.com/Anasimandro10/fluxio/2a198c4865a1b032043bcffc7705616b9a62e203/FLUXIO_CODEMAP_part1.md) |
-| **UI & Features** | UI Details/Library/Search/Settings | Tags | Backup | Image | Music/Data | Lists | Widgets | App Root | Otros | 208 | [CODEMAP_part2.md](https://raw.githubusercontent.com/Anasimandro10/fluxio/2a198c4865a1b032043bcffc7705616b9a62e203/FLUXIO_CODEMAP_part2.md) |
-| **Resources** | Drawables (XML vectoriales) | Layouts | Values | Preferences XML | Menus | Navigation | Other | 241 | [CODEMAP_part3.md](https://raw.githubusercontent.com/Anasimandro10/fluxio/2a198c4865a1b032043bcffc7705616b9a62e203/FLUXIO_CODEMAP_part3.md) |
-| **Fastlane / Metadata** | Descripciones de Play Store / F-Droid en todos los idiomas | 157 | [CODEMAP_part4.md](https://raw.githubusercontent.com/Anasimandro10/fluxio/2a198c4865a1b032043bcffc7705616b9a62e203/FLUXIO_CODEMAP_part4.md) |
+| **Codigo principal** | CI & Config | Material Components | Playback & Audio DSP | Lyrics | Statistics | 85 | [CODEMAP_part1.md](https://raw.githubusercontent.com/Anasimandro10/fluxio/3cb46ae6d81a6e2f01258ffeef5c35e5ad2f213a/FLUXIO_CODEMAP_part1.md) |
+| **UI & Features** | UI Details/Library/Search/Settings | Tags | Backup | Image | Music/Data | Lists | Widgets | App Root | Otros | 207 | [CODEMAP_part2.md](https://raw.githubusercontent.com/Anasimandro10/fluxio/3cb46ae6d81a6e2f01258ffeef5c35e5ad2f213a/FLUXIO_CODEMAP_part2.md) |
+| **Resources** | Drawables (XML vectoriales) | Layouts | Values | Preferences XML | Menus | Navigation | Other | 240 | [CODEMAP_part3.md](https://raw.githubusercontent.com/Anasimandro10/fluxio/3cb46ae6d81a6e2f01258ffeef5c35e5ad2f213a/FLUXIO_CODEMAP_part3.md) |
+| **Fastlane / Metadata** | Descripciones de Play Store / F-Droid en todos los idiomas | 157 | [CODEMAP_part4.md](https://raw.githubusercontent.com/Anasimandro10/fluxio/3cb46ae6d81a6e2f01258ffeef5c35e5ad2f213a/FLUXIO_CODEMAP_part4.md) |
 
 ---
 
 ## Detalle por parte
 
-### Part 1 — [Codigo principal](https://raw.githubusercontent.com/Anasimandro10/fluxio/2a198c4865a1b032043bcffc7705616b9a62e203/FLUXIO_CODEMAP_part1.md) (85 archivos)
+### Part 1 — [Codigo principal](https://raw.githubusercontent.com/Anasimandro10/fluxio/3cb46ae6d81a6e2f01258ffeef5c35e5ad2f213a/FLUXIO_CODEMAP_part1.md) (85 archivos)
   - CI & Config (3 archivos)
   - Material Components (patched) (6 archivos)
   - Playback & Audio DSP (65 archivos)
   - Lyrics (8 archivos)
   - Statistics (3 archivos)
 
-### Part 2 — [UI & Features](https://raw.githubusercontent.com/Anasimandro10/fluxio/2a198c4865a1b032043bcffc7705616b9a62e203/FLUXIO_CODEMAP_part2.md) (208 archivos)
+### Part 2 — [UI & Features](https://raw.githubusercontent.com/Anasimandro10/fluxio/3cb46ae6d81a6e2f01258ffeef5c35e5ad2f213a/FLUXIO_CODEMAP_part2.md) (207 archivos)
   - UI -- Details (25 archivos)
-  - UI -- Library (26 archivos)
+  - UI -- Library (25 archivos)
   - UI -- Search (6 archivos)
   - UI -- Settings (15 archivos)
   - Tags (5 archivos)
@@ -121,8 +121,8 @@
   - App Root (11 archivos)
   - Otros (23 archivos)
 
-### Part 3 — [Resources](https://raw.githubusercontent.com/Anasimandro10/fluxio/2a198c4865a1b032043bcffc7705616b9a62e203/FLUXIO_CODEMAP_part3.md) (241 archivos)
-  - Resources -- Drawables (93 archivos)
+### Part 3 — [Resources](https://raw.githubusercontent.com/Anasimandro10/fluxio/3cb46ae6d81a6e2f01258ffeef5c35e5ad2f213a/FLUXIO_CODEMAP_part3.md) (240 archivos)
+  - Resources -- Drawables (92 archivos)
   - Resources -- Layouts (71 archivos)
   - Resources -- Values (28 archivos)
   - Resources -- Preferences XML (13 archivos)
@@ -130,5 +130,5 @@
   - Resources -- Navigation (2 archivos)
   - Resources -- Other (14 archivos)
 
-### Part 4 — [Fastlane / Metadata](https://raw.githubusercontent.com/Anasimandro10/fluxio/2a198c4865a1b032043bcffc7705616b9a62e203/FLUXIO_CODEMAP_part4.md) (157 archivos)
+### Part 4 — [Fastlane / Metadata](https://raw.githubusercontent.com/Anasimandro10/fluxio/3cb46ae6d81a6e2f01258ffeef5c35e5ad2f213a/FLUXIO_CODEMAP_part4.md) (157 archivos)
   - Fastlane / Metadata (157 archivos)
