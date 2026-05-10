@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:background="@drawable/ui_widget_bg_sharp"
     android:backgroundTint="?attr/colorSurface"
-    android:theme="@style/Theme.Auxio.Widget"
+    android:theme="@style/Theme.Fluxio.Widget"
     tools:ignore="Overdraw">
 
     <android.widget.ImageView
@@ -19,7 +19,7 @@
         android:tint="?attr/colorPrimary" />
 
     <android.widget.TextView
-        style="@style/Widget.Auxio.TextView.Primary.AppWidget"
+        style="@style/Widget.Fluxio.TextView.Primary.AppWidget"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="center"

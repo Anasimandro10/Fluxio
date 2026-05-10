@@ -9,7 +9,7 @@
 
     <org.oxycblt.auxio.ui.CoordinatorAppBarLayout
         android:id="@+id/preferences_appbar"
-        style="@style/Widget.Auxio.AppBarLayout"
+        style="@style/Widget.Fluxio.AppBarLayout"
         android:clickable="true"
         android:focusable="true"
         app:liftOnScroll="true">

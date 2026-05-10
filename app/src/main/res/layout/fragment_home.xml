@@ -11,7 +11,7 @@
 
     <org.oxycblt.auxio.ui.CoordinatorAppBarLayout
         android:id="@+id/home_appbar"
-        style="@style/Widget.Auxio.AppBarLayout">
+        style="@style/Widget.Fluxio.AppBarLayout">
 
         <org.oxycblt.auxio.ui.MultiToolbar
             android:id="@+id/home_toolbar"

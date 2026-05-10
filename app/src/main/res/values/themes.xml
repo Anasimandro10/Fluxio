@@ -31,7 +31,7 @@
         neutral. The runtime album-art accent is applied in code only on
         the play button, progress bar and active nav icon.
     -->
-    <style name="Theme.Fluxio" parent="Theme.Auxio.Base">
+    <style name="Theme.Fluxio" parent="Theme.Fluxio.Base">
 
         <!-- ── Backgrounds ── -->
         <item name="android:colorBackground">@color/fluxio_bg</item>
@@ -138,21 +138,21 @@
         These will be removed when the accent system is fully stripped.
         =====================================================================
     -->
-    <style name="Theme.Auxio.Red"       parent="Theme.Fluxio" />
-    <style name="Theme.Auxio.Pink"      parent="Theme.Fluxio" />
-    <style name="Theme.Auxio.Purple"    parent="Theme.Fluxio" />
-    <style name="Theme.Auxio.DeepPurple" parent="Theme.Fluxio" />
-    <style name="Theme.Auxio.Indigo"    parent="Theme.Fluxio" />
-    <style name="Theme.Auxio.Blue"      parent="Theme.Fluxio" />
-    <style name="Theme.Auxio.DeepBlue"  parent="Theme.Fluxio" />
-    <style name="Theme.Auxio.Cyan"      parent="Theme.Fluxio" />
-    <style name="Theme.Auxio.Teal"      parent="Theme.Fluxio" />
-    <style name="Theme.Auxio.Green"     parent="Theme.Fluxio" />
-    <style name="Theme.Auxio.DeepGreen" parent="Theme.Fluxio" />
-    <style name="Theme.Auxio.Lime"      parent="Theme.Fluxio" />
-    <style name="Theme.Auxio.Yellow"    parent="Theme.Fluxio" />
-    <style name="Theme.Auxio.Orange"    parent="Theme.Fluxio" />
-    <style name="Theme.Auxio.Brown"     parent="Theme.Fluxio" />
-    <style name="Theme.Auxio.Grey"      parent="Theme.Fluxio" />
+    <style name="Theme.Fluxio.Red"       parent="Theme.Fluxio" />
+    <style name="Theme.Fluxio.Pink"      parent="Theme.Fluxio" />
+    <style name="Theme.Fluxio.Purple"    parent="Theme.Fluxio" />
+    <style name="Theme.Fluxio.DeepPurple" parent="Theme.Fluxio" />
+    <style name="Theme.Fluxio.Indigo"    parent="Theme.Fluxio" />
+    <style name="Theme.Fluxio.Blue"      parent="Theme.Fluxio" />
+    <style name="Theme.Fluxio.DeepBlue"  parent="Theme.Fluxio" />
+    <style name="Theme.Fluxio.Cyan"      parent="Theme.Fluxio" />
+    <style name="Theme.Fluxio.Teal"      parent="Theme.Fluxio" />
+    <style name="Theme.Fluxio.Green"     parent="Theme.Fluxio" />
+    <style name="Theme.Fluxio.DeepGreen" parent="Theme.Fluxio" />
+    <style name="Theme.Fluxio.Lime"      parent="Theme.Fluxio" />
+    <style name="Theme.Fluxio.Yellow"    parent="Theme.Fluxio" />
+    <style name="Theme.Fluxio.Orange"    parent="Theme.Fluxio" />
+    <style name="Theme.Fluxio.Brown"     parent="Theme.Fluxio" />
+    <style name="Theme.Fluxio.Grey"      parent="Theme.Fluxio" />
 
 </resources>

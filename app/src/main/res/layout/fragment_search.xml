@@ -8,7 +8,7 @@
     android:transitionGroup="true">
 
     <org.oxycblt.auxio.ui.CoordinatorAppBarLayout
-        style="@style/Widget.Auxio.AppBarLayout"
+        style="@style/Widget.Fluxio.AppBarLayout"
         app:liftOnScroll="true"
         app:liftOnScrollTargetViewId="@id/search_recycler">
 
@@ -64,7 +64,7 @@
 
     <org.oxycblt.auxio.list.recycler.AuxioRecyclerView
         android:id="@+id/search_recycler"
-        style="@style/Widget.Auxio.RecyclerView.Grid"
+        style="@style/Widget.Fluxio.RecyclerView.Grid"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior"

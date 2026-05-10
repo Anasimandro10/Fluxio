@@ -11,7 +11,7 @@
 
     <org.oxycblt.auxio.ui.CoordinatorAppBarLayout
         android:id="@+id/about_appbar"
-        style="@style/Widget.Auxio.AppBarLayout"
+        style="@style/Widget.Fluxio.AppBarLayout"
         app:liftOnScroll="true">
 
         <com.google.android.material.appbar.MaterialToolbar
@@ -47,7 +47,7 @@
 
                     <ImageView
                         android:id="@+id/about_fluxio_icon"
-                        style="@style/Widget.Auxio.Image.Small"
+                        style="@style/Widget.Fluxio.Image.Small"
                         android:layout_marginTop="@dimen/spacing_medium"
                         android:contentDescription="@string/desc_fluxio_icon"
                         android:src="@mipmap/ic_launcher"
@@ -118,7 +118,7 @@
 
                     <TextView
                         android:id="@+id/about_code"
-                        style="@style/Widget.Auxio.TextView.Icon.Clickable"
+                        style="@style/Widget.Fluxio.TextView.Icon.Clickable"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/spacing_mid_medium"
@@ -131,7 +131,7 @@
 
                     <TextView
                         android:id="@+id/about_wiki"
-                        style="@style/Widget.Auxio.TextView.Icon.Clickable"
+                        style="@style/Widget.Fluxio.TextView.Icon.Clickable"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/lbl_wiki"
@@ -143,7 +143,7 @@
 
                     <TextView
                         android:id="@+id/about_licenses"
-                        style="@style/Widget.Auxio.TextView.Icon.Clickable"
+                        style="@style/Widget.Fluxio.TextView.Icon.Clickable"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/lbl_licenses"
@@ -169,7 +169,7 @@
 
                     <TextView
                         android:id="@+id/about_author"
-                        style="@style/Widget.Auxio.TextView.Header"
+                        style="@style/Widget.Fluxio.TextView.Header"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/lbl_author"
@@ -178,7 +178,7 @@
 
                     <TextView
                         android:id="@+id/about_profile"
-                        style="@style/Widget.Auxio.TextView.Icon.Clickable"
+                        style="@style/Widget.Fluxio.TextView.Icon.Clickable"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/lbl_author_name"
@@ -190,7 +190,7 @@
 
                     <TextView
                         android:id="@+id/about_donate"
-                        style="@style/Widget.Auxio.TextView.Icon.Clickable"
+                        style="@style/Widget.Fluxio.TextView.Icon.Clickable"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/lbl_donate"
@@ -219,7 +219,7 @@
 
                     <TextView
                         android:id="@+id/about_supporters"
-                        style="@style/Widget.Auxio.TextView.Header"
+                        style="@style/Widget.Fluxio.TextView.Header"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/lbl_supporters"
@@ -228,7 +228,7 @@
 
                     <TextView
                         android:id="@+id/about_supporters_bkkellyh"
-                        style="@style/Widget.Auxio.TextView.Icon.Clickable"
+                        style="@style/Widget.Fluxio.TextView.Icon.Clickable"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/sup_bkkellyh"
@@ -239,7 +239,7 @@
 
                     <TextView
                         android:id="@+id/about_supporters_promo"
-                        style="@style/Widget.Auxio.TextView.Icon.Clickable"
+                        style="@style/Widget.Fluxio.TextView.Icon.Clickable"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/lng_supporters_promo"
@@ -266,7 +266,7 @@
 
                     <TextView
                         android:id="@+id/about_feedback"
-                        style="@style/Widget.Auxio.TextView.Header"
+                        style="@style/Widget.Fluxio.TextView.Header"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/lbl_feedback"
@@ -275,7 +275,7 @@
 
                     <TextView
                         android:id="@+id/about_feedback_github"
-                        style="@style/Widget.Auxio.TextView.Icon.Clickable"
+                        style="@style/Widget.Fluxio.TextView.Icon.Clickable"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/lbl_github"
@@ -287,7 +287,7 @@
 
                     <TextView
                         android:id="@+id/about_feedback_email"
-                        style="@style/Widget.Auxio.TextView.Icon.Clickable"
+                        style="@style/Widget.Fluxio.TextView.Icon.Clickable"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/lbl_email"
@@ -313,7 +313,7 @@
 
                     <TextView
                         android:id="@+id/about_library_counts"
-                        style="@style/Widget.Auxio.TextView.Header"
+                        style="@style/Widget.Fluxio.TextView.Header"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/lbl_library_counts"
@@ -322,7 +322,7 @@
 
                     <TextView
                         android:id="@+id/about_song_count"
-                        style="@style/Widget.Auxio.TextView.Icon"
+                        style="@style/Widget.Fluxio.TextView.Icon"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         app:drawableStartCompat="@drawable/ic_song_24"
@@ -333,7 +333,7 @@
 
                     <TextView
                         android:id="@+id/about_album_count"
-                        style="@style/Widget.Auxio.TextView.Icon"
+                        style="@style/Widget.Fluxio.TextView.Icon"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         app:drawableStartCompat="@drawable/ic_album_24"
@@ -344,7 +344,7 @@
 
                     <TextView
                         android:id="@+id/about_artist_count"
-                        style="@style/Widget.Auxio.TextView.Icon"
+                        style="@style/Widget.Fluxio.TextView.Icon"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         app:drawableStartCompat="@drawable/ic_artist_24"
@@ -355,7 +355,7 @@
 
                     <TextView
                         android:id="@+id/about_genre_count"
-                        style="@style/Widget.Auxio.TextView.Icon"
+                        style="@style/Widget.Fluxio.TextView.Icon"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         app:drawableStartCompat="@drawable/ic_genre_24"
@@ -366,7 +366,7 @@
 
                     <TextView
                         android:id="@+id/about_total_duration"
-                        style="@style/Widget.Auxio.TextView.Icon"
+                        style="@style/Widget.Fluxio.TextView.Icon"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         app:drawableStartCompat="@drawable/ic_time_24"
@@ -377,7 +377,7 @@
 
                     <TextView
                         android:id="@+id/about_total_size"
-                        style="@style/Widget.Auxio.TextView.Icon"
+                        style="@style/Widget.Fluxio.TextView.Icon"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         app:drawableStartCompat="@drawable/ic_file_24"

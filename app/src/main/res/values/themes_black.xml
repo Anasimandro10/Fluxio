@@ -6,23 +6,23 @@
         Kept so that Accent.blackTheme references in Accent.kt compile without
         changes. Will be removed when the accent system is fully stripped.
     -->
-    <style name="Theme.Auxio.Black"            parent="Theme.Fluxio.PureBlack" />
+    <style name="Theme.Fluxio.Black"            parent="Theme.Fluxio.PureBlack" />
 
-    <style name="Theme.Auxio.Red.Black"        parent="Theme.Fluxio.PureBlack" />
-    <style name="Theme.Auxio.Pink.Black"       parent="Theme.Fluxio.PureBlack" />
-    <style name="Theme.Auxio.Purple.Black"     parent="Theme.Fluxio.PureBlack" />
-    <style name="Theme.Auxio.DeepPurple.Black" parent="Theme.Fluxio.PureBlack" />
-    <style name="Theme.Auxio.Indigo.Black"     parent="Theme.Fluxio.PureBlack" />
-    <style name="Theme.Auxio.Blue.Black"       parent="Theme.Fluxio.PureBlack" />
-    <style name="Theme.Auxio.DeepBlue.Black"   parent="Theme.Fluxio.PureBlack" />
-    <style name="Theme.Auxio.Cyan.Black"       parent="Theme.Fluxio.PureBlack" />
-    <style name="Theme.Auxio.Teal.Black"       parent="Theme.Fluxio.PureBlack" />
-    <style name="Theme.Auxio.Green.Black"      parent="Theme.Fluxio.PureBlack" />
-    <style name="Theme.Auxio.DeepGreen.Black"  parent="Theme.Fluxio.PureBlack" />
-    <style name="Theme.Auxio.Lime.Black"       parent="Theme.Fluxio.PureBlack" />
-    <style name="Theme.Auxio.Yellow.Black"     parent="Theme.Fluxio.PureBlack" />
-    <style name="Theme.Auxio.Orange.Black"     parent="Theme.Fluxio.PureBlack" />
-    <style name="Theme.Auxio.Brown.Black"      parent="Theme.Fluxio.PureBlack" />
-    <style name="Theme.Auxio.Grey.Black"       parent="Theme.Fluxio.PureBlack" />
+    <style name="Theme.Fluxio.Red.Black"        parent="Theme.Fluxio.PureBlack" />
+    <style name="Theme.Fluxio.Pink.Black"       parent="Theme.Fluxio.PureBlack" />
+    <style name="Theme.Fluxio.Purple.Black"     parent="Theme.Fluxio.PureBlack" />
+    <style name="Theme.Fluxio.DeepPurple.Black" parent="Theme.Fluxio.PureBlack" />
+    <style name="Theme.Fluxio.Indigo.Black"     parent="Theme.Fluxio.PureBlack" />
+    <style name="Theme.Fluxio.Blue.Black"       parent="Theme.Fluxio.PureBlack" />
+    <style name="Theme.Fluxio.DeepBlue.Black"   parent="Theme.Fluxio.PureBlack" />
+    <style name="Theme.Fluxio.Cyan.Black"       parent="Theme.Fluxio.PureBlack" />
+    <style name="Theme.Fluxio.Teal.Black"       parent="Theme.Fluxio.PureBlack" />
+    <style name="Theme.Fluxio.Green.Black"      parent="Theme.Fluxio.PureBlack" />
+    <style name="Theme.Fluxio.DeepGreen.Black"  parent="Theme.Fluxio.PureBlack" />
+    <style name="Theme.Fluxio.Lime.Black"       parent="Theme.Fluxio.PureBlack" />
+    <style name="Theme.Fluxio.Yellow.Black"     parent="Theme.Fluxio.PureBlack" />
+    <style name="Theme.Fluxio.Orange.Black"     parent="Theme.Fluxio.PureBlack" />
+    <style name="Theme.Fluxio.Brown.Black"      parent="Theme.Fluxio.PureBlack" />
+    <style name="Theme.Fluxio.Grey.Black"       parent="Theme.Fluxio.PureBlack" />
 
 </resources>
