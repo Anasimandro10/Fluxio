@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Master parent theme -->
-    <style name="Theme.Fluxio" parent="Theme.Material3Expressive.DynamicColors.DayNight" />
+    <!-- Master parent theme — WITHOUT DynamicColors so system wallpaper never overrides colorPrimary -->
+    <style name="Theme.Fluxio" parent="Theme.Material3Expressive.DayNight" />
     <!-- Adds nicer selector attributes not supported on lollipop -->
     <style name="Theme.Fluxio.V23" parent="Theme.Fluxio" />
     <!-- Handles edge-to-edge on other styles variants -->
@@ -43,10 +43,9 @@
         <item name="colorOutlineVariant">@color/fluxio_separator</item>
 
         <!--
-            Primary: no fixed accent.
-            text1 is used so that default M3 widgets (FABs, checkboxes, etc.)
-            fall back to a neutral on-brand color.
-            The actual album-art color is applied in code at runtime.
+            Primary: always white (dark) / black (light).
+            No accent. No system dynamic color.
+            Album-art color is applied in code at runtime (step 31).
         -->
         <item name="colorPrimary">@color/fluxio_text1</item>
         <item name="colorOnPrimary">@color/fluxio_bg</item>
@@ -186,7 +185,7 @@
         <item name="materialButtonGroupStyle">@style/Widget.Fluxio.MaterialButtonGroup</item>
     </style>
 
-    <!-- App theme now uses Theme.Fluxio (System) as the active theme -->
+    <!-- App theme now uses Theme.Fluxio as the active theme -->
     <style name="Theme.Fluxio.App" parent="@style/Theme.Fluxio" />
 
     <!--
