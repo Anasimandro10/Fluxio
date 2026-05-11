@@ -162,12 +162,7 @@ constructor(
                 )
             )
         configuredAmplitudePx =
-            abs(
-                styledAttrs.safeGetDimPx(
-                    MR.styleable.BaseProgressIndicator_waveAmplitude,
-                    0,
-                )
-            )
+            abs(styledAttrs.safeGetDimPx(MR.styleable.BaseProgressIndicator_waveAmplitude, 0))
         configuredSpeedPx =
             styledAttrs.safeGetDimPx(MR.styleable.BaseProgressIndicator_waveSpeed, 0)
 
@@ -895,9 +890,9 @@ constructor(
 
     /**
      * Safe wrapper for [TypedArray.getDimensionPixelSize] that returns [defValue] when the
-     * attribute value is an unresolved theme reference (TYPE_ATTRIBUTE) or any non-dimension
-     * type. This prevents crashes when Material3 Expressive styles set wave attributes via
-     * ?attr/ tokens that aren't concrete dimensions in the active theme.
+     * attribute value is an unresolved theme reference (TYPE_ATTRIBUTE) or any non-dimension type.
+     * This prevents crashes when Material3 Expressive styles set wave attributes via ?attr/ tokens
+     * that aren't concrete dimensions in the active theme.
      */
     private fun TypedArray.safeGetDimPx(index: Int, defValue: Int): Int {
         val tv = peekValue(index) ?: return defValue
