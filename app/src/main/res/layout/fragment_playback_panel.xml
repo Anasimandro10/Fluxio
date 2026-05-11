@@ -45,7 +45,7 @@
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="@dimen/spacing_sm"
         android:orientation="vertical"
-        app:layout_constraintBottom_toTopOf="@+id/playback_controls_wrapper"
+        app:layout_constraintBottom_toTopOf="@+id/playback_controls_container"
         app:layout_constraintEnd_toStartOf="@+id/playback_more"
         app:layout_constraintStart_toEndOf="@+id/playback_cover"
         app:layout_constraintTop_toTopOf="@+id/playback_cover"
@@ -62,7 +62,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textAppearance="@style/TextAppearance.Fluxio.Title"
                 android:textColor="?android:attr/textColorPrimary"
                 android:maxLines="1"
                 android:ellipsize="end"
@@ -83,7 +83,7 @@
             android:id="@+id/playback_artist"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textAppearance="@style/TextAppearance.Fluxio.Body"
             android:textColor="?android:attr/textColorSecondary"
             android:maxLines="1"
             android:ellipsize="end"
@@ -91,7 +91,7 @@
 
     </LinearLayout>
 
-    <!-- Botón de overflow, anclado a la esquina derecha del bloque de info -->
+    <!-- Botón de overflow -->
     <org.oxycblt.auxio.ui.RippleFixMaterialButton
         android:id="@+id/playback_more"
         style="@style/Widget.Fluxio.Button.Playback.More"
@@ -104,9 +104,23 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@+id/playback_info_container" />
 
+    <!--
+        seek bar invisible en este layout compacto (pantalla < 360dp de alto).
+        Presente como gone para que ViewBinding genere el campo no-nulo
+        en los tres variants, igual que h360dp y h520dp.
+    -->
+    <org.oxycblt.auxio.playback.ui.StyledSeekBar
+        android:id="@+id/playback_seek_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@+id/playback_toolbar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <!-- Controles: fila única con los 5 botones (compacto) -->
     <org.oxycblt.auxio.playback.ui.ForcedLTRFrameLayout
-        android:id="@+id/playback_controls_wrapper"
+        android:id="@+id/playback_controls_container"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="@dimen/spacing_sm"
