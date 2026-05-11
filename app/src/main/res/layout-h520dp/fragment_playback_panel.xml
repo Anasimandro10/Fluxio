@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- ── Toolbar ── -->
     <org.oxycblt.auxio.ui.ButtonGroupToolbar
         android:id="@+id/playback_toolbar"
         android:layout_width="match_parent"
@@ -20,121 +22,136 @@
         app:titleTextAppearance="?attr/textAppearanceLabelLargeEmphasized"
         tools:subtitle="@string/lbl_all_songs" />
 
+    <!-- ── Artwork: cuadrado dominante, 24dp márgenes, r:14dp ── -->
+    <!--
+        layout_width/height = 0dp + DimensionRatio="1:1" hace que el alto iguale
+        al ancho definido por las restricciones horizontales (pantalla - 48dp).
+        verticalChainStyle=packed + bias=0.0 empaca todos los elementos desde
+        debajo del toolbar hacia abajo.
+    -->
     <org.oxycblt.auxio.playback.ui.ControlledCoverView
         android:id="@+id/playback_cover"
         style="@style/Widget.Fluxio.Image.Full"
-        android:layout_margin="@dimen/spacing_medium"
-        app:enablePlaybackIndicator="false"
-        app:enableSelectionBadge="false"
-        app:layout_constraintBottom_toTopOf="@+id/playback_info_container"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/playback_toolbar"
-        app:layout_constraintVertical_chainStyle="packed" />
-
-    <org.oxycblt.auxio.playback.ui.stepper.PlayerFastSeekOverlay
-        android:id="@+id/playback_fast_seek_overlay"
-        style="@style/Widget.Fluxio.Image.Full"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_margin="@dimen/spacing_medium"
-        app:layout_constraintBottom_toTopOf="@+id/playback_info_container"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginHorizontal="@dimen/padding_player_horizontal"
+        android:layout_marginTop="@dimen/gap_player_section"
+        app:enablePlaybackIndicator="false"
+        app:enableSelectionBadge="false"
+        app:shapeAppearance="@style/ShapeAppearance.Material3.Corner.Large"
+        app:layout_constraintDimensionRatio="1:1"
         app:layout_constraintTop_toBottomOf="@+id/playback_toolbar"
-        app:layout_constraintVertical_chainStyle="packed" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/playback_info_container"
+        app:layout_constraintVertical_chainStyle="packed"
+        app:layout_constraintVertical_bias="0.0" />
 
+    <!-- ── Overlay fast-seek (mismo bounds que el artwork) ── -->
+    <org.oxycblt.auxio.playback.ui.stepper.PlayerFastSeekOverlay
+        android:id="@+id/playback_fast_seek_overlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginHorizontal="@dimen/padding_player_horizontal"
+        android:layout_marginTop="@dimen/gap_player_section"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintTop_toBottomOf="@+id/playback_toolbar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/playback_info_container" />
+
+    <!-- ── Info: título + corazón (fila horizontal) + artista ── -->
     <LinearLayout
         android:id="@+id/playback_info_container"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/spacing_medium"
-        android:layout_marginEnd="@dimen/spacing_medium"
+        android:layout_marginHorizontal="@dimen/padding_player_horizontal"
+        android:layout_marginTop="@dimen/gap_artwork_to_info"
         android:orientation="vertical"
-        app:layout_constraintBottom_toTopOf="@+id/playback_seek_bar"
-        app:layout_constraintEnd_toStartOf="@+id/playback_more"
-        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintTop_toBottomOf="@+id/playback_cover"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/playback_toolbar"
-        app:layout_constraintVertical_bias="1.0"
-        app:layout_constraintVertical_chainStyle="packed">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/playback_seek_bar">
 
-        <TextView
-            android:id="@+id/playback_song"
-            style="@style/Widget.Fluxio.TextView.Primary"
+        <!-- Fila: título (izquierda, ocupa el espacio disponible) + corazón (derecha) -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            tools:text="Song Name" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
+            <TextView
+                android:id="@+id/playback_song"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textAppearance="@style/TextAppearance.Fluxio.Display"
+                android:textColor="?android:attr/textColorPrimary"
+                android:maxLines="1"
+                android:ellipsize="end"
+                tools:text="Song Name" />
+
+            <!--
+                Placeholder del botón favorito. El icono real (corazón outline/solid)
+                y la lógica de toggle se añaden en el paso 30e-2.
+            -->
+            <org.oxycblt.auxio.ui.RippleFixMaterialButton
+                android:id="@+id/playback_favorite"
+                style="@style/Widget.Fluxio.Button.Playback.Toggle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription=""
+                app:icon="@drawable/ic_add_24"
+                app:materialSizeOverlay="@style/SizeOverlay.Material3Expressive.Button.IconButton.Medium" />
+
+        </LinearLayout>
+
+        <!-- Artista: 17sp text2, 4dp debajo del título -->
         <TextView
             android:id="@+id/playback_artist"
-            style="@style/Widget.Fluxio.TextView.Secondary.Marquee"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_title_subtitle"
+            android:textAppearance="@style/TextAppearance.Fluxio.Headline"
+            android:textColor="?android:attr/textColorSecondary"
+            android:maxLines="1"
+            android:ellipsize="end"
             tools:text="Artist Name" />
-
-        <TextView
-            android:id="@+id/playback_album"
-            style="@style/Widget.Fluxio.TextView.Secondary.Marquee"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            tools:text="Album Name" />
 
     </LinearLayout>
 
-    <org.oxycblt.auxio.ui.RippleFixMaterialButton
-        android:id="@+id/playback_more"
-        style="@style/Widget.Fluxio.Button.Playback.More"
-        app:materialSizeOverlay="@style/SizeOverlay.Material3Expressive.Button.IconButton.Medium"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="@dimen/spacing_medium"
-        app:icon="@drawable/ic_more_24"
-        app:layout_constraintBottom_toBottomOf="@+id/playback_info_container"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/playback_info_container" />
-
+    <!-- ── Seek bar: track 4dp, thumb 12dp, etiquetas 12sp text2 ── -->
+    <!--
+        StyledSeekBar incluye internamente el WavySlider y las etiquetas
+        de posición/duración (view_seek_bar.xml). El estilo del track y
+        thumb se controla desde el tema y StyledSeekBar.kt.
+    -->
     <org.oxycblt.auxio.playback.ui.StyledSeekBar
         android:id="@+id/playback_seek_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintBottom_toTopOf="@+id/playback_controls_container"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
+        android:layout_marginTop="@dimen/spacing_xs"
+        app:layout_constraintTop_toBottomOf="@+id/playback_info_container"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/playback_info_container" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/playback_controls_container" />
 
+    <!-- ── Controles primarios: ← play → (iconos grandes, sin fondo en play) ── -->
     <org.oxycblt.auxio.playback.ui.ForcedLTRFrameLayout
         android:id="@+id/playback_controls_container"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/spacing_medium"
-        android:layout_marginEnd="@dimen/spacing_medium"
+        android:layout_marginHorizontal="@dimen/padding_player_horizontal"
         app:layout_constraintTop_toBottomOf="@+id/playback_seek_bar"
-        app:layout_constraintBottom_toTopOf="@+id/playback_lyrics"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintWidth_max="400dp">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/playback_secondary_controls"
+        app:layout_constraintWidth_max="480dp">
 
         <com.google.android.material.button.MaterialButtonGroup
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:spacing="@dimen/spacing_small">
-
-            <org.oxycblt.auxio.ui.WidthFixMaterialButton
-                android:id="@+id/playback_repeat"
-                style="@style/Widget.Fluxio.Button.Playback.Toggle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:contentDescription="@string/desc_change_repeat"
-                app:icon="@drawable/ic_repeat_off_24"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@+id/playback_skip_prev"
-                app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintHorizontal_chainStyle="packed"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:materialSizeOverlay="@style/SizeOverlay.Material3Expressive.Button.IconButton.Medium" />
 
             <org.oxycblt.auxio.ui.RippleFixMaterialButton
                 android:id="@+id/playback_skip_prev"
@@ -142,10 +159,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:contentDescription="@string/desc_skip_prev"
-                app:icon="@drawable/ic_skip_prev_24"
-                app:layout_constraintEnd_toStartOf="@+id/playback_play_pause"
-                app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toEndOf="@+id/playback_repeat"
+                app:icon="@drawable/ic_skip_prev_40"
                 app:materialSizeOverlay="@style/SizeOverlay.Material3Expressive.Button.IconButton.Large.Narrow" />
 
             <org.oxycblt.auxio.ui.RippleFixMaterialButton
@@ -155,9 +169,6 @@
                 android:layout_height="wrap_content"
                 android:contentDescription="@string/desc_play_pause"
                 app:icon="@drawable/sel_playing_state_24"
-                app:layout_constraintEnd_toStartOf="@+id/playback_skip_next"
-                app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toEndOf="@+id/playback_skip_prev"
                 app:materialSizeOverlay="@style/SizeOverlay.Material3Expressive.Button.IconButton.Large"
                 tools:icon="@drawable/ic_play_24" />
 
@@ -167,11 +178,29 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:contentDescription="@string/desc_skip_next"
-                app:icon="@drawable/ic_skip_next_24"
-                app:layout_constraintEnd_toStartOf="@+id/playback_shuffle"
-                app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toEndOf="@+id/playback_play_pause"
+                app:icon="@drawable/ic_skip_next_40"
                 app:materialSizeOverlay="@style/SizeOverlay.Material3Expressive.Button.IconButton.Large.Narrow" />
+
+        </com.google.android.material.button.MaterialButtonGroup>
+
+    </org.oxycblt.auxio.playback.ui.ForcedLTRFrameLayout>
+
+    <!-- ── Controles secundarios: shuffle | repeat | overflow ── -->
+    <org.oxycblt.auxio.playback.ui.ForcedLTRFrameLayout
+        android:id="@+id/playback_secondary_controls"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/padding_player_horizontal"
+        app:layout_constraintTop_toBottomOf="@+id/playback_controls_container"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/playback_tab_bar"
+        app:layout_constraintWidth_max="480dp">
+
+        <com.google.android.material.button.MaterialButtonGroup
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:spacing="@dimen/spacing_small">
 
             <org.oxycblt.auxio.ui.RippleFixMaterialButton
                 android:id="@+id/playback_shuffle"
@@ -180,31 +209,101 @@
                 android:layout_height="wrap_content"
                 android:contentDescription="@string/desc_shuffle"
                 app:icon="@drawable/sel_shuffle_state_24"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toEndOf="@+id/playback_skip_next"
-                app:layout_constraintTop_toTopOf="parent"
-                app:materialSizeOverlay="@style/SizeOverlay.Material3Expressive.Button.IconButton.Medium"
-                app:tint="@color/sel_activatable_icon" />
+                app:tint="@color/sel_activatable_icon"
+                app:materialSizeOverlay="@style/SizeOverlay.Material3Expressive.Button.IconButton.Medium" />
+
+            <org.oxycblt.auxio.ui.WidthFixMaterialButton
+                android:id="@+id/playback_repeat"
+                style="@style/Widget.Fluxio.Button.Playback.Toggle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/desc_change_repeat"
+                app:icon="@drawable/ic_repeat_off_24"
+                app:materialSizeOverlay="@style/SizeOverlay.Material3Expressive.Button.IconButton.Medium" />
+
+            <org.oxycblt.auxio.ui.RippleFixMaterialButton
+                android:id="@+id/playback_more"
+                style="@style/Widget.Fluxio.Button.Playback.More"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription=""
+                app:icon="@drawable/ic_more_24"
+                app:materialSizeOverlay="@style/SizeOverlay.Material3Expressive.Button.IconButton.Medium" />
 
         </com.google.android.material.button.MaterialButtonGroup>
+
     </org.oxycblt.auxio.playback.ui.ForcedLTRFrameLayout>
 
-    <!-- Lyrics list -->
+    <!-- ── Barra de tabs: COLA / LETRAS / AUDIO ── -->
+    <!--
+        El texto se establece programáticamente en el paso 30e-3.
+        tools:text muestra etiquetas en el editor de layouts.
+        La lógica de tab activo (subrayado + color puro) va en 30e-3.
+    -->
+    <LinearLayout
+        android:id="@+id/playback_tab_bar"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="@dimen/spacing_xs"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@+id/playback_secondary_controls"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/playback_lyrics">
+
+        <TextView
+            android:id="@+id/playback_tab_queue"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text=""
+            android:textAppearance="@style/TextAppearance.Fluxio.Label"
+            android:textColor="?android:attr/textColorSecondary"
+            tools:text="COLA" />
+
+        <TextView
+            android:id="@+id/playback_tab_lyrics"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text=""
+            android:textAppearance="@style/TextAppearance.Fluxio.Label"
+            android:textColor="?android:attr/textColorSecondary"
+            tools:text="LETRAS" />
+
+        <TextView
+            android:id="@+id/playback_tab_audio"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text=""
+            android:textAppearance="@style/TextAppearance.Fluxio.Label"
+            android:textColor="?android:attr/textColorSecondary"
+            tools:text="AUDIO" />
+
+    </LinearLayout>
+
+    <!-- ── RecyclerView de letras (oculto por defecto, se muestra al activar tab) ── -->
+    <!--
+        height=0dp + constraintTop/Bottom: cuando está visible se expande para
+        rellenar el espacio entre la barra de tabs y el borde inferior de pantalla.
+        Cuando está gone ocupa 0dp y no desplaza ningún elemento.
+    -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/playback_lyrics"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="@dimen/spacing_small"
         android:clipToPadding="false"
-        android:paddingHorizontal="@dimen/spacing_medium"
-        android:paddingBottom="@dimen/spacing_large"
+        android:paddingHorizontal="@dimen/spacing_md"
+        android:paddingBottom="@dimen/spacing_lg"
         android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@+id/playback_tab_bar"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/playback_controls_container"
+        app:layout_constraintEnd_toEndOf="parent"
         tools:visibility="visible" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
