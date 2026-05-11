@@ -14,7 +14,7 @@
         UISettings can store and restore the user's preferred mode. The actual
         mode switch happens in MainActivity via AppCompatDelegate.
 
-        Theme.Fluxio.PureBlack extends Theme.Fluxio and overrides
+        Theme.Fluxio.PureBlack extends Theme.Fluxio.Base and overrides
         background/surface containers to #000000 for OLED screens. It is
         only meaningful when AppCompatDelegate is in MODE_NIGHT_YES.
         =====================================================================
@@ -26,15 +26,16 @@
         is what actually forces the mode. Keeping distinct style names lets
         UISettings persist the user's preference without extra enum machinery.
     -->
-    <style name="Theme.Fluxio.Dark" parent="Theme.Fluxio" />
-    <style name="Theme.Fluxio.Light" parent="Theme.Fluxio" />
+    <style name="Theme.Fluxio.Dark" parent="Theme.Fluxio.Base" />
+    <style name="Theme.Fluxio.Light" parent="Theme.Fluxio.Base" />
 
     <!--
         PureBlack: True-black backgrounds for OLED screens.
         Only applied when AppCompatDelegate is in MODE_NIGHT_YES.
-        Overrides the nine surface-related color roles to #000000 / near-black.
+        Extends Theme.Fluxio.Base so all Fluxio color roles are inherited;
+        only the nine surface-related roles are overridden to #000000.
     -->
-    <style name="Theme.Fluxio.PureBlack" parent="Theme.Fluxio">
+    <style name="Theme.Fluxio.PureBlack" parent="Theme.Fluxio.Base">
         <item name="android:colorBackground">@color/fluxio_black_bg</item>
         <item name="colorSurface">@color/fluxio_black_surface</item>
         <item name="colorSurfaceDim">@color/fluxio_black_bg</item>
@@ -49,26 +50,26 @@
     <!--
         =====================================================================
         LEGACY ACCENT ALIASES  (kept so Accent.kt / R.style.* compile)
-        All 13 accent themes and the dynamic alias now resolve to Theme.Fluxio.
+        All 13 accent themes and the dynamic alias now resolve to Theme.Fluxio.Base.
         The accent chooser still functions but has no visible effect.
         These will be removed when the accent system is fully stripped.
         =====================================================================
     -->
-    <style name="Theme.Fluxio.Red"       parent="Theme.Fluxio" />
-    <style name="Theme.Fluxio.Pink"      parent="Theme.Fluxio" />
-    <style name="Theme.Fluxio.Purple"    parent="Theme.Fluxio" />
-    <style name="Theme.Fluxio.DeepPurple" parent="Theme.Fluxio" />
-    <style name="Theme.Fluxio.Indigo"    parent="Theme.Fluxio" />
-    <style name="Theme.Fluxio.Blue"      parent="Theme.Fluxio" />
-    <style name="Theme.Fluxio.DeepBlue"  parent="Theme.Fluxio" />
-    <style name="Theme.Fluxio.Cyan"      parent="Theme.Fluxio" />
-    <style name="Theme.Fluxio.Teal"      parent="Theme.Fluxio" />
-    <style name="Theme.Fluxio.Green"     parent="Theme.Fluxio" />
-    <style name="Theme.Fluxio.DeepGreen" parent="Theme.Fluxio" />
-    <style name="Theme.Fluxio.Lime"      parent="Theme.Fluxio" />
-    <style name="Theme.Fluxio.Yellow"    parent="Theme.Fluxio" />
-    <style name="Theme.Fluxio.Orange"    parent="Theme.Fluxio" />
-    <style name="Theme.Fluxio.Brown"     parent="Theme.Fluxio" />
-    <style name="Theme.Fluxio.Grey"      parent="Theme.Fluxio" />
+    <style name="Theme.Fluxio.Red"       parent="Theme.Fluxio.Base" />
+    <style name="Theme.Fluxio.Pink"      parent="Theme.Fluxio.Base" />
+    <style name="Theme.Fluxio.Purple"    parent="Theme.Fluxio.Base" />
+    <style name="Theme.Fluxio.DeepPurple" parent="Theme.Fluxio.Base" />
+    <style name="Theme.Fluxio.Indigo"    parent="Theme.Fluxio.Base" />
+    <style name="Theme.Fluxio.Blue"      parent="Theme.Fluxio.Base" />
+    <style name="Theme.Fluxio.DeepBlue"  parent="Theme.Fluxio.Base" />
+    <style name="Theme.Fluxio.Cyan"      parent="Theme.Fluxio.Base" />
+    <style name="Theme.Fluxio.Teal"      parent="Theme.Fluxio.Base" />
+    <style name="Theme.Fluxio.Green"     parent="Theme.Fluxio.Base" />
+    <style name="Theme.Fluxio.DeepGreen" parent="Theme.Fluxio.Base" />
+    <style name="Theme.Fluxio.Lime"      parent="Theme.Fluxio.Base" />
+    <style name="Theme.Fluxio.Yellow"    parent="Theme.Fluxio.Base" />
+    <style name="Theme.Fluxio.Orange"    parent="Theme.Fluxio.Base" />
+    <style name="Theme.Fluxio.Brown"     parent="Theme.Fluxio.Base" />
+    <style name="Theme.Fluxio.Grey"      parent="Theme.Fluxio.Base" />
 
 </resources>

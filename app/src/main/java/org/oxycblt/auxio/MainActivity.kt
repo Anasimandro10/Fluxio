@@ -76,13 +76,15 @@ class MainActivity : AppCompatActivity() {
     private fun setupTheme() {
         AppCompatDelegate.setDefaultNightMode(uiSettings.theme)
         // Apply pure-black theme for OLED when in dark mode; standard Fluxio theme otherwise.
-        // No accent system: colorPrimary is always white (dark) / black (light) from the theme.
+        // setTheme() must point to Theme_Fluxio_Base (not Theme_Fluxio) so that the full
+        // version chain (V23→V27→V29→V31→Base) is resolved, applying Fluxio colors,
+        // the correct toolbar style, and windowNoTitle/windowActionBar=false.
         if (isNight && uiSettings.useBlackTheme) {
             L.d("Applying pure-black theme")
             setTheme(R.style.Theme_Fluxio_PureBlack)
         } else {
             L.d("Applying standard theme")
-            setTheme(R.style.Theme_Fluxio)
+            setTheme(R.style.Theme_Fluxio_Base)
         }
     }
 
