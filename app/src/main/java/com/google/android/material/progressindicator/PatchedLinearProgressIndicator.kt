@@ -122,14 +122,14 @@ constructor(
             )
 
         trackThicknessPx =
-            styledAttrs.getDimensionPixelSize(
+            styledAttrs.safeGetDimPx(
                 MR.styleable.BaseProgressIndicator_trackThickness,
                 trackThicknessPx,
             )
 
         val requestedCorner =
             styledAttrs
-                .getDimensionPixelSize(
+                .safeGetDimPx(
                     MR.styleable.BaseProgressIndicator_trackCornerRadius,
                     trackThicknessPx / 2,
                 )
@@ -146,30 +146,30 @@ constructor(
 
         indicatorTrackGapPx =
             abs(
-                styledAttrs.getDimensionPixelSize(
+                styledAttrs.safeGetDimPx(
                     MR.styleable.BaseProgressIndicator_indicatorTrackGapSize,
                     0,
                 )
             )
 
         val fallbackWavelength =
-            abs(styledAttrs.getDimensionPixelSize(MR.styleable.BaseProgressIndicator_wavelength, 0))
+            abs(styledAttrs.safeGetDimPx(MR.styleable.BaseProgressIndicator_wavelength, 0))
         configuredWavelengthPx =
             abs(
-                styledAttrs.getDimensionPixelSize(
+                styledAttrs.safeGetDimPx(
                     MR.styleable.BaseProgressIndicator_wavelengthDeterminate,
                     fallbackWavelength,
                 )
             )
         configuredAmplitudePx =
             abs(
-                styledAttrs.getDimensionPixelSize(
+                styledAttrs.safeGetDimPx(
                     MR.styleable.BaseProgressIndicator_waveAmplitude,
                     0,
                 )
             )
         configuredSpeedPx =
-            styledAttrs.getDimensionPixelSize(MR.styleable.BaseProgressIndicator_waveSpeed, 0)
+            styledAttrs.safeGetDimPx(MR.styleable.BaseProgressIndicator_waveSpeed, 0)
 
         waveRampProgressMin =
             styledAttrs
@@ -890,6 +890,21 @@ constructor(
                 min(trackThicknessPx / 2f, trackThicknessPx * fraction)
             }
             else -> trackCornerRadiusPx
+        }
+    }
+
+    /**
+     * Safe wrapper for [TypedArray.getDimensionPixelSize] that returns [defValue] when the
+     * attribute value is an unresolved theme reference (TYPE_ATTRIBUTE) or any non-dimension
+     * type. This prevents crashes when Material3 Expressive styles set wave attributes via
+     * ?attr/ tokens that aren't concrete dimensions in the active theme.
+     */
+    private fun TypedArray.safeGetDimPx(index: Int, defValue: Int): Int {
+        val tv = peekValue(index) ?: return defValue
+        return if (tv.type == TypedValue.TYPE_DIMENSION) {
+            TypedValue.complexToDimensionPixelSize(tv.data, resources.displayMetrics)
+        } else {
+            defValue
         }
     }
 
