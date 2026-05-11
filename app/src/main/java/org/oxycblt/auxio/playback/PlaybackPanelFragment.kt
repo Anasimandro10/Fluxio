@@ -115,15 +115,11 @@ class PlaybackPanelFragment :
 
         binding.playbackSong.apply {
             isSelected = true
-            setOnClickListener { navigateToCurrentSong() }
+            setOnClickListener { navigateToCurrentAlbum() }
         }
         binding.playbackArtist.apply {
             isSelected = true
             setOnClickListener { navigateToCurrentArtist() }
-        }
-        binding.playbackAlbum?.apply {
-            isSelected = true
-            setOnClickListener { navigateToCurrentAlbum() }
         }
 
         binding.playbackSeekBar?.listener = this
@@ -193,7 +189,6 @@ class PlaybackPanelFragment :
         binding.playbackRepeat.clearPendingIcon()
         binding.playbackSong.isSelected = false
         binding.playbackArtist.isSelected = false
-        binding.playbackAlbum?.isSelected = false
         binding.playbackToolbar.setOnMenuItemClickListener(null)
     }
 
@@ -232,7 +227,6 @@ class PlaybackPanelFragment :
         binding.playbackCover.bind(song)
         binding.playbackSong.text = song.name.resolve(context)
         binding.playbackArtist.text = song.artists.resolveNames(context)
-        binding.playbackAlbum?.text = song.album.name.resolve(context)
         binding.playbackSeekBar?.durationDs = song.durationMs.msToDs()
     }
 
@@ -286,10 +280,6 @@ class PlaybackPanelFragment :
         if (index >= 0 && index != previousIndex) {
             requireBinding().playbackLyrics?.smoothScrollToPosition(index)
         }
-    }
-
-    private fun navigateToCurrentSong() {
-        playbackModel.song.value?.let(detailModel::showAlbum)
     }
 
     private fun navigateToCurrentArtist() {
