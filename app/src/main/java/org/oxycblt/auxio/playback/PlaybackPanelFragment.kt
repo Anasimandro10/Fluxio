@@ -55,9 +55,9 @@ import org.oxycblt.auxio.playback.ui.stepper.DisplayPortion
 import org.oxycblt.auxio.playback.ui.stepper.PlayerFastSeekOverlay
 import org.oxycblt.auxio.ui.ViewBindingFragment
 import org.oxycblt.auxio.util.collectImmediately
+import org.oxycblt.auxio.util.getAttrColorCompat
 import org.oxycblt.auxio.util.showToast
 import org.oxycblt.auxio.util.systemBarInsetsCompat
-import org.oxycblt.auxio.util.getAttrColorCompat
 import org.oxycblt.musikr.MusicParent
 import org.oxycblt.musikr.Song
 import timber.log.Timber as L
@@ -85,7 +85,13 @@ class PlaybackPanelFragment :
     private var lastCoverWidth = 0
     private var lyricsAdapter: LyricsAdapter? = null
 
-    enum class PlayerTab { NONE, QUEUE, LYRICS, AUDIO }
+    enum class PlayerTab {
+        NONE,
+        QUEUE,
+        LYRICS,
+        AUDIO,
+    }
+
     private var currentTab = PlayerTab.NONE
 
     override fun onCreateBinding(inflater: LayoutInflater) =
@@ -246,8 +252,10 @@ class PlaybackPanelFragment :
     private fun updateTabUI() {
         val b = binding ?: return
         val context = requireContext()
-        val activeColor = context.getAttrColorCompat(com.google.android.material.R.attr.colorPrimary).defaultColor
-        val inactiveColor = context.getAttrColorCompat(android.R.attr.textColorSecondary).defaultColor
+        val activeColor =
+            context.getAttrColorCompat(com.google.android.material.R.attr.colorPrimary).defaultColor
+        val inactiveColor =
+            context.getAttrColorCompat(android.R.attr.textColorSecondary).defaultColor
 
         fun updateTextView(tv: android.widget.TextView?, tab: PlayerTab) {
             if (tv == null) return
@@ -277,44 +285,62 @@ class PlaybackPanelFragment :
 
     @SuppressLint("ClickableViewAccessibility")
     private fun setupGestures(binding: FragmentPlaybackPanelBinding) {
-        val gestureDetector = android.view.GestureDetector(requireContext(), object : android.view.GestureDetector.SimpleOnGestureListener() {
-            private val SWIPE_THRESHOLD = 100
-            private val SWIPE_VELOCITY_THRESHOLD = 100
+        val gestureDetector =
+            android.view.GestureDetector(
+                requireContext(),
+                object : android.view.GestureDetector.SimpleOnGestureListener() {
+                    private val SWIPE_THRESHOLD = 100
+                    private val SWIPE_VELOCITY_THRESHOLD = 100
 
-            override fun onFling(
-                e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float
-            ): Boolean {
-                if (e1 == null) return false
-                val diffY = e2.y - e1.y
-                val diffX = e2.x - e1.x
-                if (Math.abs(diffX) > Math.abs(diffY)) {
-                    if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
-                        if (diffX > 0) shiftTab(-1) else shiftTab(1)
-                        return true
+                    override fun onFling(
+                        e1: MotionEvent?,
+                        e2: MotionEvent,
+                        velocityX: Float,
+                        velocityY: Float,
+                    ): Boolean {
+                        if (e1 == null) return false
+                        val diffY = e2.y - e1.y
+                        val diffX = e2.x - e1.x
+                        if (Math.abs(diffX) > Math.abs(diffY)) {
+                            if (
+                                Math.abs(diffX) > SWIPE_THRESHOLD &&
+                                    Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD
+                            ) {
+                                if (diffX > 0) shiftTab(-1) else shiftTab(1)
+                                return true
+                            }
+                        } else if (
+                            diffY > 0 &&
+                                Math.abs(diffY) > SWIPE_THRESHOLD &&
+                                Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD
+                        ) {
+                            if (currentTab != PlayerTab.NONE) {
+                                setTab(PlayerTab.NONE)
+                                return true
+                            }
+                        }
+                        return false
                     }
-                } else if (diffY > 0 && Math.abs(diffY) > SWIPE_THRESHOLD && Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD) {
-                    if (currentTab != PlayerTab.NONE) {
-                        setTab(PlayerTab.NONE)
-                        return true
-                    }
-                }
-                return false
+                },
+            )
+        val touchListener =
+            android.view.View.OnTouchListener { _, event ->
+                gestureDetector.onTouchEvent(event)
+                false
             }
-        })
-        val touchListener = android.view.View.OnTouchListener { _, event ->
-            gestureDetector.onTouchEvent(event)
-            false
-        }
         binding.root.setOnTouchListener(touchListener)
-        binding.playbackLyrics?.addOnItemTouchListener(object : RecyclerView.SimpleOnItemTouchListener() {
-            override fun onInterceptTouchEvent(rv: RecyclerView, e: MotionEvent): Boolean {
-                gestureDetector.onTouchEvent(e)
-                return false
+        binding.playbackLyrics?.addOnItemTouchListener(
+            object : RecyclerView.SimpleOnItemTouchListener() {
+                override fun onInterceptTouchEvent(rv: RecyclerView, e: MotionEvent): Boolean {
+                    gestureDetector.onTouchEvent(e)
+                    return false
+                }
+
+                override fun onTouchEvent(rv: RecyclerView, e: MotionEvent) {
+                    gestureDetector.onTouchEvent(e)
+                }
             }
-            override fun onTouchEvent(rv: RecyclerView, e: MotionEvent) {
-                gestureDetector.onTouchEvent(e)
-            }
-        })
+        )
     }
 
     override fun onSeekConfirmed(positionDs: Long) {

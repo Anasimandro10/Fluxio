@@ -17,13 +17,11 @@
  */
 package org.oxycblt.auxio.playback.ui.stepper
 
-import android.animation.ValueAnimator
 import android.content.Context
 import android.provider.Settings
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.widget.LinearLayout
-import androidx.core.animation.addListener
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.databinding.PlayerFastSeekSecondsViewBinding
 
