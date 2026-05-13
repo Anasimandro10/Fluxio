@@ -19,6 +19,7 @@
 
         <!-- ── Backgrounds ── -->
         <item name="android:colorBackground">@color/fluxio_bg</item>
+        <item name="android:windowBackground">@color/fluxio_bg</item>
         <item name="colorOnBackground">@color/fluxio_text1</item>
 
         <!-- ── Surfaces ── -->

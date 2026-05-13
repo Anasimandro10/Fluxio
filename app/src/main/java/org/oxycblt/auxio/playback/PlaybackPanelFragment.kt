@@ -24,6 +24,7 @@ import android.media.audiofx.AudioEffect
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
+import android.view.MotionEvent
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import androidx.activity.result.ActivityResultLauncher
@@ -56,6 +57,7 @@ import org.oxycblt.auxio.ui.ViewBindingFragment
 import org.oxycblt.auxio.util.collectImmediately
 import org.oxycblt.auxio.util.showToast
 import org.oxycblt.auxio.util.systemBarInsetsCompat
+import org.oxycblt.auxio.util.getAttrColorCompat
 import org.oxycblt.musikr.MusicParent
 import org.oxycblt.musikr.Song
 import timber.log.Timber as L
@@ -82,6 +84,9 @@ class PlaybackPanelFragment :
     private var equalizerLauncher: ActivityResultLauncher<Intent>? = null
     private var lastCoverWidth = 0
     private var lyricsAdapter: LyricsAdapter? = null
+
+    enum class PlayerTab { NONE, QUEUE, LYRICS, AUDIO }
+    private var currentTab = PlayerTab.NONE
 
     override fun onCreateBinding(inflater: LayoutInflater) =
         FragmentPlaybackPanelBinding.inflate(inflater)
@@ -143,6 +148,13 @@ class PlaybackPanelFragment :
                 listModel.openMenu(R.menu.playback_song, it, PlaySong.ByItself)
             }
         }
+
+        binding.playbackTabQueue?.setOnClickListener { setTab(PlayerTab.QUEUE) }
+        binding.playbackTabLyrics?.setOnClickListener { setTab(PlayerTab.LYRICS) }
+        binding.playbackTabAudio?.setOnClickListener { setTab(PlayerTab.AUDIO) }
+
+        setupGestures(binding)
+        updateTabUI()
 
         lyricsAdapter = LyricsAdapter()
         binding.playbackLyrics?.adapter = lyricsAdapter
@@ -215,6 +227,96 @@ class PlaybackPanelFragment :
         return false
     }
 
+    private fun setTab(tab: PlayerTab) {
+        currentTab = if (currentTab == tab) PlayerTab.NONE else tab
+        updateTabUI()
+    }
+
+    private fun shiftTab(direction: Int) {
+        val tabs = arrayOf(PlayerTab.QUEUE, PlayerTab.LYRICS, PlayerTab.AUDIO)
+        val currentIndex = tabs.indexOf(currentTab)
+        if (currentIndex != -1) {
+            val nextIndex = (currentIndex + direction + tabs.size) % tabs.size
+            setTab(tabs[nextIndex])
+        } else {
+            setTab(if (direction > 0) PlayerTab.QUEUE else PlayerTab.AUDIO)
+        }
+    }
+
+    private fun updateTabUI() {
+        val b = binding ?: return
+        val context = requireContext()
+        val activeColor = context.getAttrColorCompat(com.google.android.material.R.attr.colorPrimary).defaultColor
+        val inactiveColor = context.getAttrColorCompat(android.R.attr.textColorSecondary).defaultColor
+
+        fun updateTextView(tv: android.widget.TextView?, tab: PlayerTab) {
+            if (tv == null) return
+            if (currentTab == tab) {
+                tv.setTextColor(activeColor)
+                tv.paintFlags = tv.paintFlags or android.graphics.Paint.UNDERLINE_TEXT_FLAG
+            } else {
+                tv.setTextColor(inactiveColor)
+                tv.paintFlags = tv.paintFlags and android.graphics.Paint.UNDERLINE_TEXT_FLAG.inv()
+            }
+        }
+
+        updateTextView(b.playbackTabQueue, PlayerTab.QUEUE)
+        updateTextView(b.playbackTabLyrics, PlayerTab.LYRICS)
+        updateTextView(b.playbackTabAudio, PlayerTab.AUDIO)
+
+        val showMain = currentTab == PlayerTab.NONE
+        b.playbackCover.isVisible = showMain
+        b.playbackFastSeekOverlay?.isVisible = showMain
+        b.playbackInfoContainer.isVisible = showMain
+        b.playbackSeekBar?.isVisible = showMain
+        b.playbackControlsContainer.isVisible = showMain
+        b.playbackSecondaryControls?.isVisible = showMain
+
+        b.playbackLyrics?.isVisible = currentTab == PlayerTab.LYRICS
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setupGestures(binding: FragmentPlaybackPanelBinding) {
+        val gestureDetector = android.view.GestureDetector(requireContext(), object : android.view.GestureDetector.SimpleOnGestureListener() {
+            private val SWIPE_THRESHOLD = 100
+            private val SWIPE_VELOCITY_THRESHOLD = 100
+
+            override fun onFling(
+                e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float
+            ): Boolean {
+                if (e1 == null) return false
+                val diffY = e2.y - e1.y
+                val diffX = e2.x - e1.x
+                if (Math.abs(diffX) > Math.abs(diffY)) {
+                    if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                        if (diffX > 0) shiftTab(-1) else shiftTab(1)
+                        return true
+                    }
+                } else if (diffY > 0 && Math.abs(diffY) > SWIPE_THRESHOLD && Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD) {
+                    if (currentTab != PlayerTab.NONE) {
+                        setTab(PlayerTab.NONE)
+                        return true
+                    }
+                }
+                return false
+            }
+        })
+        val touchListener = android.view.View.OnTouchListener { _, event ->
+            gestureDetector.onTouchEvent(event)
+            false
+        }
+        binding.root.setOnTouchListener(touchListener)
+        binding.playbackLyrics?.addOnItemTouchListener(object : RecyclerView.SimpleOnItemTouchListener() {
+            override fun onInterceptTouchEvent(rv: RecyclerView, e: MotionEvent): Boolean {
+                gestureDetector.onTouchEvent(e)
+                return false
+            }
+            override fun onTouchEvent(rv: RecyclerView, e: MotionEvent) {
+                gestureDetector.onTouchEvent(e)
+            }
+        })
+    }
+
     override fun onSeekConfirmed(positionDs: Long) {
         playbackModel.seekTo(positionDs)
     }
@@ -244,6 +346,7 @@ class PlaybackPanelFragment :
     private fun updateRepeat(repeatMode: RepeatMode) {
         val repeatButton = requireBinding().playbackRepeat
         repeatButton.isChecked = repeatMode != RepeatMode.NONE
+        repeatButton.isActivated = repeatMode != RepeatMode.NONE
         repeatButton.setIconResource(repeatMode.icon)
     }
 
@@ -254,6 +357,7 @@ class PlaybackPanelFragment :
 
     private fun updateShuffled(isShuffled: Boolean) {
         requireBinding().playbackShuffle.isChecked = isShuffled
+        requireBinding().playbackShuffle.isActivated = isShuffled
     }
 
     /** Shows the lyrics list when lyrics are available, hides it otherwise. */

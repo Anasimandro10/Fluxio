@@ -211,7 +211,7 @@ class PlayerFastSeekOverlay(context: Context, attrs: AttributeSet?) :
                 leftSecondsView
                     .animate()
                     .alpha(1f)
-                    .setDuration(200)
+                    .setDuration(150)
                     .withEndAction { leftIsAnimatingIn = false }
                     .start()
                 leftCircleClipTapView.animate().alpha(1f).setDuration(200).start()
@@ -250,7 +250,7 @@ class PlayerFastSeekOverlay(context: Context, attrs: AttributeSet?) :
                 rightSecondsView
                     .animate()
                     .alpha(1f)
-                    .setDuration(200)
+                    .setDuration(150)
                     .withEndAction { rightIsAnimatingIn = false }
                     .start()
                 rightCircleClipTapView.animate().alpha(1f).setDuration(200).start()

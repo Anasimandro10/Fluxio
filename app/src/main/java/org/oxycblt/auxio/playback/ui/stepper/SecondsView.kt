@@ -34,14 +34,6 @@ class SecondsView(context: Context, attrs: AttributeSet?) : LinearLayout(context
     }
 
     var cycleDuration: Long = ICON_ANIMATION_DURATION
-        set(value) {
-            firstAnimator.duration = value / 5
-            secondAnimator.duration = value / 5
-            thirdAnimator.duration = value / 5
-            fourthAnimator.duration = value / 5
-            fifthAnimator.duration = value / 5
-            field = value
-        }
 
     var seconds: Int = 0
         set(value) {
@@ -66,112 +58,14 @@ class SecondsView(context: Context, attrs: AttributeSet?) : LinearLayout(context
     }
 
     fun setForwarding(isForward: Boolean) {
-        binding.triangleContainer.rotation = if (isForward) 0f else 180f
+        // no-op, design removed arrows
     }
 
     fun startAnimation() {
-        stopAnimation()
-
-        if (animationsEnabled) {
-            firstAnimator.start()
-        } else {
-            // If no animations are enable show the arrow(s) without animation
-            showWithoutAnimation()
-        }
+        // no-op, design removed arrows
     }
 
     fun stopAnimation() {
-        firstAnimator.cancel()
-        secondAnimator.cancel()
-        thirdAnimator.cancel()
-        fourthAnimator.cancel()
-        fifthAnimator.cancel()
-
-        reset()
-    }
-
-    private fun reset() {
-        binding.icon1.alpha = 0f
-        binding.icon2.alpha = 0f
-        binding.icon3.alpha = 0f
-    }
-
-    private fun showWithoutAnimation() {
-        binding.icon1.alpha = 1f
-        binding.icon2.alpha = 1f
-        binding.icon3.alpha = 1f
-    }
-
-    private val firstAnimator: ValueAnimator =
-        CustomValueAnimator(
-            {
-                binding.icon1.alpha = 0f
-                binding.icon2.alpha = 0f
-                binding.icon3.alpha = 0f
-            },
-            { binding.icon1.alpha = it },
-            { secondAnimator.start() },
-        )
-
-    private val secondAnimator: ValueAnimator =
-        CustomValueAnimator(
-            {
-                binding.icon1.alpha = 1f
-                binding.icon2.alpha = 0f
-                binding.icon3.alpha = 0f
-            },
-            { binding.icon2.alpha = it },
-            { thirdAnimator.start() },
-        )
-
-    private val thirdAnimator: ValueAnimator =
-        CustomValueAnimator(
-            {
-                binding.icon1.alpha = 1f
-                binding.icon2.alpha = 1f
-                binding.icon3.alpha = 0f
-            },
-            {
-                binding.icon1.alpha = 1f - binding.icon3.alpha
-                binding.icon3.alpha = it
-            },
-            { fourthAnimator.start() },
-        )
-
-    private val fourthAnimator: ValueAnimator =
-        CustomValueAnimator(
-            {
-                binding.icon1.alpha = 0f
-                binding.icon2.alpha = 1f
-                binding.icon3.alpha = 1f
-            },
-            { binding.icon2.alpha = 1f - it },
-            { fifthAnimator.start() },
-        )
-
-    private val fifthAnimator: ValueAnimator =
-        CustomValueAnimator(
-            {
-                binding.icon1.alpha = 0f
-                binding.icon2.alpha = 0f
-                binding.icon3.alpha = 1f
-            },
-            { binding.icon3.alpha = 1f - it },
-            { firstAnimator.start() },
-        )
-
-    private inner class CustomValueAnimator(
-        start: () -> Unit,
-        update: (value: Float) -> Unit,
-        end: () -> Unit,
-    ) : ValueAnimator() {
-
-        init {
-            duration = cycleDuration / 5
-            setFloatValues(0f, 1f)
-
-            addUpdateListener { update(it.animatedValue as Float) }
-            addListener(onStart = { start() }, onEnd = { end() })
-        }
+        // no-op, design removed arrows
     }
 }

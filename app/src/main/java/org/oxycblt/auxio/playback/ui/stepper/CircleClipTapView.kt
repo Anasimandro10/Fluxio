@@ -43,7 +43,9 @@ class CircleClipTapView(context: Context?, attrs: AttributeSet) : View(context, 
         backgroundPaint.apply {
             style = Paint.Style.FILL
             isAntiAlias = true
-            color = 0x30000000
+            val typedValue = android.util.TypedValue()
+            context.theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, typedValue, true)
+            color = androidx.core.graphics.ColorUtils.setAlphaComponent(typedValue.data, (255 * 0.15).toInt())
         }
 
         val dm = context.resources.displayMetrics

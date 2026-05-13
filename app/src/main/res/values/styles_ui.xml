@@ -486,11 +486,13 @@
     <style name="Widget.Fluxio.Button.Playback.PlayPause.Primary" parent="Widget.Fluxio.Button.Icon.Base">
         <item name="android:checkable">true</item>
         <item name="iconSize">@dimen/size_icon_large</item>
+        <item name="iconTint">?attr/colorOnSurface</item>
     </style>
 
     <!-- Full-player prev/next: flat, white icon, no container -->
     <style name="Widget.Fluxio.Button.Playback.Skip.Primary" parent="Widget.Fluxio.Button.Icon.Base">
         <item name="iconSize">@dimen/size_icon_medium</item>
+        <item name="iconTint">?attr/colorOnSurface</item>
     </style>
 
 </resources>
