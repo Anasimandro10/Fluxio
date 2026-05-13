@@ -252,8 +252,7 @@ class PlaybackPanelFragment :
     private fun updateTabUI() {
         val b = binding ?: return
         val context = requireContext()
-        val activeColor =
-            context.getAttrColorCompat(android.R.attr.colorPrimary).defaultColor
+        val activeColor = context.getAttrColorCompat(android.R.attr.colorPrimary).defaultColor
         val inactiveColor =
             context.getAttrColorCompat(android.R.attr.textColorSecondary).defaultColor
 
