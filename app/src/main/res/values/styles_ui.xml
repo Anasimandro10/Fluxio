@@ -440,17 +440,57 @@
 
     <style name="Widget.Fluxio.Button.Playback.More" parent="Widget.Fluxio.Button.Icon.Base" />
 
-    <style name="Widget.Fluxio.Button.Playback.Toggle" parent="Widget.Material3Expressive.Button.IconButton.Outlined">
+    <!-- Toggle (shuffle / repeat / favourite): flat icon, no container, tint from sel_checkable_icon -->
+    <style name="Widget.Fluxio.Button.Playback.Toggle" parent="Widget.Fluxio.Button.Icon.Base">
         <item name="android:checkable">true</item>
         <item name="toggleCheckedStateOnClick">false</item>
         <item name="iconTint">@color/sel_checkable_icon</item>
-        <item name="strokeColor">@color/sel_checkable_outline</item>
-        <item name="backgroundTint">?attr/colorSurfaceContainerLow</item>
     </style>
 
-    <style name="Widget.Fluxio.Button.Playback.Skip" parent="Widget.Material3Expressive.Button.IconButton.Tonal" />
+    <style name="Widget.Fluxio.Button.Playback.Skip" parent="Widget.Fluxio.Button.Icon.Base" />
 
+    <!-- Compact-layout play button: tonal (visible container in 5-button row) -->
     <style name="Widget.Fluxio.Button.Playback.PlayPause" parent="Widget.Material3Expressive.Button.IconButton.Tonal">
         <item name="android:checkable">true</item>
     </style>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         FLUXIO — Artwork ShapeAppearances
+         Exact radii per spec: 6 / 10 / 14 dp
+    ═══════════════════════════════════════════════════════════ -->
+
+    <!-- List items, queue rows: 6dp -->
+    <style name="ShapeAppearance.Fluxio.Artwork.List" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/radius_artwork_list</item>
+    </style>
+
+    <!-- Grid cells, collage, add-to-playlist rows: 10dp -->
+    <style name="ShapeAppearance.Fluxio.Artwork.Grid" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/radius_artwork_grid</item>
+    </style>
+
+    <!-- Large artwork in player: exactly 14dp (M3 Corner.Large = 16dp — wrong) -->
+    <style name="ShapeAppearance.Fluxio.Artwork.Player" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/radius_artwork_player</item>
+    </style>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         FLUXIO — Full-screen player button variants
+         Icon-only, no background (spec: play btn sin fondo)
+    ═══════════════════════════════════════════════════════════ -->
+
+    <!-- Full-player play/pause: icon-only, no container -->
+    <style name="Widget.Fluxio.Button.Playback.PlayPause.Primary" parent="Widget.Fluxio.Button.Icon.Base">
+        <item name="android:checkable">true</item>
+        <item name="iconSize">@dimen/size_icon_large</item>
+    </style>
+
+    <!-- Full-player prev/next: flat, white icon, no container -->
+    <style name="Widget.Fluxio.Button.Playback.Skip.Primary" parent="Widget.Fluxio.Button.Icon.Base">
+        <item name="iconSize">@dimen/size_icon_medium</item>
+    </style>
+
 </resources>

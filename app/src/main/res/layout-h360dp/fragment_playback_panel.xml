@@ -31,7 +31,7 @@
         android:layout_marginTop="@dimen/spacing_md"
         app:enablePlaybackIndicator="false"
         app:enableSelectionBadge="false"
-        app:shapeAppearance="@style/ShapeAppearance.Material3.Corner.Large"
+        app:shapeAppearance="@style/ShapeAppearance.Fluxio.Artwork.Player"
         app:layout_constraintDimensionRatio="1:1"
         app:layout_constraintBottom_toTopOf="@+id/playback_seek_bar"
         app:layout_constraintStart_toStartOf="parent"

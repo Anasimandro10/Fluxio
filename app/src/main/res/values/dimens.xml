@@ -204,7 +204,7 @@
     ═══════════════════════════════════════════════════════════ -->
 
     <dimen name="slider_track_height">4dp</dimen>
-    <dimen name="slider_thumb_height">24dp</dimen>
+    <dimen name="slider_thumb_height">12dp</dimen>
     <dimen name="progress_stable_height">10.5dp</dimen>
     <dimen name="progress_amplitude">3dp</dimen>
     <dimen name="progress_wavelength">40dp</dimen>

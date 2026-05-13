@@ -143,6 +143,9 @@
     <string name="lbl_shuffle">Shuffle</string>
 
     <string name="lbl_queue">Queue</string>
+    <string name="lbl_tab_queue">QUEUE</string>
+    <string name="lbl_tab_lyrics">LYRICS</string>
+    <string name="lbl_tab_audio">AUDIO</string>
     <string name="lbl_play_next">Play next</string>
     <string name="lbl_queue_add">Add to queue</string>
 
