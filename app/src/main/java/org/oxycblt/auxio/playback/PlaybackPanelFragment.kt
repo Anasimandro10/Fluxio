@@ -253,7 +253,7 @@ class PlaybackPanelFragment :
         val b = binding ?: return
         val context = requireContext()
         val activeColor =
-            context.getAttrColorCompat(com.google.android.material.R.attr.colorPrimary).defaultColor
+            context.getAttrColorCompat(android.R.attr.colorPrimary).defaultColor
         val inactiveColor =
             context.getAttrColorCompat(android.R.attr.textColorSecondary).defaultColor
 
