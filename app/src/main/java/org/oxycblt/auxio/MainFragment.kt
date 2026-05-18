@@ -553,7 +553,7 @@ class MainFragment :
     }
 
     private class SheetBackPressedCallback(
-        private val playbackSheetBehavior: PlaybackBottomSheetBehavior<*>,
+        private val playbackSheetBehavior: PlaybackBottomSheetBehavior<*>
     ) : OnBackPressedCallback(false) {
         override fun handleOnBackStarted(backEvent: BackEventCompat) {
             if (playbackSheetShown()) {
