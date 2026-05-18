@@ -209,7 +209,8 @@ data class Sort(val mode: Mode, val direction: Direction) {
                 songs.sortBy { it.album.name.sortStr() }
                 songs.sortByDescending { it.album.dates }
                 when (direction) {
-                    Direction.ASCENDING -> songs.sortBy { it.artists.firstOrNull()?.name?.sortStr() }
+                    Direction.ASCENDING ->
+                        songs.sortBy { it.artists.firstOrNull()?.name?.sortStr() }
                     Direction.DESCENDING ->
                         songs.sortByDescending { it.artists.firstOrNull()?.name?.sortStr() }
                 }
@@ -219,7 +220,8 @@ data class Sort(val mode: Mode, val direction: Direction) {
                 albums.sortBy { it.name.sortStr() }
                 albums.sortByDescending { it.dates }
                 when (direction) {
-                    Direction.ASCENDING -> albums.sortBy { it.artists.firstOrNull()?.name?.sortStr() }
+                    Direction.ASCENDING ->
+                        albums.sortBy { it.artists.firstOrNull()?.name?.sortStr() }
                     Direction.DESCENDING ->
                         albums.sortByDescending { it.artists.firstOrNull()?.name?.sortStr() }
                 }

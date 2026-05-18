@@ -17,8 +17,6 @@
  */
 package org.oxycblt.auxio.playback
 
-import org.oxycblt.auxio.playback.equalizer.*
-
 import android.os.Bundle
 import android.text.InputType
 import android.view.Gravity
@@ -45,6 +43,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.databinding.FragmentAudioTabBinding
+import org.oxycblt.auxio.playback.equalizer.*
 import org.oxycblt.auxio.settings.categories.DeviceProfileDialog
 import org.oxycblt.auxio.ui.ViewBindingFragment
 

@@ -62,7 +62,6 @@ import org.oxycblt.auxio.util.collect
 import org.oxycblt.auxio.util.collectImmediately
 import org.oxycblt.auxio.util.context
 import org.oxycblt.auxio.util.coordinatorLayoutBehavior
-import org.oxycblt.auxio.util.getAttrColorCompat
 import org.oxycblt.auxio.util.getDimen
 import org.oxycblt.auxio.util.lazyReflectedMethod
 import org.oxycblt.auxio.util.navigateSafe
@@ -114,7 +113,6 @@ class MainFragment :
         playbackSheetBehavior.uiSettings = uiSettings
         playbackSheetBehavior.makeBackgroundDrawable(requireContext())
 
-
         elevationNormal = binding.context.getDimen(MR.dimen.m3_sys_elevation_level1)
 
         // Currently all back press callbacks are handled in MainFragment, as it's not guaranteed
@@ -151,8 +149,6 @@ class MainFragment :
             binding.queueSheet,
             context.getString(R.string.lbl_queue),
         )
-
-
 
         normalCornerSize = playbackSheetBehavior.sheetBackgroundDrawable.topLeftCornerResolvedSize
         maxScaleXDistance =
