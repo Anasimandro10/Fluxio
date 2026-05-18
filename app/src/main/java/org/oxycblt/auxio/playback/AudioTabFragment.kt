@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2026 Fluxio Project
- * EqualizerFragment.kt is part of Fluxio.
+ * AudioTabFragment.kt is part of Fluxio.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.oxycblt.auxio.playback.equalizer
+package org.oxycblt.auxio.playback
+
+import org.oxycblt.auxio.playback.equalizer.*
+import org.oxycblt.auxio.databinding.FragmentAudioTabBinding
 
 import android.os.Bundle
 import android.text.InputType
@@ -42,21 +45,21 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.oxycblt.auxio.R
-import org.oxycblt.auxio.databinding.FragmentEqualizerBinding
+import org.oxycblt.auxio.databinding.FragmentAudioTabBinding
 import org.oxycblt.auxio.settings.categories.DeviceProfileDialog
 import org.oxycblt.auxio.ui.ViewBindingFragment
 
 @AndroidEntryPoint
-class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
+class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
 
     private val viewModel: EqualizerViewModel by viewModels()
     private val seekBars = arrayOfNulls<SeekBar>(10)
     private var ignoreSpinner = false
 
     override fun onCreateBinding(inflater: LayoutInflater) =
-        FragmentEqualizerBinding.inflate(inflater)
+        FragmentAudioTabBinding.inflate(inflater)
 
-    override fun onBindingCreated(binding: FragmentEqualizerBinding, savedInstanceState: Bundle?) {
+    override fun onBindingCreated(binding: FragmentAudioTabBinding, savedInstanceState: Bundle?) {
         ViewCompat.setOnApplyWindowInsetsListener(binding.eqScroll) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.updatePadding(top = bars.top)
@@ -92,13 +95,13 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         }
     }
 
-    override fun onDestroyBinding(binding: FragmentEqualizerBinding) {
+    override fun onDestroyBinding(binding: FragmentAudioTabBinding) {
         seekBars.fill(null)
     }
 
     // ---- Build ----
 
-    private fun buildBandViews(binding: FragmentEqualizerBinding) {
+    private fun buildBandViews(binding: FragmentAudioTabBinding) {
         val density = resources.displayMetrics.density
         val trackLenPx = (172 * density + 0.5f).toInt()
         val thumbSizePx = (32 * density + 0.5f).toInt()
@@ -164,7 +167,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
 
     // ---- Setup ----
 
-    private fun setupPresetSpinner(binding: FragmentEqualizerBinding) {
+    private fun setupPresetSpinner(binding: FragmentAudioTabBinding) {
         val names = EqualizerSettings.PRESET_NAMES + listOf(getString(R.string.lbl_eq_custom))
         val adapter =
             ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, names).also {
@@ -192,19 +195,19 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
             }
     }
 
-    private fun setupSwitch(binding: FragmentEqualizerBinding) {
+    private fun setupSwitch(binding: FragmentAudioTabBinding) {
         binding.eqSwitch.setOnCheckedChangeListener { _, checked -> viewModel.setEnabled(checked) }
     }
 
     /** Opens [AutoEqBrowserDialog] when the user taps Browse Presets. */
-    private fun setupAutoEqBrowse(binding: FragmentEqualizerBinding) {
+    private fun setupAutoEqBrowse(binding: FragmentAudioTabBinding) {
         binding.eqBtnAutoeqBrowse.setOnClickListener {
             AutoEqBrowserDialog().show(childFragmentManager, AutoEqBrowserDialog.TAG)
         }
     }
 
     /** Opens [DeviceProfileDialog] from the shortcut button inside the EQ screen. */
-    private fun setupDeviceProfilesButton(binding: FragmentEqualizerBinding) {
+    private fun setupDeviceProfilesButton(binding: FragmentAudioTabBinding) {
         binding.eqBtnDeviceProfiles.setOnClickListener {
             DeviceProfileDialog().show(childFragmentManager, DeviceProfileDialog.TAG)
         }
@@ -213,7 +216,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
     /**
      * Wires the Save button to show a name dialog; chips are rendered in [onListeningModesChanged].
      */
-    private fun setupListeningModes(binding: FragmentEqualizerBinding) {
+    private fun setupListeningModes(binding: FragmentAudioTabBinding) {
         binding.eqBtnSaveMode.setOnClickListener {
             if (!viewModel.canSaveListeningMode()) return@setOnClickListener
             showSaveModeDialog()
@@ -222,7 +225,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
 
     // ---- State handlers ----
 
-    private fun onEnabledChanged(binding: FragmentEqualizerBinding, enabled: Boolean) {
+    private fun onEnabledChanged(binding: FragmentAudioTabBinding, enabled: Boolean) {
         binding.eqSwitch.isChecked = enabled
         seekBars.forEach { it?.isEnabled = enabled }
         binding.eqPresetSpinner.isEnabled = enabled
@@ -236,7 +239,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
         }
     }
 
-    private fun onPresetChanged(binding: FragmentEqualizerBinding, preset: Int) {
+    private fun onPresetChanged(binding: FragmentAudioTabBinding, preset: Int) {
         ignoreSpinner = true
         val pos =
             if (preset == EqualizerSettings.PRESET_CUSTOM) EqualizerSettings.PRESET_NAMES.size
@@ -248,7 +251,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
     }
 
     private fun onProfileLabelChanged(
-        binding: FragmentEqualizerBinding,
+        binding: FragmentAudioTabBinding,
         name: String?,
         modified: Boolean,
     ) {
@@ -263,7 +266,7 @@ class EqualizerFragment : ViewBindingFragment<FragmentEqualizerBinding>() {
     }
 
     private fun onListeningModesChanged(
-        binding: FragmentEqualizerBinding,
+        binding: FragmentAudioTabBinding,
         modes: List<ListeningMode>,
     ) {
         // Update Save button: disabled at capacity so the user never hits a silent failure.

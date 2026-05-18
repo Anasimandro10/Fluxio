@@ -54,7 +54,7 @@ import org.oxycblt.auxio.music.MusicViewModel
 import org.oxycblt.auxio.playback.OpenPanel
 import org.oxycblt.auxio.playback.PlaybackBottomSheetBehavior
 import org.oxycblt.auxio.playback.PlaybackViewModel
-import org.oxycblt.auxio.playback.queue.QueueBottomSheetBehavior
+
 import org.oxycblt.auxio.ui.DialogAwareNavigationListener
 import org.oxycblt.auxio.ui.UISettings
 import org.oxycblt.auxio.ui.ViewBindingFragment
@@ -113,9 +113,7 @@ class MainFragment :
             binding.playbackSheet.coordinatorLayoutBehavior as PlaybackBottomSheetBehavior
         playbackSheetBehavior.uiSettings = uiSettings
         playbackSheetBehavior.makeBackgroundDrawable(requireContext())
-        val queueSheetBehavior =
-            binding.queueSheet.coordinatorLayoutBehavior as QueueBottomSheetBehavior?
-        queueSheetBehavior?.uiSettings = uiSettings
+
 
         elevationNormal = binding.context.getDimen(MR.dimen.m3_sys_elevation_level1)
 
@@ -125,7 +123,6 @@ class MainFragment :
         sheetBackCallback =
             SheetBackPressedCallback(
                 playbackSheetBehavior = playbackSheetBehavior,
-                queueSheetBehavior = queueSheetBehavior,
             )
         val detailBackCallback =
             DetailBackPressedCallback(detailModel).also { detailBackCallback = it }
@@ -153,30 +150,7 @@ class MainFragment :
             context.getString(R.string.lbl_queue),
         )
 
-        if (queueSheetBehavior != null) {
-            // In portrait mode, set up click listeners on the stacked sheets.
-            L.d("Configuring stacked bottom sheets")
-            unlikelyToBeNull(binding.queueHandleWrapper).setOnClickListener {
-                playbackModel.openQueue()
-            }
-        } else {
-            // Dual-pane mode, manually style the static queue sheet.
-            L.d("Configuring dual-pane bottom sheet")
-            binding.queueSheet.apply {
-                // Emulate the elevated bottom sheet style.
-                background =
-                    MaterialShapeDrawable.createWithElevationOverlay(context).apply {
-                        shapeAppearanceModel =
-                            ShapeAppearanceModel.builder(
-                                    context,
-                                    MR.style.ShapeAppearance_Material3_Corner_ExtraLarge,
-                                    MR.style.ShapeAppearanceOverlay_Material3_Corner_Top,
-                                )
-                                .build()
-                        fillColor = context.getAttrColorCompat(MR.attr.colorSurfaceContainerHigh)
-                    }
-            }
-        }
+
 
         normalCornerSize = playbackSheetBehavior.sheetBackgroundDrawable.topLeftCornerResolvedSize
         maxScaleXDistance =

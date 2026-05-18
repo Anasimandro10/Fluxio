@@ -292,18 +292,13 @@
         rellenar el espacio entre la barra de tabs y el borde inferior de pantalla.
         Cuando está gone ocupa 0dp y no desplaza ningún elemento.
     -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/playback_lyrics"
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/playback_pager"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:clipToPadding="false"
-        android:paddingHorizontal="@dimen/spacing_md"
-        android:paddingBottom="@dimen/spacing_lg"
-        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@+id/playback_tab_bar"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        tools:visibility="visible" />
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

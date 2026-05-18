@@ -92,50 +92,6 @@
             android:layout_height="match_parent"
             app:layout_behavior="org.oxycblt.auxio.ui.BottomSheetContentBehavior" />
 
-        <LinearLayout
-            android:id="@+id/queue_sheet"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clickable="true"
-            android:elevation="1dp"
-            android:focusable="true"
-            android:orientation="vertical"
-            app:layout_behavior="org.oxycblt.auxio.playback.queue.QueueBottomSheetBehavior">
-
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/queue_handle_wrapper"
-                android:layout_width="match_parent"
-                android:layout_height="@dimen/size_touchable_large"
-                android:contentDescription="@string/desc_queue_bar">
-
-                <com.google.android.material.bottomsheet.BottomSheetDragHandleView
-                    android:id="@+id/queue_handle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingBottom="@dimen/spacing_medium"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <TextView
-                    android:id="@+id/queue_title"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/lbl_queue"
-                    android:textAppearance="?attr/textAppearanceLabelLargeEmphasized"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    app:layout_constraintBottom_toBottomOf="@+id/queue_handle"
-                    app:layout_constraintEnd_toEndOf="@+id/queue_handle"
-                    app:layout_constraintStart_toStartOf="parent" />
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
-
-            <androidx.fragment.app.FragmentContainerView
-                android:id="@+id/queue_fragment"
-                android:name="org.oxycblt.auxio.playback.queue.QueueFragment"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-
-        </LinearLayout>
 
         <View
             android:id="@+id/sheet_scrim"

@@ -41,7 +41,7 @@ import org.oxycblt.auxio.ui.ViewBindingBottomSheetDialogFragment
 @AndroidEntryPoint
 class AutoEqBrowserDialog : ViewBindingBottomSheetDialogFragment<DialogAutoeqBrowserBinding>() {
 
-    // ViewModel owned by EqualizerFragment — shared so applyAutoEqProfile reaches the EQ.
+    // ViewModel owned by AudioTabFragment — shared so applyAutoEqProfile reaches the EQ.
     private val viewModel: EqualizerViewModel by viewModels({ requireParentFragment() })
 
     private lateinit var resultsAdapter: AutoEqResultAdapter

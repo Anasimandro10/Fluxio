@@ -41,7 +41,9 @@ import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.databinding.FragmentPlaybackPanelBinding
-import org.oxycblt.auxio.databinding.ItemLyricLineBinding
+import androidx.fragment.app.Fragment
+import androidx.viewpager2.adapter.FragmentStateAdapter
+import androidx.viewpager2.widget.ViewPager2
 import org.oxycblt.auxio.detail.DetailViewModel
 import org.oxycblt.auxio.list.ListViewModel
 import org.oxycblt.auxio.lyrics.LrcLine
@@ -83,7 +85,6 @@ class PlaybackPanelFragment :
 
     private var equalizerLauncher: ActivityResultLauncher<Intent>? = null
     private var lastCoverWidth = 0
-    private var lyricsAdapter: LyricsAdapter? = null
 
     enum class PlayerTab {
         NONE,
@@ -162,9 +163,32 @@ class PlaybackPanelFragment :
         setupGestures(binding)
         updateTabUI()
 
-        lyricsAdapter = LyricsAdapter()
-        binding.playbackLyrics?.adapter = lyricsAdapter
-        binding.playbackLyrics?.layoutManager = LinearLayoutManager(requireContext())
+        binding.playbackPager?.apply {
+            adapter = object : FragmentStateAdapter(this@PlaybackPanelFragment) {
+                override fun getItemCount() = 3
+                override fun createFragment(position: Int): Fragment {
+                    return when (position) {
+                        0 -> org.oxycblt.auxio.playback.queue.QueueFragment()
+                        1 -> LyricsTabFragment()
+                        2 -> AudioTabFragment()
+                        else -> throw IllegalArgumentException()
+                    }
+                }
+            }
+            registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+                override fun onPageSelected(position: Int) {
+                    val tab = when (position) {
+                        0 -> PlayerTab.QUEUE
+                        1 -> PlayerTab.LYRICS
+                        else -> PlayerTab.AUDIO
+                    }
+                    if (currentTab != tab) {
+                        currentTab = tab
+                        updateTabUI()
+                    }
+                }
+            })
+        }
 
         collectImmediately(playbackModel.song, ::updateSong)
         collectImmediately(playbackModel.parent, ::updateParent)
@@ -172,9 +196,6 @@ class PlaybackPanelFragment :
         collectImmediately(playbackModel.repeatMode, ::updateRepeat)
         collectImmediately(playbackModel.isPlaying, ::updatePlaying)
         collectImmediately(playbackModel.isShuffled, ::updateShuffled)
-        collectImmediately(lyricsModel.lines, ::updateLyrics)
-        collectImmediately(lyricsModel.isSynced, ::updateIsSynced)
-        collectImmediately(lyricsModel.currentLineIndex, ::updateCurrentLine)
     }
 
     override fun onStart() {
@@ -202,8 +223,7 @@ class PlaybackPanelFragment :
 
     override fun onDestroyBinding(binding: FragmentPlaybackPanelBinding) {
         equalizerLauncher = null
-        lyricsAdapter = null
-        binding.playbackLyrics?.adapter = null
+        binding.playbackPager?.adapter = null
         binding.playbackRepeat.clearPendingIcon()
         binding.playbackSong.isSelected = false
         binding.playbackArtist.isSelected = false
@@ -236,6 +256,18 @@ class PlaybackPanelFragment :
     private fun setTab(tab: PlayerTab) {
         currentTab = if (currentTab == tab) PlayerTab.NONE else tab
         updateTabUI()
+        val pager = binding?.playbackPager ?: return
+        if (currentTab != PlayerTab.NONE) {
+            val target = when (currentTab) {
+                PlayerTab.QUEUE -> 0
+                PlayerTab.LYRICS -> 1
+                PlayerTab.AUDIO -> 2
+                else -> 0
+            }
+            if (pager.currentItem != target) {
+                pager.setCurrentItem(target, true)
+            }
+        }
     }
 
     private fun shiftTab(direction: Int) {
@@ -279,7 +311,7 @@ class PlaybackPanelFragment :
         b.playbackControlsContainer.isVisible = showMain
         b.playbackSecondaryControls?.isVisible = showMain
 
-        b.playbackLyrics?.isVisible = currentTab == PlayerTab.LYRICS
+        b.playbackPager?.isVisible = currentTab != PlayerTab.NONE
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -328,18 +360,7 @@ class PlaybackPanelFragment :
                 false
             }
         binding.root.setOnTouchListener(touchListener)
-        binding.playbackLyrics?.addOnItemTouchListener(
-            object : RecyclerView.SimpleOnItemTouchListener() {
-                override fun onInterceptTouchEvent(rv: RecyclerView, e: MotionEvent): Boolean {
-                    gestureDetector.onTouchEvent(e)
-                    return false
-                }
 
-                override fun onTouchEvent(rv: RecyclerView, e: MotionEvent) {
-                    gestureDetector.onTouchEvent(e)
-                }
-            }
-        )
     }
 
     override fun onSeekConfirmed(positionDs: Long) {
@@ -385,31 +406,7 @@ class PlaybackPanelFragment :
         requireBinding().playbackShuffle.isActivated = isShuffled
     }
 
-    /** Shows the lyrics list when lyrics are available, hides it otherwise. */
-    private fun updateLyrics(lines: List<LrcLine>) {
-        requireBinding().playbackLyrics?.isVisible = lines.isNotEmpty()
-        lyricsAdapter?.submitList(lines)
-    }
 
-    /**
-     * Updates the adapter when the sync state changes. Plain-text lyrics show all lines at full
-     * opacity; synced lyrics dim inactive lines.
-     */
-    private fun updateIsSynced(isSynced: Boolean) {
-        lyricsAdapter?.setIsSynced(isSynced)
-    }
-
-    /** Scrolls to keep the active lyric line visible and highlights it. */
-    private fun updateCurrentLine(index: Int) {
-        val adapter = lyricsAdapter ?: return
-        val previousIndex = adapter.activeIndex
-        adapter.setActiveIndex(index)
-        // Only scroll when the active line actually changed.
-        // Scrolling on every emission interrupted manual scrolling by the user.
-        if (index >= 0 && index != previousIndex) {
-            requireBinding().playbackLyrics?.smoothScrollToPosition(index)
-        }
-    }
 
     private fun navigateToCurrentArtist() {
         playbackModel.song.value?.let(detailModel::showArtist)
@@ -441,63 +438,4 @@ class PlaybackPanelFragment :
         if (forward) playbackModel.stepForward() else playbackModel.stepBack()
     }
 
-    // -------------------------------------------------------------------------
-    // Inner adapter for the lyrics RecyclerView
-    // -------------------------------------------------------------------------
-
-    /** Adapter that renders a list of [LrcLine] items and highlights the active one. */
-    private class LyricsAdapter : ListAdapter<LrcLine, LyricsAdapter.ViewHolder>(LrcLineDiff) {
-
-        var activeIndex = -1
-            private set
-
-        private var isSynced = true
-
-        fun setActiveIndex(index: Int) {
-            val old = activeIndex
-            activeIndex = index
-            if (old >= 0) notifyItemChanged(old)
-            if (index >= 0) notifyItemChanged(index)
-        }
-
-        /** Called when lyrics change between synced and plain text. */
-        fun setIsSynced(synced: Boolean) {
-            isSynced = synced
-            notifyDataSetChanged()
-        }
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val binding =
-                ItemLyricLineBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-            return ViewHolder(binding)
-        }
-
-        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            holder.bind(getItem(position), isSynced && position == activeIndex, isSynced)
-        }
-
-        inner class ViewHolder(private val binding: ItemLyricLineBinding) :
-            RecyclerView.ViewHolder(binding.root) {
-
-            fun bind(line: LrcLine, isActive: Boolean, isSynced: Boolean) {
-                binding.lyricLine.text = line.text
-                // Plain text: all lines full opacity. Synced: dim inactive lines.
-                binding.lyricLine.alpha =
-                    when {
-                        !isSynced -> 1f
-                        isActive -> 1f
-                        else -> 0.35f
-                    }
-                binding.lyricLine.isSelected = isActive
-            }
-        }
-
-        private object LrcLineDiff : DiffUtil.ItemCallback<LrcLine>() {
-            // Use text as identity key so plain-text lines with startMs=0 are handled correctly
-            override fun areItemsTheSame(old: LrcLine, new: LrcLine) =
-                old.startMs == new.startMs && old.text == new.text
-
-            override fun areContentsTheSame(old: LrcLine, new: LrcLine) = old == new
-        }
-    }
 }

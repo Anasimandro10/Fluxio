@@ -445,6 +445,7 @@
         <item name="android:checkable">true</item>
         <item name="toggleCheckedStateOnClick">false</item>
         <item name="iconTint">@color/sel_checkable_icon</item>
+        <item name="backgroundTint">@android:color/transparent</item>
     </style>
 
     <style name="Widget.Fluxio.Button.Playback.Skip" parent="Widget.Fluxio.Button.Icon.Base" />
@@ -452,6 +453,7 @@
     <!-- Compact-layout play button: tonal (visible container in 5-button row) -->
     <style name="Widget.Fluxio.Button.Playback.PlayPause" parent="Widget.Material3Expressive.Button.IconButton.Tonal">
         <item name="android:checkable">true</item>
+        <item name="backgroundTint">@android:color/transparent</item>
     </style>
 
     <!-- ═══════════════════════════════════════════════════════════
@@ -487,6 +489,7 @@
         <item name="android:checkable">true</item>
         <item name="iconSize">@dimen/size_icon_large</item>
         <item name="iconTint">?attr/colorOnSurface</item>
+        <item name="backgroundTint">@android:color/transparent</item>
     </style>
 
     <!-- Full-player prev/next: flat, white icon, no container -->

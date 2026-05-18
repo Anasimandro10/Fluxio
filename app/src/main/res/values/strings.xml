@@ -578,4 +578,5 @@
     <string name="set_spatializer_open">Open system spatial audio settings</string>
     <string name="set_spatializer_desc">Configure spatial audio and head tracking in system settings</string>
 
+    <string name="lbl_no_lyrics">Sin letras disponibles</string>
 </resources>
