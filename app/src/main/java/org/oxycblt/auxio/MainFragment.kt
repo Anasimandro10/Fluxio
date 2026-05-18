@@ -32,8 +32,6 @@ import androidx.navigation.fragment.findNavController
 import com.google.android.material.R as MR
 import com.google.android.material.bottomsheet.BackportBottomSheetBehavior
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.material.shape.MaterialShapeDrawable
-import com.google.android.material.shape.ShapeAppearanceModel
 import com.google.android.material.transition.MaterialFadeThrough
 import com.leinardi.android.speeddial.SpeedDialActionItem
 import com.leinardi.android.speeddial.SpeedDialView
@@ -54,7 +52,6 @@ import org.oxycblt.auxio.music.MusicViewModel
 import org.oxycblt.auxio.playback.OpenPanel
 import org.oxycblt.auxio.playback.PlaybackBottomSheetBehavior
 import org.oxycblt.auxio.playback.PlaybackViewModel
-import org.oxycblt.auxio.playback.queue.QueueBottomSheetBehavior
 import org.oxycblt.auxio.ui.DialogAwareNavigationListener
 import org.oxycblt.auxio.ui.UISettings
 import org.oxycblt.auxio.ui.ViewBindingFragment
@@ -65,7 +62,6 @@ import org.oxycblt.auxio.util.coordinatorLayoutBehavior
 import org.oxycblt.auxio.util.getDimen
 import org.oxycblt.auxio.util.lazyReflectedMethod
 import org.oxycblt.auxio.util.navigateSafe
-import org.oxycblt.auxio.util.unlikelyToBeNull
 import org.oxycblt.musikr.Music
 import org.oxycblt.musikr.Song
 import timber.log.Timber as L
@@ -118,12 +114,7 @@ class MainFragment :
         // Currently all back press callbacks are handled in MainFragment, as it's not guaranteed
         // that instantiating these callbacks in their respective fragments would result in the
         // correct order.
-        sheetBackCallback =
-            SheetBackPressedCallback(
-                playbackSheetBehavior = playbackSheetBehavior,
-                queueSheetBehavior =
-                    binding.queueSheet.coordinatorLayoutBehavior as QueueBottomSheetBehavior?,
-            )
+        sheetBackCallback = SheetBackPressedCallback(playbackSheetBehavior)
         val detailBackCallback =
             DetailBackPressedCallback(detailModel).also { detailBackCallback = it }
         val selectionBackCallback =
@@ -140,14 +131,10 @@ class MainFragment :
             insets
         }
 
-        // Send meaningful accessibility events for bottom sheets
+        // Send meaningful accessibility events for the playback bottom sheet
         ViewCompat.setAccessibilityPaneTitle(
             binding.playbackSheet,
             context.getString(R.string.lbl_playback),
-        )
-        ViewCompat.setAccessibilityPaneTitle(
-            binding.queueSheet,
-            context.getString(R.string.lbl_queue),
         )
 
         normalCornerSize = playbackSheetBehavior.sheetBackgroundDrawable.topLeftCornerResolvedSize
@@ -245,8 +232,6 @@ class MainFragment :
         val binding = requireBinding()
         val playbackSheetBehavior =
             binding.playbackSheet.coordinatorLayoutBehavior as PlaybackBottomSheetBehavior
-        val queueSheetBehavior =
-            binding.queueSheet.coordinatorLayoutBehavior as QueueBottomSheetBehavior?
 
         val playbackRatio = max(playbackSheetBehavior.calculateSlideOffset(), 0f)
         // Stupid hack to prevent you from sliding the sheet up without closing the speed
@@ -279,44 +264,11 @@ class MainFragment :
         binding.exploreNavHost.isInvisible = playbackLastStretchRatio == 1f
         binding.playbackSheet.translationZ = (1 - playbackLastStretchRatio) * elevationNormal
 
-        if (queueSheetBehavior != null) {
-            val queueRatio = max(queueSheetBehavior.calculateSlideOffset(), 0f)
-            val queueInRatio = max(queueRatio - 0.5f, 0f) * 2
+        // No separate queue sheet — queue lives as a tab inside the playback panel.
+        // Fade bar out / panel in based on playback sheet position only.
+        binding.playbackBarFragment.alpha = playbackOutRatio
+        binding.playbackPanelFragment.alpha = playbackInRatio
 
-            val queueMaxXScaleDelta = maxScaleXDistance / binding.queueSheet.width
-            val queueBackRatio =
-                max(1 - ((1 - binding.queueSheet.scaleX) / queueMaxXScaleDelta), 0f)
-
-            val queueEdgeRatio = max(queueRatio - 0.9f, 0f) / 0.1f
-
-            val queueBarEdgeRatio = max(queueEdgeRatio - 0.5f, 0f) * 2
-            val queueBarBackRatio = max(queueBackRatio - 0.5f, 0f) * 2
-            val queueBarRatio = min(queueBarEdgeRatio * queueBarBackRatio, 1f)
-
-            val queuePanelEdgeRatio = min(queueEdgeRatio * 2, 1f)
-            val queuePanelBackRatio = min(queueBackRatio * 2, 1f)
-            val queuePanelRatio = 1 - min(queuePanelEdgeRatio * queuePanelBackRatio, 1f)
-
-            binding.playbackBarFragment.alpha = max(playbackOutRatio, queueBarRatio)
-            binding.playbackPanelFragment.alpha = min(playbackInRatio, queuePanelRatio)
-            binding.queueFragment.alpha = queueInRatio
-
-            if (playbackModel.song.value != null) {
-                // Playback sheet intercepts queue sheet touch events, prevent that from
-                // occurring by disabling dragging whenever the queue sheet is expanded.
-                playbackSheetBehavior.isDraggable =
-                    queueSheetBehavior.state == BackportBottomSheetBehavior.STATE_COLLAPSED
-            }
-        } else {
-            // No queue sheet, fade normally based on the playback sheet
-            binding.playbackBarFragment.alpha = playbackOutRatio
-            binding.playbackPanelFragment.alpha = playbackInRatio
-            (binding.queueSheet.background as MaterialShapeDrawable).shapeAppearanceModel =
-                ShapeAppearanceModel.builder()
-                    .setTopLeftCornerSize(normalCornerSize)
-                    .setTopRightCornerSize(normalCornerSize * (1 - playbackLastStretchRatio))
-                    .build()
-        }
         // Fade out the playback bar as the panel expands.
         binding.playbackBarFragment.apply {
             // Prevent interactions when the playback bar fully fades out.
@@ -325,16 +277,6 @@ class MainFragment :
 
         // Prevent interactions when the playback panel fully fades out.
         binding.playbackPanelFragment.isInvisible = binding.playbackPanelFragment.alpha == 0f
-
-        binding.queueSheet.apply {
-            // Queue sheet (not queue content) should fade out with the playback panel.
-            alpha = playbackInRatio
-            // Prevent interactions when the queue sheet fully fades out.
-            binding.queueSheet.isInvisible = alpha == 0f
-        }
-
-        // Prevent interactions when the queue content fully fades out.
-        binding.queueFragment.isInvisible = binding.queueFragment.alpha == 0f
 
         if (playbackModel.song.value == null) {
             // Sometimes lingering drags can un-hide the playback sheet even when we intend to
@@ -554,7 +496,8 @@ class MainFragment :
         when (panel) {
             OpenPanel.MAIN -> tryClosePlaybackPanel()
             OpenPanel.PLAYBACK -> tryOpenPlaybackPanel()
-            OpenPanel.QUEUE -> tryOpenQueuePanel()
+            // Queue is now a tab inside the player panel — just open the playback panel.
+            OpenPanel.QUEUE -> tryOpenPlaybackPanel()
         }
         playbackModel.openPanel.consume()
     }
@@ -568,19 +511,6 @@ class MainFragment :
             // Playback sheet is not expanded and not hidden, we can expand it.
             L.d("Expanding playback sheet")
             playbackSheetBehavior.state = BackportBottomSheetBehavior.STATE_EXPANDED
-            return
-        }
-
-        val queueSheetBehavior =
-            (binding.queueSheet.coordinatorLayoutBehavior ?: return) as QueueBottomSheetBehavior
-        if (
-            playbackSheetBehavior.state == BackportBottomSheetBehavior.STATE_EXPANDED &&
-                queueSheetBehavior.targetState == BackportBottomSheetBehavior.STATE_EXPANDED
-        ) {
-            // Queue sheet and playback sheet is expanded, close the queue sheet so the
-            // playback panel can shown.
-            L.d("Collapsing queue sheet")
-            queueSheetBehavior.state = BackportBottomSheetBehavior.STATE_COLLAPSED
         }
     }
 
@@ -589,27 +519,9 @@ class MainFragment :
         val playbackSheetBehavior =
             binding.playbackSheet.coordinatorLayoutBehavior as PlaybackBottomSheetBehavior
         if (playbackSheetBehavior.targetState == BackportBottomSheetBehavior.STATE_EXPANDED) {
-            // Playback sheet (and possibly queue) needs to be collapsed.
-            L.d("Collapsing playback and queue sheets")
-            val queueSheetBehavior =
-                binding.queueSheet.coordinatorLayoutBehavior as QueueBottomSheetBehavior?
+            // Playback sheet needs to be collapsed.
+            L.d("Collapsing playback sheet")
             playbackSheetBehavior.state = BackportBottomSheetBehavior.STATE_COLLAPSED
-            queueSheetBehavior?.state = BackportBottomSheetBehavior.STATE_COLLAPSED
-        }
-    }
-
-    private fun tryOpenQueuePanel() {
-        val binding = requireBinding()
-        val playbackSheetBehavior =
-            binding.playbackSheet.coordinatorLayoutBehavior as PlaybackBottomSheetBehavior
-        val queueSheetBehavior =
-            (binding.queueSheet.coordinatorLayoutBehavior ?: return) as QueueBottomSheetBehavior
-        if (
-            playbackSheetBehavior.state == BackportBottomSheetBehavior.STATE_EXPANDED &&
-                queueSheetBehavior.targetState == BackportBottomSheetBehavior.STATE_COLLAPSED
-        ) {
-            // Playback sheet is expanded and queue sheet is collapsed, we can expand it.
-            queueSheetBehavior.state = BackportBottomSheetBehavior.STATE_EXPANDED
         }
     }
 
@@ -619,10 +531,6 @@ class MainFragment :
             binding.playbackSheet.coordinatorLayoutBehavior as PlaybackBottomSheetBehavior
         if (playbackSheetBehavior.targetState == BackportBottomSheetBehavior.STATE_HIDDEN) {
             L.d("Unhiding and enabling playback sheet")
-            val queueSheetBehavior =
-                binding.queueSheet.coordinatorLayoutBehavior as QueueBottomSheetBehavior?
-            // Queue sheet behavior is either collapsed or expanded, no hiding needed
-            queueSheetBehavior?.isDraggable = true
             playbackSheetBehavior.apply {
                 // Make sure the view is draggable, at least until the draw checks kick in.
                 isDraggable = true
@@ -636,17 +544,7 @@ class MainFragment :
         val playbackSheetBehavior =
             binding.playbackSheet.coordinatorLayoutBehavior as PlaybackBottomSheetBehavior
         if (playbackSheetBehavior.targetState != BackportBottomSheetBehavior.STATE_HIDDEN) {
-            val queueSheetBehavior =
-                binding.queueSheet.coordinatorLayoutBehavior as QueueBottomSheetBehavior?
-
-            L.d("Hiding and disabling playback and queue sheets")
-
-            // Make both bottom sheets non-draggable so the user can't halt the hiding event.
-            queueSheetBehavior?.apply {
-                isDraggable = false
-                state = BackportBottomSheetBehavior.STATE_COLLAPSED
-            }
-
+            L.d("Hiding and disabling playback sheet")
             playbackSheetBehavior.apply {
                 isDraggable = false
                 state = BackportBottomSheetBehavior.STATE_HIDDEN
@@ -656,67 +554,38 @@ class MainFragment :
 
     private class SheetBackPressedCallback(
         private val playbackSheetBehavior: PlaybackBottomSheetBehavior<*>,
-        private val queueSheetBehavior: QueueBottomSheetBehavior<*>?,
     ) : OnBackPressedCallback(false) {
         override fun handleOnBackStarted(backEvent: BackEventCompat) {
-            if (queueSheetShown()) {
-                unlikelyToBeNull(queueSheetBehavior).startBackProgress(backEvent)
-            }
-
             if (playbackSheetShown()) {
                 playbackSheetBehavior.startBackProgress(backEvent)
-                return
             }
         }
 
         override fun handleOnBackProgressed(backEvent: BackEventCompat) {
-            if (queueSheetShown()) {
-                unlikelyToBeNull(queueSheetBehavior).updateBackProgress(backEvent)
-                return
-            }
-
             if (playbackSheetShown()) {
                 playbackSheetBehavior.updateBackProgress(backEvent)
-                return
             }
         }
 
         override fun handleOnBackPressed() {
-            if (queueSheetShown()) {
-                unlikelyToBeNull(queueSheetBehavior).handleBackInvoked()
-                return
-            }
-
             if (playbackSheetShown()) {
                 playbackSheetBehavior.handleBackInvoked()
-                return
             }
         }
 
         override fun handleOnBackCancelled() {
-            if (queueSheetShown()) {
-                unlikelyToBeNull(queueSheetBehavior).cancelBackProgress()
-                return
-            }
-
             if (playbackSheetShown()) {
                 playbackSheetBehavior.cancelBackProgress()
-                return
             }
         }
 
         fun invalidateEnabled() {
-            isEnabled = queueSheetShown() || playbackSheetShown()
+            isEnabled = playbackSheetShown()
         }
 
         private fun playbackSheetShown() =
             playbackSheetBehavior.targetState != BackportBottomSheetBehavior.STATE_COLLAPSED &&
                 playbackSheetBehavior.targetState != BackportBottomSheetBehavior.STATE_HIDDEN
-
-        private fun queueSheetShown() =
-            queueSheetBehavior != null &&
-                playbackSheetBehavior.state == BackportBottomSheetBehavior.STATE_EXPANDED &&
-                queueSheetBehavior.targetState != BackportBottomSheetBehavior.STATE_COLLAPSED
     }
 
     private class DetailBackPressedCallback(private val detailModel: DetailViewModel) :
