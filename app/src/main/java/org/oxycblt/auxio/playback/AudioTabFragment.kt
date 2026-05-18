@@ -18,7 +18,6 @@
 package org.oxycblt.auxio.playback
 
 import org.oxycblt.auxio.playback.equalizer.*
-import org.oxycblt.auxio.databinding.FragmentAudioTabBinding
 
 import android.os.Bundle
 import android.text.InputType

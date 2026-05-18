@@ -54,7 +54,7 @@ import org.oxycblt.auxio.music.MusicViewModel
 import org.oxycblt.auxio.playback.OpenPanel
 import org.oxycblt.auxio.playback.PlaybackBottomSheetBehavior
 import org.oxycblt.auxio.playback.PlaybackViewModel
-
+import org.oxycblt.auxio.playback.queue.QueueBottomSheetBehavior
 import org.oxycblt.auxio.ui.DialogAwareNavigationListener
 import org.oxycblt.auxio.ui.UISettings
 import org.oxycblt.auxio.ui.ViewBindingFragment
@@ -123,6 +123,8 @@ class MainFragment :
         sheetBackCallback =
             SheetBackPressedCallback(
                 playbackSheetBehavior = playbackSheetBehavior,
+                queueSheetBehavior =
+                    binding.queueSheet.coordinatorLayoutBehavior as QueueBottomSheetBehavior?,
             )
         val detailBackCallback =
             DetailBackPressedCallback(detailModel).also { detailBackCallback = it }
