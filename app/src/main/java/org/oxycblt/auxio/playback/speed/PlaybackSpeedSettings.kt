@@ -29,16 +29,14 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * Persists playback speed preference and exposes it as a [StateFlow].
  *
- * The UI (AudioTabFragment) calls [setSpeed] when the user moves the slider or taps a chip.
- * Step 40-1 will observe [speedFlow] in ExoPlaybackStateHolder to call
- * ExoPlayer.setPlaybackParameters() and make the speed audible.
+ * The UI (AudioTabFragment) calls [setSpeed] when the user moves the slider or taps a chip. Step
+ * 40-1 will observe [speedFlow] in ExoPlaybackStateHolder to call ExoPlayer.setPlaybackParameters()
+ * and make the speed audible.
  *
  * Follows the same pattern as [CrossfadeSettings] and [StereoWideningSettings].
  */
 @Singleton
-class PlaybackSpeedSettings
-@Inject
-constructor(@ApplicationContext context: Context) {
+class PlaybackSpeedSettings @Inject constructor(@ApplicationContext context: Context) {
 
     private val prefs = PreferenceManager.getDefaultSharedPreferences(context)
 
@@ -59,7 +57,9 @@ constructor(@ApplicationContext context: Context) {
     private val _speedFlow =
         MutableStateFlow(prefs.getFloat(KEY_SPEED, DEFAULT_SPEED).coerceIn(MIN_SPEED, MAX_SPEED))
 
-    /** Current playback speed as a [StateFlow]. Step 40-1 observes this in ExoPlaybackStateHolder. */
+    /**
+     * Current playback speed as a [StateFlow]. Step 40-1 observes this in ExoPlaybackStateHolder.
+     */
     val speedFlow: StateFlow<Float> = _speedFlow.asStateFlow()
 
     /** Current playback speed value [0.25–3.0]. */

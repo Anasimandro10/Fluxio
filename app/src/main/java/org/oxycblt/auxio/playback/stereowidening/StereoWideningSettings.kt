@@ -30,8 +30,8 @@ import javax.inject.Singleton
  * Persists stereo-widening preferences and keeps [StereoWideningProcessor] in sync.
  *
  * [setAmount] writes to SharedPreferences AND updates the processor so that the value survives
- * process death regardless of whether the caller is the Preference UI or AudioTabFragment's
- * raw SeekBar.
+ * process death regardless of whether the caller is the Preference UI or AudioTabFragment's raw
+ * SeekBar.
  *
  * Follows the same pattern as [CrossfadeSettings].
  */

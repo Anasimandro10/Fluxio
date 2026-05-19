@@ -311,8 +311,8 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
     // ---- Speed card ----
 
     /**
-     * Maps a SeekBar progress value [0–55] to a playback speed [0.25–3.0].
-     * Step size: 0.05× per unit. SeekBar max = 55 → 0.25 + 55 × 0.05 = 3.0.
+     * Maps a SeekBar progress value [0–55] to a playback speed [0.25–3.0]. Step size: 0.05× per
+     * unit. SeekBar max = 55 → 0.25 + 55 × 0.05 = 3.0.
      */
     private fun progressToSpeed(progress: Int): Float = 0.25f + progress * 0.05f
 
@@ -377,8 +377,8 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
     }
 
     /**
-     * Marks the chip that exactly matches [speed] as checked; clears all others.
-     * Uses kotlin.math.abs for idiomatic Kotlin float comparison.
+     * Marks the chip that exactly matches [speed] as checked; clears all others. Uses
+     * kotlin.math.abs for idiomatic Kotlin float comparison.
      */
     private fun updateSpeedChips(binding: FragmentAudioTabBinding, speed: Float) {
         val tolerance = 0.001f

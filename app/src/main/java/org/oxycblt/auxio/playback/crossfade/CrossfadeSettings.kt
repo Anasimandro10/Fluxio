@@ -26,9 +26,9 @@ import javax.inject.Singleton
 /**
  * Persists crossfade preferences and keeps [CrossfadeProcessor] in sync.
  *
- * [setEnabled] and [setDuration] both write to SharedPreferences AND push to the processor so
- * that the value survives process death regardless of whether the caller is the Preference UI
- * or a raw SeekBar (AudioTabFragment).
+ * [setEnabled] and [setDuration] both write to SharedPreferences AND push to the processor so that
+ * the value survives process death regardless of whether the caller is the Preference UI or a raw
+ * SeekBar (AudioTabFragment).
  *
  * Note: the real dual-ExoPlayer crossfade engine is implemented in a later step. The processor
  * calls here are stubs that will be wired up then.
