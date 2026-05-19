@@ -39,11 +39,21 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.databinding.FragmentAudioTabBinding
-import org.oxycblt.auxio.playback.equalizer.*
+import org.oxycblt.auxio.playback.crossfade.CrossfadeSettings
+import org.oxycblt.auxio.playback.equalizer.AutoEqBrowserDialog
+import org.oxycblt.auxio.playback.equalizer.EqualizerSettings
+import org.oxycblt.auxio.playback.equalizer.EqualizerViewModel
+import org.oxycblt.auxio.playback.equalizer.ListeningMode
+import org.oxycblt.auxio.playback.equalizer.ListeningModeManager
+import org.oxycblt.auxio.playback.speed.PlaybackSpeedSettings
+import org.oxycblt.auxio.playback.stereowidening.StereoWideningSettings
 import org.oxycblt.auxio.settings.categories.DeviceProfileDialog
 import org.oxycblt.auxio.ui.ViewBindingFragment
 
@@ -51,8 +61,18 @@ import org.oxycblt.auxio.ui.ViewBindingFragment
 class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
 
     private val viewModel: EqualizerViewModel by viewModels()
+
+    @Inject lateinit var crossfadeSettings: CrossfadeSettings
+    @Inject lateinit var stereoSettings: StereoWideningSettings
+    @Inject lateinit var speedSettings: PlaybackSpeedSettings
+
     private val seekBars = arrayOfNulls<SeekBar>(10)
     private var ignoreSpinner = false
+
+    // Suppress internal SeekBar listener triggers during programmatic init.
+    private var ignoreCrossfadeSlider = false
+    private var ignoreStereoSlider = false
+    private var ignoreSpeedSlider = false
 
     override fun onCreateBinding(inflater: LayoutInflater) =
         FragmentAudioTabBinding.inflate(inflater)
@@ -70,6 +90,10 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
         setupAutoEqBrowse(binding)
         setupDeviceProfilesButton(binding)
         setupListeningModes(binding)
+
+        setupCrossfadeCard(binding)
+        setupStereoCard(binding)
+        setupSpeedCard(binding)
 
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -97,7 +121,7 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
         seekBars.fill(null)
     }
 
-    // ---- Build ----
+    // ---- EQ band views ----
 
     private fun buildBandViews(binding: FragmentAudioTabBinding) {
         val density = resources.displayMetrics.density
@@ -163,7 +187,7 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
         }
     }
 
-    // ---- Setup ----
+    // ---- EQ setup ----
 
     private fun setupPresetSpinner(binding: FragmentAudioTabBinding) {
         val names = EqualizerSettings.PRESET_NAMES + listOf(getString(R.string.lbl_eq_custom))
@@ -197,23 +221,18 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
         binding.eqSwitch.setOnCheckedChangeListener { _, checked -> viewModel.setEnabled(checked) }
     }
 
-    /** Opens [AutoEqBrowserDialog] when the user taps Browse Presets. */
     private fun setupAutoEqBrowse(binding: FragmentAudioTabBinding) {
         binding.eqBtnAutoeqBrowse.setOnClickListener {
             AutoEqBrowserDialog().show(childFragmentManager, AutoEqBrowserDialog.TAG)
         }
     }
 
-    /** Opens [DeviceProfileDialog] from the shortcut button inside the EQ screen. */
     private fun setupDeviceProfilesButton(binding: FragmentAudioTabBinding) {
         binding.eqBtnDeviceProfiles.setOnClickListener {
             DeviceProfileDialog().show(childFragmentManager, DeviceProfileDialog.TAG)
         }
     }
 
-    /**
-     * Wires the Save button to show a name dialog; chips are rendered in [onListeningModesChanged].
-     */
     private fun setupListeningModes(binding: FragmentAudioTabBinding) {
         binding.eqBtnSaveMode.setOnClickListener {
             if (!viewModel.canSaveListeningMode()) return@setOnClickListener
@@ -221,7 +240,156 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
         }
     }
 
-    // ---- State handlers ----
+    // ---- Crossfade card ----
+
+    private fun setupCrossfadeCard(binding: FragmentAudioTabBinding) {
+        val initialSeconds = crossfadeSettings.durationSeconds
+        ignoreCrossfadeSlider = true
+        binding.audioCrossfadeSlider.post {
+            binding.audioCrossfadeSlider.progress = initialSeconds
+            ignoreCrossfadeSlider = false
+        }
+        // Show "Off" if crossfade is disabled, otherwise show the stored duration.
+        binding.audioCrossfadeValue.text =
+            if (!crossfadeSettings.enabled) getString(R.string.lbl_audio_off)
+            else crossfadeValueLabel(initialSeconds)
+
+        binding.audioCrossfadeSlider.setOnSeekBarChangeListener(
+            object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(sb: SeekBar, progress: Int, fromUser: Boolean) {
+                    if (ignoreCrossfadeSlider) return
+                    binding.audioCrossfadeValue.text = crossfadeValueLabel(progress)
+                    crossfadeSettings.setEnabled(progress > 0)
+                    crossfadeSettings.setDuration(progress)
+                }
+
+                override fun onStartTrackingTouch(sb: SeekBar) {
+                    sb.parent.requestDisallowInterceptTouchEvent(true)
+                }
+
+                override fun onStopTrackingTouch(sb: SeekBar) {}
+            }
+        )
+    }
+
+    /** "Off" when seconds == 0, otherwise "Ns". */
+    private fun crossfadeValueLabel(seconds: Int): String =
+        if (seconds == 0) getString(R.string.lbl_audio_off) else "${seconds}s"
+
+    // ---- Stereo Widening card ----
+
+    private fun setupStereoCard(binding: FragmentAudioTabBinding) {
+        val initialPercent = stereoSettings.amountPercent
+        ignoreStereoSlider = true
+        binding.audioStereoSlider.post {
+            binding.audioStereoSlider.progress = initialPercent
+            ignoreStereoSlider = false
+        }
+        binding.audioStereoValue.text = stereoValueLabel(initialPercent)
+
+        binding.audioStereoSlider.setOnSeekBarChangeListener(
+            object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(sb: SeekBar, progress: Int, fromUser: Boolean) {
+                    if (ignoreStereoSlider) return
+                    binding.audioStereoValue.text = stereoValueLabel(progress)
+                    stereoSettings.setAmount(progress)
+                }
+
+                override fun onStartTrackingTouch(sb: SeekBar) {
+                    sb.parent.requestDisallowInterceptTouchEvent(true)
+                }
+
+                override fun onStopTrackingTouch(sb: SeekBar) {}
+            }
+        )
+    }
+
+    /** "Off" when percent == 0, otherwise "N%". */
+    private fun stereoValueLabel(percent: Int): String =
+        if (percent == 0) getString(R.string.lbl_audio_off) else "${percent}%"
+
+    // ---- Speed card ----
+
+    /**
+     * Maps a SeekBar progress value [0–55] to a playback speed [0.25–3.0].
+     * Step size: 0.05× per unit. SeekBar max = 55 → 0.25 + 55 × 0.05 = 3.0.
+     */
+    private fun progressToSpeed(progress: Int): Float = 0.25f + progress * 0.05f
+
+    /** Maps a playback speed [0.25–3.0] back to a SeekBar progress [0–55]. */
+    private fun speedToProgress(speed: Float): Int =
+        ((speed - 0.25f) / 0.05f).roundToInt().coerceIn(0, 55)
+
+    /** Formats a speed as a clean string: 1.0 → "1×", 1.5 → "1.5×", 0.25 → "0.25×". */
+    private fun speedLabel(speed: Float): String {
+        val s = String.format("%.2f", speed).trimEnd('0').trimEnd('.')
+        return "${s}×"
+    }
+
+    private fun setupSpeedCard(binding: FragmentAudioTabBinding) {
+        val initialSpeed = speedSettings.speedX
+        val initialProgress = speedToProgress(initialSpeed)
+
+        ignoreSpeedSlider = true
+        binding.audioSpeedSlider.post {
+            binding.audioSpeedSlider.progress = initialProgress
+            ignoreSpeedSlider = false
+        }
+        binding.audioSpeedValue.text = speedLabel(initialSpeed)
+        updateSpeedChips(binding, initialSpeed)
+
+        binding.audioSpeedSlider.setOnSeekBarChangeListener(
+            object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(sb: SeekBar, progress: Int, fromUser: Boolean) {
+                    if (ignoreSpeedSlider) return
+                    val speed = progressToSpeed(progress)
+                    binding.audioSpeedValue.text = speedLabel(speed)
+                    updateSpeedChips(binding, speed)
+                    speedSettings.setSpeed(speed)
+                }
+
+                override fun onStartTrackingTouch(sb: SeekBar) {
+                    sb.parent.requestDisallowInterceptTouchEvent(true)
+                }
+
+                override fun onStopTrackingTouch(sb: SeekBar) {}
+            }
+        )
+
+        val chipPresets =
+            listOf(
+                binding.audioChipSpeed050 to 0.50f,
+                binding.audioChipSpeed075 to 0.75f,
+                binding.audioChipSpeed100 to 1.00f,
+                binding.audioChipSpeed150 to 1.50f,
+                binding.audioChipSpeed200 to 2.00f,
+            )
+        chipPresets.forEach { (chip, speed) ->
+            chip.setOnClickListener {
+                ignoreSpeedSlider = true
+                binding.audioSpeedSlider.progress = speedToProgress(speed)
+                ignoreSpeedSlider = false
+                binding.audioSpeedValue.text = speedLabel(speed)
+                updateSpeedChips(binding, speed)
+                speedSettings.setSpeed(speed)
+            }
+        }
+    }
+
+    /**
+     * Marks the chip that exactly matches [speed] as checked; clears all others.
+     * Uses kotlin.math.abs for idiomatic Kotlin float comparison.
+     */
+    private fun updateSpeedChips(binding: FragmentAudioTabBinding, speed: Float) {
+        val tolerance = 0.001f
+        binding.audioChipSpeed050.isChecked = abs(speed - 0.50f) < tolerance
+        binding.audioChipSpeed075.isChecked = abs(speed - 0.75f) < tolerance
+        binding.audioChipSpeed100.isChecked = abs(speed - 1.00f) < tolerance
+        binding.audioChipSpeed150.isChecked = abs(speed - 1.50f) < tolerance
+        binding.audioChipSpeed200.isChecked = abs(speed - 2.00f) < tolerance
+    }
+
+    // ---- EQ state handlers ----
 
     private fun onEnabledChanged(binding: FragmentAudioTabBinding, enabled: Boolean) {
         binding.eqSwitch.isChecked = enabled
@@ -267,7 +435,6 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
         binding: FragmentAudioTabBinding,
         modes: List<ListeningMode>,
     ) {
-        // Update Save button: disabled at capacity so the user never hits a silent failure.
         binding.eqBtnSaveMode.isEnabled = modes.size < ListeningModeManager.MAX_MODES
 
         val chipGroup = binding.eqListeningModesChips

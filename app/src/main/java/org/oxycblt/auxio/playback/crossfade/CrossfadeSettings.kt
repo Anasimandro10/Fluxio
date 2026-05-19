@@ -26,25 +26,25 @@ import javax.inject.Singleton
 /**
  * Persists crossfade preferences and keeps [CrossfadeProcessor] in sync.
  *
- * Uses the default [PreferenceManager] shared preferences so that the Preference UI
- * (SeekBarPreference / SwitchPreferenceCompat) and this class read from the same store.
+ * [setEnabled] and [setDuration] both write to SharedPreferences AND push to the processor so
+ * that the value survives process death regardless of whether the caller is the Preference UI
+ * or a raw SeekBar (AudioTabFragment).
  *
- * On startup the [init] block pushes the persisted values into the processor. At runtime
- * [AudioPreferenceFragment] calls [setEnabled] / [setDuration] via OnPreferenceChangeListener so
- * the processor is updated immediately without needing a singleton listener — avoiding the
- * single-listener constraint documented in the project lessons.
+ * Note: the real dual-ExoPlayer crossfade engine is implemented in a later step. The processor
+ * calls here are stubs that will be wired up then.
  */
 @Singleton
 class CrossfadeSettings
 @Inject
 constructor(@ApplicationContext context: Context, private val processor: CrossfadeProcessor) {
+
     private val prefs = PreferenceManager.getDefaultSharedPreferences(context)
 
     companion object {
-        /** SharedPreferences key — must match set_key_crossfade_enabled in settings.xml. */
+        /** SharedPreferences key for the crossfade enabled flag. */
         const val KEY_ENABLED = "fluxio_crossfade_enabled"
 
-        /** SharedPreferences key — must match set_key_crossfade_duration in settings.xml. */
+        /** SharedPreferences key for the crossfade duration in seconds. */
         const val KEY_DURATION = "fluxio_crossfade_duration"
 
         /** Default crossfade duration shown when the user first opens the slider. */
@@ -60,22 +60,23 @@ constructor(@ApplicationContext context: Context, private val processor: Crossfa
         get() = prefs.getInt(KEY_DURATION, DEFAULT_DURATION_SECONDS)
 
     /**
-     * Pushes a new enabled state to [CrossfadeProcessor].
+     * Persists the enabled state and pushes it to [CrossfadeProcessor].
      *
-     * The Preference framework has already persisted [value] to SharedPreferences before this is
-     * called (OnPreferenceChangeListener returns true), so [enabled] will reflect [value] on the
-     * next read.
+     * Writing to SharedPreferences here means the value is correct after a restart whether the
+     * caller is the Preference framework or AudioTabFragment's raw SeekBar.
      */
     fun setEnabled(value: Boolean) {
+        prefs.edit().putBoolean(KEY_ENABLED, value).apply()
         processor.enabled = value
     }
 
     /**
-     * Pushes a new duration to [CrossfadeProcessor].
+     * Persists the duration and pushes it to [CrossfadeProcessor].
      *
-     * [seconds] is the raw integer from the SeekBarPreference [0–12].
+     * @param seconds Raw integer [0–12].
      */
     fun setDuration(seconds: Int) {
+        prefs.edit().putInt(KEY_DURATION, seconds).apply()
         processor.crossfadeDurationMs = seconds * 1_000L
     }
 

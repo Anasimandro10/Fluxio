@@ -29,28 +29,25 @@ import javax.inject.Singleton
 /**
  * Persists stereo-widening preferences and keeps [StereoWideningProcessor] in sync.
  *
- * Uses the default [PreferenceManager] shared preferences so that the Preference UI
- * (SeekBarPreference) and this class read from the same store.
+ * [setAmount] writes to SharedPreferences AND updates the processor so that the value survives
+ * process death regardless of whether the caller is the Preference UI or AudioTabFragment's
+ * raw SeekBar.
  *
- * On startup the [init] block pushes the persisted value into the processor. At runtime
- * [AudioPreferenceFragment] calls [setAmount] via OnPreferenceChangeListener so the processor is
- * updated immediately without needing a singleton listener — avoiding the single-listener
- * constraint documented in the project lessons.
- *
- * Follows exactly the same pattern as [CrossfadeSettings].
+ * Follows the same pattern as [CrossfadeSettings].
  */
 @Singleton
 class StereoWideningSettings
 @Inject
 constructor(@ApplicationContext context: Context, private val processor: StereoWideningProcessor) {
+
     private val prefs = PreferenceManager.getDefaultSharedPreferences(context)
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
     companion object {
-        /** SharedPreferences key — must match set_key_stereo_widening in settings.xml. */
+        /** SharedPreferences key for the stereo widening amount. */
         const val KEY_AMOUNT = "fluxio_stereo_widening"
 
-        /** Default widening percentage shown when the user first opens the slider. */
+        /** Default widening percentage. */
         const val DEFAULT_AMOUNT = 0
     }
 
@@ -59,15 +56,15 @@ constructor(@ApplicationContext context: Context, private val processor: StereoW
         get() = prefs.getInt(KEY_AMOUNT, DEFAULT_AMOUNT)
 
     /**
-     * Pushes a new widening intensity to [StereoWideningProcessor].
+     * Persists the widening intensity and pushes it to [StereoWideningProcessor].
      *
-     * The Preference framework has already persisted [percent] to SharedPreferences before this is
-     * called (OnPreferenceChangeListener returns true), so [amountPercent] will reflect [percent]
-     * on the next read.
+     * Writing to SharedPreferences here means the value is correct after a restart whether the
+     * caller is the Preference framework or AudioTabFragment's raw SeekBar.
      *
-     * @param percent The raw integer from the SeekBarPreference [0–100].
+     * @param percent Raw integer [0–100].
      */
     fun setAmount(percent: Int) {
+        prefs.edit().putInt(KEY_AMOUNT, percent).apply()
         processor.amount = percent / 100f
     }
 
@@ -81,7 +78,7 @@ constructor(@ApplicationContext context: Context, private val processor: StereoW
             processor.spatializerBypass = spatializer.isEnabled && spatializer.isAvailable
 
             spatializer.addOnSpatializerStateChangedListener(
-                { command -> command.run() }, // Executor
+                { command -> command.run() },
                 object : Spatializer.OnSpatializerStateChangedListener {
                     override fun onSpatializerEnabledChanged(s: Spatializer, enabled: Boolean) {
                         processor.spatializerBypass = enabled && s.isAvailable

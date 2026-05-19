@@ -126,6 +126,10 @@
     <string name="lbl_autoeq_modified">Profile: %s (modified)</string>
     <string name="lbl_autoeq_no_results">No headphones found</string>
     <string name="lbl_autoeq_error">Could not load headphone database. Check your connection.</string>
+    <string name="lbl_crossfade">Crossfade</string>
+    <string name="lbl_stereo_widening">Stereo widening</string>
+    <string name="lbl_playback_speed">Speed</string>
+    <string name="lbl_audio_off">Off</string>
     <string name="lbl_autoeq_clear_profile">Clear profile</string>
     <string name="lbl_sleep_timer">Sleep timer</string>
     <string name="lbl_sleep_timer_off">Timer is off</string>
