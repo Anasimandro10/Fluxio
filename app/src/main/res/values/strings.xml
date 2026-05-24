@@ -583,12 +583,4 @@
     <string name="set_spatializer_desc">Configure spatial audio and head tracking in system settings</string>
 
     <string name="lbl_no_lyrics">Sin letras disponibles</string>
-
-    <!-- Missing strings -->
-    <string name="lbl_autoeq_browse">Browse AutoEQ profiles</string>
-    <string name="lbl_autoeq_recent">Recent</string>
-    <string name="lbl_autoeq_retry">Retry</string>
-    <string name="lbl_autoeq_title">AutoEQ</string>
-    <string name="lbl_listening_modes">Listening modes</string>
-    <string name="lbl_listening_modes_empty">No listening modes configured</string>
 </resources>
