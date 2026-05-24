@@ -130,7 +130,9 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
     // Adapter
     // -------------------------------------------------------------------------
 
-    private inner class LyricsAdapter :
+    // Not `inner` — Kotlin prohibits `companion object` and `object` declarations
+    // inside inner classes. ViewHolder is still `inner` to LyricsAdapter (fine).
+    private class LyricsAdapter :
         ListAdapter<LrcLine, LyricsAdapter.ViewHolder>(LrcLineDiff) {
 
         var activeIndex = -1

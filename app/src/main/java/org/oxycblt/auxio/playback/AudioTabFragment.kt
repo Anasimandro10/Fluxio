@@ -33,6 +33,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -74,7 +75,7 @@ import org.oxycblt.auxio.ui.ViewBindingFragment
 class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
 
     private val viewModel: EqualizerViewModel by viewModels()
-    private val playbackModel: PlaybackViewModel by androidx.fragment.app.activityViewModels()
+    private val playbackModel: PlaybackViewModel by activityViewModels()
 
     @Inject lateinit var crossfadeSettings: CrossfadeSettings
     @Inject lateinit var stereoSettings: StereoWideningSettings
@@ -215,12 +216,13 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
                     max = 240
                     progress = 120
                     rotation = -90f
-                    // Spec: sliders pure color (colorPrimary until step 31 wires ambient)
+                    // Spec: sliders pure color (colorPrimary until step 31 wires ambient).
+                    // Use AppCompat's colorPrimary — it is universally defined in the theme.
                     progressTintList =
                         android.content.res.ColorStateList.valueOf(
                             com.google.android.material.color.MaterialColors.getColor(
                                 requireContext(),
-                                com.google.android.material.R.attr.colorPrimary,
+                                androidx.appcompat.R.attr.colorPrimary,
                                 android.graphics.Color.WHITE,
                             )
                         )

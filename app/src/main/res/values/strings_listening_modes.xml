@@ -9,4 +9,11 @@
     <string name="hint_listening_mode_name">Mode name</string>
     <!-- Confirmation message before deleting a listening mode -->
     <string name="lbl_confirm_delete_mode">Delete this listening mode?</string>
+    <!-- EQ card header state label when equalizer is enabled -->
+    <string name="lbl_eq_on">On</string>
+    <!-- Modes card header state label: "1 mode" / "N modes" -->
+    <plurals name="lbl_x_listening_modes">
+        <item quantity="one">1 mode</item>
+        <item quantity="other">%d modes</item>
+    </plurals>
 </resources>
