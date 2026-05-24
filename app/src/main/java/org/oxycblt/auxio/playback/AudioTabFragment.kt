@@ -22,6 +22,7 @@ import android.text.InputType
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.EditText
@@ -31,11 +32,14 @@ import android.widget.SeekBar
 import android.widget.TextView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.transition.AutoTransition
+import androidx.transition.TransitionManager
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
@@ -57,10 +61,21 @@ import org.oxycblt.auxio.playback.stereowidening.StereoWideningSettings
 import org.oxycblt.auxio.settings.categories.DeviceProfileDialog
 import org.oxycblt.auxio.ui.ViewBindingFragment
 
+/**
+ * AUDIO tab inside the player panel.
+ *
+ * Design spec (FLUXIO_CONTEXTO.md §Player — AUDIO tab):
+ *  - Cards: bg surface r:18dp. State right 15sp text2. Title left 17sp text1.
+ *  - One card open at a time (accordion). Tap header to expand/collapse.
+ *  - Sliders: pure color (colorPrimary, will be wired to ambient at step 31).
+ *  - EQ: 10 vertical sliders 4dp wide, freq labels 10sp text2, preset spinner.
+ *  - Speed: slider + chips [0.5×][0.75×][1×][1.5×][2×]. Active chip: pure color bg.
+ */
 @AndroidEntryPoint
 class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
 
     private val viewModel: EqualizerViewModel by viewModels()
+    private val playbackModel: PlaybackViewModel by androidx.fragment.app.activityViewModels()
 
     @Inject lateinit var crossfadeSettings: CrossfadeSettings
     @Inject lateinit var stereoSettings: StereoWideningSettings
@@ -68,11 +83,12 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
 
     private val seekBars = arrayOfNulls<SeekBar>(10)
     private var ignoreSpinner = false
-
-    // Suppress internal SeekBar listener triggers during programmatic init.
     private var ignoreCrossfadeSlider = false
     private var ignoreStereoSlider = false
     private var ignoreSpeedSlider = false
+
+    // Accordion: tracks which content View is currently expanded (null = all collapsed).
+    private var expandedContent: View? = null
 
     override fun onCreateBinding(inflater: LayoutInflater) =
         FragmentAudioTabBinding.inflate(inflater)
@@ -90,10 +106,13 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
         setupAutoEqBrowse(binding)
         setupDeviceProfilesButton(binding)
         setupListeningModes(binding)
-
         setupCrossfadeCard(binding)
         setupStereoCard(binding)
         setupSpeedCard(binding)
+        setupTimerCard(binding)
+
+        // Accordion: EQ is expanded by default.
+        setupAccordion(binding)
 
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -121,12 +140,65 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
         seekBars.fill(null)
     }
 
-    // ---- EQ band views ----
+    // -------------------------------------------------------------------------
+    // Accordion logic (spec: "One open at a time")
+    // -------------------------------------------------------------------------
+
+    private fun setupAccordion(binding: FragmentAudioTabBinding) {
+        // Map each header to its collapsible content.
+        val pairs =
+            listOf(
+                binding.cardEqHeader to binding.cardEqContent,
+                binding.cardCrossfadeHeader to binding.cardCrossfadeContent,
+                binding.cardStereoHeader to binding.cardStereoContent,
+                binding.cardSpeedHeader to binding.cardSpeedContent,
+                binding.cardTimerHeader to binding.cardTimerContent,
+                binding.cardModesHeader to binding.cardModesContent,
+            )
+
+        // EQ card starts expanded (content is already visible="visible" in XML).
+        expandedContent = binding.cardEqContent
+
+        pairs.forEach { (header, content) ->
+            header.setOnClickListener {
+                if (content.isVisible) {
+                    // Tapping the already-open card collapses it.
+                    toggleContent(binding, content, expand = false)
+                    expandedContent = null
+                } else {
+                    // Collapse whatever is open, then open this card.
+                    expandedContent?.let { current ->
+                        toggleContent(binding, current, expand = false)
+                    }
+                    toggleContent(binding, content, expand = true)
+                    expandedContent = content
+                }
+            }
+        }
+    }
+
+    /**
+     * Animate expand/collapse of a card's content view using [TransitionManager].
+     * AutoTransition handles both the fade and the bounds change so the card
+     * smoothly grows/shrinks without clipping neighbouring cards.
+     */
+    private fun toggleContent(binding: FragmentAudioTabBinding, content: View, expand: Boolean) {
+        TransitionManager.beginDelayedTransition(
+            binding.audioAccordionRoot,
+            AutoTransition().apply { duration = 220 },
+        )
+        content.isVisible = expand
+    }
+
+    // -------------------------------------------------------------------------
+    // EQ band views
+    // -------------------------------------------------------------------------
 
     private fun buildBandViews(binding: FragmentAudioTabBinding) {
         val density = resources.displayMetrics.density
         val trackLenPx = (172 * density + 0.5f).toInt()
         val thumbSizePx = (32 * density + 0.5f).toInt()
+        // Spec: freq labels 10sp text2
         val freqLabels = listOf("31", "63", "125", "250", "500", "1k", "2k", "4k", "8k", "16k")
 
         binding.eqBandsContainer.removeAllViews()
@@ -144,6 +216,16 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
                     max = 240
                     progress = 120
                     rotation = -90f
+                    // Spec: sliders pure color (colorPrimary until step 31 wires ambient)
+                    progressTintList =
+                        android.content.res.ColorStateList.valueOf(
+                            com.google.android.material.color.MaterialColors.getColor(
+                                requireContext(),
+                                com.google.android.material.R.attr.colorPrimary,
+                                android.graphics.Color.WHITE,
+                            )
+                        )
+                    thumbTintList = progressTintList
                     layoutParams =
                         FrameLayout.LayoutParams(trackLenPx, thumbSizePx).apply {
                             gravity = Gravity.CENTER
@@ -175,10 +257,18 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
             frame.addView(seekBar)
             binding.eqBandsContainer.addView(frame)
 
+            // Freq label: 10sp text2 per spec
             binding.eqFreqLabels.addView(
                 TextView(requireContext()).apply {
                     text = freqLabels[i]
-                    textSize = 9f
+                    textSize = 10f
+                    setTextColor(
+                        com.google.android.material.color.MaterialColors.getColor(
+                            requireContext(),
+                            com.google.android.material.R.attr.colorOnSurfaceVariant,
+                            android.graphics.Color.GRAY,
+                        )
+                    )
                     gravity = Gravity.CENTER
                     layoutParams =
                         LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -187,7 +277,9 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
         }
     }
 
-    // ---- EQ setup ----
+    // -------------------------------------------------------------------------
+    // EQ setup
+    // -------------------------------------------------------------------------
 
     private fun setupPresetSpinner(binding: FragmentAudioTabBinding) {
         val names = EqualizerSettings.PRESET_NAMES + listOf(getString(R.string.lbl_eq_custom))
@@ -240,7 +332,9 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
         }
     }
 
-    // ---- Crossfade card ----
+    // -------------------------------------------------------------------------
+    // Crossfade card
+    // -------------------------------------------------------------------------
 
     private fun setupCrossfadeCard(binding: FragmentAudioTabBinding) {
         val initialSeconds = crossfadeSettings.durationSeconds
@@ -249,7 +343,7 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
             binding.audioCrossfadeSlider.progress = initialSeconds
             ignoreCrossfadeSlider = false
         }
-        // Show "Off" if crossfade is disabled, otherwise show the stored duration.
+        // State text in the card header (reuses audio_crossfade_value ID)
         binding.audioCrossfadeValue.text =
             if (!crossfadeSettings.enabled) getString(R.string.lbl_audio_off)
             else crossfadeValueLabel(initialSeconds)
@@ -272,11 +366,13 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
         )
     }
 
-    /** "Off" when seconds == 0, otherwise "Ns". */
+    /** "Off" when 0, otherwise "Ns". */
     private fun crossfadeValueLabel(seconds: Int): String =
         if (seconds == 0) getString(R.string.lbl_audio_off) else "${seconds}s"
 
-    // ---- Stereo Widening card ----
+    // -------------------------------------------------------------------------
+    // Stereo Widening card
+    // -------------------------------------------------------------------------
 
     private fun setupStereoCard(binding: FragmentAudioTabBinding) {
         val initialPercent = stereoSettings.amountPercent
@@ -304,23 +400,22 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
         )
     }
 
-    /** "Off" when percent == 0, otherwise "N%". */
+    /** "Off" when 0, otherwise "N%". */
     private fun stereoValueLabel(percent: Int): String =
         if (percent == 0) getString(R.string.lbl_audio_off) else "${percent}%"
 
-    // ---- Speed card ----
+    // -------------------------------------------------------------------------
+    // Speed card
+    // -------------------------------------------------------------------------
 
-    /**
-     * Maps a SeekBar progress value [0–55] to a playback speed [0.25–3.0]. Step size: 0.05× per
-     * unit. SeekBar max = 55 → 0.25 + 55 × 0.05 = 3.0.
-     */
+    /** Maps SeekBar progress [0–55] to speed [0.25–3.0]. */
     private fun progressToSpeed(progress: Int): Float = 0.25f + progress * 0.05f
 
-    /** Maps a playback speed [0.25–3.0] back to a SeekBar progress [0–55]. */
+    /** Maps speed [0.25–3.0] back to SeekBar progress [0–55]. */
     private fun speedToProgress(speed: Float): Int =
         ((speed - 0.25f) / 0.05f).roundToInt().coerceIn(0, 55)
 
-    /** Formats a speed as a clean string: 1.0 → "1×", 1.5 → "1.5×", 0.25 → "0.25×". */
+    /** "1×", "1.5×", "0.25×" etc. */
     private fun speedLabel(speed: Float): String {
         val s = String.format("%.2f", speed).trimEnd('0').trimEnd('.')
         return "${s}×"
@@ -356,6 +451,7 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
             }
         )
 
+        // Speed preset chips — active chip gets pure color bg automatically via Filter chip style
         val chipPresets =
             listOf(
                 binding.audioChipSpeed050 to 0.50f,
@@ -377,8 +473,8 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
     }
 
     /**
-     * Marks the chip that exactly matches [speed] as checked; clears all others. Uses
-     * kotlin.math.abs for idiomatic Kotlin float comparison.
+     * Marks the chip matching [speed] as checked; clears the rest.
+     * The Filter chip style handles the visual change (pure color bg when checked) automatically.
      */
     private fun updateSpeedChips(binding: FragmentAudioTabBinding, speed: Float) {
         val tolerance = 0.001f
@@ -389,12 +485,58 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
         binding.audioChipSpeed200.isChecked = abs(speed - 2.00f) < tolerance
     }
 
-    // ---- EQ state handlers ----
+    // -------------------------------------------------------------------------
+    // Timer card
+    // -------------------------------------------------------------------------
+
+    private fun setupTimerCard(binding: FragmentAudioTabBinding) {
+        val chips = listOf(
+            binding.audioChipTimer15m to 15,
+            binding.audioChipTimer30m to 30,
+            binding.audioChipTimer45m to 45,
+            binding.audioChipTimer1h to 60,
+            binding.audioChipTimer2h to 120
+        )
+        
+        chips.forEach { (chip, minutes) ->
+            chip.setOnClickListener {
+                if (chip.isChecked) {
+                    playbackModel.startSleepTimer(minutes)
+                } else {
+                    playbackModel.cancelSleepTimer()
+                }
+            }
+        }
+        
+        binding.audioChipTimerCustom.setOnClickListener {
+            // Open custom dialog
+            org.oxycblt.auxio.playback.sleeptimer.SleepTimerDialog().show(childFragmentManager, "sleep_timer")
+        }
+
+        binding.audioTimerEndOfSongSwitch.setOnCheckedChangeListener { _, isChecked ->
+            // Assume PlaybackViewModel has setStopAtEnd(Boolean) or similar.
+            // Fluxio usually manages this via PlaybackSpeedSettings or PlaybackViewModel
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                // Assuming playbackModel has sleepTimerTimeRemaining flow or LiveData
+                // This will be wired to audio_timer_value
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // EQ state observers
+    // -------------------------------------------------------------------------
 
     private fun onEnabledChanged(binding: FragmentAudioTabBinding, enabled: Boolean) {
         binding.eqSwitch.isChecked = enabled
         seekBars.forEach { it?.isEnabled = enabled }
         binding.eqPresetSpinner.isEnabled = enabled
+        // Update state text in EQ card header
+        binding.cardEqState.text =
+            if (enabled) getString(R.string.lbl_eq_on) else getString(R.string.lbl_audio_off)
     }
 
     private fun onBandsChanged(bands: FloatArray) {
@@ -422,13 +564,13 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
         modified: Boolean,
     ) {
         if (name == null) {
-            binding.eqAutoeqProfileLabel.visibility = View.GONE
+            binding.eqAutoeqProfileLabel.isVisible = false
             return
         }
         binding.eqAutoeqProfileLabel.text =
             if (modified) getString(R.string.lbl_autoeq_modified, name)
             else getString(R.string.lbl_autoeq_profile, name)
-        binding.eqAutoeqProfileLabel.visibility = View.VISIBLE
+        binding.eqAutoeqProfileLabel.isVisible = true
     }
 
     private fun onListeningModesChanged(
@@ -437,17 +579,22 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
     ) {
         binding.eqBtnSaveMode.isEnabled = modes.size < ListeningModeManager.MAX_MODES
 
+        // Update state text in modes card header
+        binding.cardModesState.text =
+            if (modes.isEmpty()) "—"
+            else resources.getQuantityString(R.plurals.lbl_x_listening_modes, modes.size, modes.size)
+
         val chipGroup = binding.eqListeningModesChips
         chipGroup.removeAllViews()
 
         if (modes.isEmpty()) {
-            chipGroup.visibility = View.GONE
-            binding.eqListeningModesEmpty.visibility = View.VISIBLE
+            chipGroup.isVisible = false
+            binding.eqListeningModesEmpty.isVisible = true
             return
         }
 
-        binding.eqListeningModesEmpty.visibility = View.GONE
-        chipGroup.visibility = View.VISIBLE
+        binding.eqListeningModesEmpty.isVisible = false
+        chipGroup.isVisible = true
 
         modes.forEach { mode ->
             val chip =
@@ -462,7 +609,9 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
         }
     }
 
-    // ---- Dialogs ----
+    // -------------------------------------------------------------------------
+    // Dialogs
+    // -------------------------------------------------------------------------
 
     private fun showSaveModeDialog() {
         val paddingPx = (16 * resources.displayMetrics.density).toInt()

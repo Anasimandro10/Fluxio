@@ -1,57 +1,91 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  dialog_autoeq_browser.xml — AutoEQ Bottom Sheet
+  Design spec (FLUXIO_CONTEXTO.md §Player — AUDIO tab):
+    AutoEQ sheet: pill search bar bg element. Real-time results.
+    Active profile: pure color checkmark right.
+    No results: "No se encontraron perfiles para '[query]'" centered 17sp text3.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical">
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingTop="20dp"
+    android:background="?attr/colorSurface">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="16dp"
         android:text="@string/lbl_autoeq_title"
-        android:textAppearance="?attr/textAppearanceTitleMedium" />
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:textColor="?attr/colorOnSurface" />
 
-    <com.google.android.material.textfield.TextInputLayout
+    <!-- Pill search bar bg element -->
+    <LinearLayout
         android:id="@+id/autoeq_browser_search_layout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
-        android:hint="@string/hint_autoeq_search"
-        app:endIconMode="clear_text">
+        android:layout_height="52dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/bg_search_pill"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp">
 
-        <com.google.android.material.textfield.TextInputEditText
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_search"
+            app:tint="?attr/colorOnSurfaceVariant" />
+
+        <EditText
             android:id="@+id/autoeq_browser_search"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:background="@null"
+            android:hint="@string/hint_autoeq_search"
+            android:textColorHint="?attr/colorOnSurfaceVariant"
+            android:textColor="?attr/colorOnSurface"
             android:imeOptions="actionSearch"
             android:inputType="text"
             android:singleLine="true" />
+            
+        <ImageView
+            android:id="@+id/autoeq_browser_clear"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_close"
+            android:visibility="gone"
+            app:tint="?attr/colorOnSurfaceVariant" />
 
-    </com.google.android.material.textfield.TextInputLayout>
+    </LinearLayout>
 
     <TextView
         android:id="@+id/autoeq_browser_count"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="4dp"
-        android:textAppearance="?attr/textAppearanceCaption"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="8dp"
+        android:textSize="12sp"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:visibility="gone" />
-        
+
     <TextView
         android:id="@+id/autoeq_browser_recent_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="8dp"
         android:text="@string/lbl_autoeq_recent"
-        android:textAppearance="?attr/textAppearanceLabelMedium"
-        android:textColor="?android:attr/textColorSecondary"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:visibility="gone" />
 
     <ProgressBar
@@ -59,7 +93,6 @@
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
         android:indeterminate="true"
         android:visibility="gone" />
 
@@ -69,33 +102,34 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:gravity="center"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="32dp"
         android:visibility="gone">
 
+        <!-- Centered 17sp text3 for errors/no results -->
         <TextView
             android:id="@+id/autoeq_browser_status"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
+            android:layout_marginHorizontal="16dp"
             android:gravity="center"
-            android:textAppearance="?attr/textAppearanceBody2" />
+            android:textSize="17sp"
+            android:textColor="?attr/colorOnSurfaceVariant" />
 
-        <com.google.android.material.button.MaterialButton
+        <Button
             android:id="@+id/autoeq_browser_retry_button"
+            style="?attr/materialButtonOutlinedStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="@string/lbl_autoeq_retry"
-            style="@style/Widget.Material3.Button.TextButton" />
+            android:layout_marginTop="16dp"
+            android:text="@string/lbl_autoeq_retry" />
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/autoeq_browser_results"
         android:layout_width="match_parent"
-        android:layout_height="420dp"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:clipToPadding="false"
-        android:paddingTop="4dp"
         android:paddingBottom="24dp"
         android:scrollbars="vertical"
         android:visibility="gone" />

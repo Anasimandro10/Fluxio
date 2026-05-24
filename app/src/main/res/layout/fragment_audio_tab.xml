@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  fragment_audio_tab.xml  —  AUDIO tab inside the player panel.
+  Design spec (FLUXIO_CONTEXTO.md §Player — AUDIO tab):
+    Cards: bg surface r:18dp. State right 15sp text2. Title left 17sp text1. One open at a time.
+    Sliders: pure color (colorPrimary → wired to ambient at step 31).
+    EQ: 10 vertical sliders 4dp, freq labels 10sp text2, preset spinner bg element r:8dp.
+    Speed: slider 0.25×–3.0× + chips. Active chip: pure color bg.
+-->
 <androidx.core.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -7,14 +15,19 @@
     android:layout_height="match_parent"
     android:fillViewport="true">
 
+    <!-- Scene root for TransitionManager accordion animations -->
     <LinearLayout
+        android:id="@+id/audio_accordion_root"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:paddingHorizontal="16dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="24dp">
 
-        <!-- EQ on/off toggle -->
+        <!-- ═══════════════════════════ CARD: EQUALIZER ═══════════════════ -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_eq"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
@@ -26,173 +39,185 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="16dp">
+                android:orientation="vertical">
 
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/lbl_equalizer"
-                    android:textAppearance="?attr/textAppearanceTitleMedium" />
-
-                <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/eq_switch"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
-
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- EQ bands -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="0dp"
-            app:strokeColor="?attr/colorOutlineVariant"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="16dp">
-
-                <Spinner
-                    android:id="@+id/eq_preset_spinner"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp" />
-
+                <!-- Header (accordion trigger) -->
                 <LinearLayout
-                    android:id="@+id/eq_db_labels"
+                    android:id="@+id/card_eq_header"
                     android:layout_width="match_parent"
-                    android:layout_height="0dp"
-                    android:orientation="horizontal"
-                    android:visibility="gone" />
-
-                <LinearLayout
-                    android:id="@+id/eq_bands_container"
-                    android:layout_width="match_parent"
-                    android:layout_height="190dp"
-                    android:orientation="horizontal" />
-
-                <LinearLayout
-                    android:id="@+id/eq_freq_labels"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal" />
-
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- AutoEQ -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/eq_card_autoeq"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="0dp"
-            app:strokeColor="?attr/colorOutlineVariant"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="16dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="10dp"
-                    android:text="@string/lbl_autoeq"
-                    android:textAppearance="?attr/textAppearanceTitleSmall" />
-
-                <TextView
-                    android:id="@+id/eq_autoeq_profile_label"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:textAppearance="?attr/textAppearanceBodySmall"
-                    android:visibility="gone" />
-
-                <Button
-                    android:id="@+id/eq_btn_autoeq_browse"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/lbl_autoeq_browse" />
-
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Listening modes -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/eq_card_listening_modes"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="0dp"
-            app:strokeColor="?attr/colorOutlineVariant"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="16dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="56dp"
                     android:gravity="center_vertical"
-                    android:layout_marginBottom="12dp"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/lbl_listening_modes"
-                        android:textAppearance="?attr/textAppearanceTitleSmall" />
+                        android:text="@string/lbl_equalizer"
+                        android:textSize="17sp"
+                        android:textColor="?attr/colorOnSurface" />
 
-                    <Button
-                        android:id="@+id/eq_btn_save_mode"
-                        style="?attr/materialButtonOutlinedStyle"
+                    <!-- State: "Activo" / "Desactivado" — 15sp text2 per spec -->
+                    <TextView
+                        android:id="@+id/card_eq_state"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/lbl_save" />
+                        android:textSize="15sp"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:text="@string/lbl_audio_off" />
 
                 </LinearLayout>
 
-                <com.google.android.material.chip.ChipGroup
-                    android:id="@+id/eq_listening_modes_chips"
+                <!-- Collapsible content (starts visible — EQ is default open) -->
+                <LinearLayout
+                    android:id="@+id/card_eq_content"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:visibility="gone" />
+                    android:orientation="vertical"
+                    android:paddingHorizontal="16dp"
+                    android:paddingBottom="16dp"
+                    android:visibility="visible">
 
-                <TextView
-                    android:id="@+id/eq_listening_modes_empty"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:alpha="0.6"
-                    android:text="@string/lbl_listening_modes_empty"
-                    android:textAppearance="?attr/textAppearanceBodySmall" />
+                    <!-- EQ on/off row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingVertical="10dp">
 
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/lbl_equalizer"
+                            android:textSize="15sp"
+                            android:textColor="?attr/colorOnSurface" />
+
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/eq_switch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+
+                    </LinearLayout>
+
+                    <!-- Preset spinner — spec: bg element r:8dp -->
+                    <Spinner
+                        android:id="@+id/eq_preset_spinner"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- 10 vertical SeekBar bands (populated programmatically in buildBandViews) -->
+                    <LinearLayout
+                        android:id="@+id/eq_db_labels"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:orientation="horizontal"
+                        android:visibility="gone" />
+
+                    <LinearLayout
+                        android:id="@+id/eq_bands_container"
+                        android:layout_width="match_parent"
+                        android:layout_height="190dp"
+                        android:orientation="horizontal" />
+
+                    <!-- Freq labels: 10sp text2 per spec -->
+                    <LinearLayout
+                        android:id="@+id/eq_freq_labels"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="16dp" />
+
+                    <!-- Divider -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginBottom="12dp"
+                        android:background="?attr/colorOutlineVariant" />
+
+                    <!-- AutoEQ section (spec: btn pure color) -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="6dp"
+                        android:text="@string/lbl_autoeq"
+                        android:textSize="13sp"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <TextView
+                        android:id="@+id/eq_autoeq_profile_label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:textSize="13sp"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:visibility="gone" />
+
+                    <!-- AutoEQ button: outlined matches pure-color stroke from theme -->
+                    <Button
+                        android:id="@+id/eq_btn_autoeq_browse"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:text="@string/lbl_autoeq_browse" />
+
+                    <!-- Divider -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginBottom="12dp"
+                        android:background="?attr/colorOutlineVariant" />
+
+                    <!-- Device profiles row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/set_device_profiles"
+                                android:textSize="15sp"
+                                android:textColor="?attr/colorOnSurface" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/set_device_profiles_bt"
+                                android:textSize="13sp"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        </LinearLayout>
+
+                        <Button
+                            android:id="@+id/eq_btn_device_profiles"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/lbl_edit" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Crossfade card -->
+        <!-- ══════════════════════════ CARD: CROSSFADE ═══════════════════ -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/audio_crossfade_card"
             android:layout_width="match_parent"
@@ -206,16 +231,19 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="16dp">
+                android:orientation="vertical">
 
+                <!-- Header -->
                 <LinearLayout
+                    android:id="@+id/card_crossfade_header"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="56dp"
                     android:gravity="center_vertical"
-                    android:layout_marginBottom="16dp"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
 
                     <TextView
                         android:layout_width="0dp"
@@ -223,53 +251,66 @@
                         android:layout_weight="1"
                         android:text="@string/lbl_crossfade"
                         android:textSize="17sp"
-                        android:textAppearance="?attr/textAppearanceTitleMedium" />
+                        android:textColor="?attr/colorOnSurface" />
 
+                    <!-- State: "Off" / "Ns" — reuses audio_crossfade_value ID -->
                     <TextView
                         android:id="@+id/audio_crossfade_value"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textSize="15sp"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:text="@string/lbl_audio_off" />
 
                 </LinearLayout>
 
-                <SeekBar
-                    android:id="@+id/audio_crossfade_slider"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:max="12"
-                    android:progress="0" />
-
+                <!-- Collapsible content -->
                 <LinearLayout
+                    android:id="@+id/card_crossfade_content"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:orientation="horizontal">
+                    android:orientation="vertical"
+                    android:paddingHorizontal="16dp"
+                    android:paddingBottom="20dp"
+                    android:visibility="gone">
 
-                    <TextView
-                        android:layout_width="0dp"
+                    <!-- Slider: pure color via progressTint/thumbTint -->
+                    <SeekBar
+                        android:id="@+id/audio_crossfade_slider"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/lbl_audio_off"
-                        android:textSize="11sp"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
+                        android:layout_marginBottom="4dp"
+                        android:max="12"
+                        android:progress="0"
+                        android:progressTint="?attr/colorPrimary"
+                        android:thumbTint="?attr/colorPrimary" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="12s"
-                        android:textSize="11sp"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
+                        android:orientation="horizontal">
 
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/lbl_audio_off"
+                            android:textSize="12sp"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="12s"
+                            android:textSize="12sp"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    </LinearLayout>
                 </LinearLayout>
-
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Stereo Widening card -->
+        <!-- ════════════════════════ CARD: STEREO WIDENING ══════════════ -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/audio_stereo_card"
             android:layout_width="match_parent"
@@ -283,16 +324,19 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="16dp">
+                android:orientation="vertical">
 
+                <!-- Header -->
                 <LinearLayout
+                    android:id="@+id/card_stereo_header"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="56dp"
                     android:gravity="center_vertical"
-                    android:layout_marginBottom="16dp"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
 
                     <TextView
                         android:layout_width="0dp"
@@ -300,53 +344,64 @@
                         android:layout_weight="1"
                         android:text="@string/lbl_stereo_widening"
                         android:textSize="17sp"
-                        android:textAppearance="?attr/textAppearanceTitleMedium" />
+                        android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:id="@+id/audio_stereo_value"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textSize="15sp"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:text="@string/lbl_audio_off" />
 
                 </LinearLayout>
 
-                <SeekBar
-                    android:id="@+id/audio_stereo_slider"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:max="100"
-                    android:progress="0" />
-
+                <!-- Collapsible content -->
                 <LinearLayout
+                    android:id="@+id/card_stereo_content"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:orientation="horizontal">
+                    android:orientation="vertical"
+                    android:paddingHorizontal="16dp"
+                    android:paddingBottom="20dp"
+                    android:visibility="gone">
 
-                    <TextView
-                        android:layout_width="0dp"
+                    <SeekBar
+                        android:id="@+id/audio_stereo_slider"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/lbl_audio_off"
-                        android:textSize="11sp"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
+                        android:layout_marginBottom="4dp"
+                        android:max="100"
+                        android:progress="0"
+                        android:progressTint="?attr/colorPrimary"
+                        android:thumbTint="?attr/colorPrimary" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="100%"
-                        android:textSize="11sp"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
+                        android:orientation="horizontal">
 
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/lbl_audio_off"
+                            android:textSize="12sp"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="100%"
+                            android:textSize="12sp"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    </LinearLayout>
                 </LinearLayout>
-
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Speed card -->
+        <!-- ════════════════════════ CARD: PLAYBACK SPEED ══════════════ -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/audio_speed_card"
             android:layout_width="match_parent"
@@ -360,16 +415,19 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="16dp">
+                android:orientation="vertical">
 
+                <!-- Header -->
                 <LinearLayout
+                    android:id="@+id/card_speed_header"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="56dp"
                     android:gravity="center_vertical"
-                    android:layout_marginBottom="16dp"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
 
                     <TextView
                         android:layout_width="0dp"
@@ -377,106 +435,261 @@
                         android:layout_weight="1"
                         android:text="@string/lbl_playback_speed"
                         android:textSize="17sp"
-                        android:textAppearance="?attr/textAppearanceTitleMedium" />
+                        android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:id="@+id/audio_speed_value"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textSize="15sp"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:text="1×" />
 
                 </LinearLayout>
 
-                <!-- Slider 0.25×–3.0× (55 steps of 0.05) -->
-                <SeekBar
-                    android:id="@+id/audio_speed_slider"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:max="55"
-                    android:progress="15" />
-
+                <!-- Collapsible content -->
                 <LinearLayout
+                    android:id="@+id/card_speed_content"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:orientation="horizontal">
+                    android:orientation="vertical"
+                    android:paddingHorizontal="16dp"
+                    android:paddingBottom="20dp"
+                    android:visibility="gone">
+
+                    <!-- Slider 0.25×–3.0× (55 steps × 0.05) -->
+                    <SeekBar
+                        android:id="@+id/audio_speed_slider"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
+                        android:max="55"
+                        android:progress="15"
+                        android:progressTint="?attr/colorPrimary"
+                        android:thumbTint="?attr/colorPrimary" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="12dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="0.25×"
+                            android:textSize="12sp"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="3×"
+                            android:textSize="12sp"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    </LinearLayout>
+
+                    <!-- Speed preset chips — active chip: pure color bg per spec -->
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/audio_speed_chips"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:singleSelection="true"
+                        app:selectionRequired="false">
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/audio_chip_speed_050"
+                            style="@style/Widget.Material3.Chip.Filter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checkable="true"
+                            android:text="0.5×" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/audio_chip_speed_075"
+                            style="@style/Widget.Material3.Chip.Filter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checkable="true"
+                            android:text="0.75×" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/audio_chip_speed_100"
+                            style="@style/Widget.Material3.Chip.Filter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checkable="true"
+                            android:text="1×" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/audio_chip_speed_150"
+                            style="@style/Widget.Material3.Chip.Filter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checkable="true"
+                            android:text="1.5×" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/audio_chip_speed_200"
+                            style="@style/Widget.Material3.Chip.Filter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checkable="true"
+                            android:text="2×" />
+
+                    </com.google.android.material.chip.ChipGroup>
+
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- ════════════════════════ CARD: TIMER ══════════════ -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/audio_timer_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- Header -->
+                <LinearLayout
+                    android:id="@+id/card_timer_header"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="0.25×"
-                        android:textSize="11sp"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
+                        android:text="Sleep timer"
+                        android:textSize="17sp"
+                        android:textColor="?attr/colorOnSurface" />
 
+                    <!-- State: "Off" or countdown -->
                     <TextView
+                        android:id="@+id/audio_timer_value"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="3×"
-                        android:textSize="11sp"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
+                        android:textSize="15sp"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:text="@string/lbl_audio_off" />
 
                 </LinearLayout>
 
-                <!-- Speed preset chips -->
-                <com.google.android.material.chip.ChipGroup
-                    android:id="@+id/audio_speed_chips"
+                <!-- Collapsible content -->
+                <LinearLayout
+                    android:id="@+id/card_timer_content"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    app:singleSelection="true"
-                    app:selectionRequired="false">
+                    android:orientation="vertical"
+                    android:paddingHorizontal="16dp"
+                    android:paddingBottom="16dp"
+                    android:visibility="gone">
 
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/audio_chip_speed_050"
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
+                    <!-- Stop at end of song toggle -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:checkable="true"
-                        android:text="0.5×" />
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="12dp">
 
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/audio_chip_speed_075"
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Parar al final de la canción"
+                            android:textSize="15sp"
+                            android:textColor="?attr/colorOnSurface" />
+
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/audio_timer_end_of_song_switch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+
+                    </LinearLayout>
+
+                    <!-- Timer chips -->
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/audio_timer_chips"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:checkable="true"
-                        android:text="0.75×" />
+                        app:singleSelection="true"
+                        app:selectionRequired="false">
 
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/audio_chip_speed_100"
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checkable="true"
-                        android:text="1×" />
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/audio_chip_timer_15m"
+                            style="@style/Widget.Material3.Chip.Filter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checkable="true"
+                            android:text="15m" />
 
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/audio_chip_speed_150"
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checkable="true"
-                        android:text="1.5×" />
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/audio_chip_timer_30m"
+                            style="@style/Widget.Material3.Chip.Filter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checkable="true"
+                            android:text="30m" />
 
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/audio_chip_speed_200"
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checkable="true"
-                        android:text="2×" />
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/audio_chip_timer_45m"
+                            style="@style/Widget.Material3.Chip.Filter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checkable="true"
+                            android:text="45m" />
 
-                </com.google.android.material.chip.ChipGroup>
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/audio_chip_timer_1h"
+                            style="@style/Widget.Material3.Chip.Filter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checkable="true"
+                            android:text="1h" />
 
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/audio_chip_timer_2h"
+                            style="@style/Widget.Material3.Chip.Filter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checkable="true"
+                            android:text="2h" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/audio_chip_timer_custom"
+                            style="@style/Widget.Material3.Chip.Filter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checkable="true"
+                            android:text="Custom" />
+
+                    </com.google.android.material.chip.ChipGroup>
+
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Device profiles -->
+        <!-- ════════════════════════ CARD: LISTENING MODES ══════════════ -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/eq_card_listening_modes"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
@@ -488,38 +701,88 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="16dp">
+                android:orientation="vertical">
 
+                <!-- Header -->
                 <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:id="@+id/card_modes_header"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
 
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="@string/set_device_profiles"
-                        android:textAppearance="?attr/textAppearanceTitleSmall" />
+                        android:layout_weight="1"
+                        android:text="@string/lbl_listening_modes"
+                        android:textSize="17sp"
+                        android:textColor="?attr/colorOnSurface" />
 
                     <TextView
+                        android:id="@+id/card_modes_state"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/set_device_profiles_bt"
-                        android:textAppearance="?attr/textAppearanceBodySmall" />
+                        android:textSize="15sp"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:text="—" />
 
                 </LinearLayout>
 
-                <Button
-                    android:id="@+id/eq_btn_device_profiles"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="wrap_content"
+                <!-- Collapsible content -->
+                <LinearLayout
+                    android:id="@+id/card_modes_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/lbl_edit" />
+                    android:orientation="vertical"
+                    android:paddingHorizontal="16dp"
+                    android:paddingBottom="16dp"
+                    android:visibility="gone">
 
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="12dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/lbl_listening_modes"
+                            android:textSize="13sp"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        <Button
+                            android:id="@+id/eq_btn_save_mode"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/lbl_save" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/eq_listening_modes_chips"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/eq_listening_modes_empty"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:alpha="0.5"
+                        android:text="@string/lbl_listening_modes_empty"
+                        android:textSize="13sp"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

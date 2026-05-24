@@ -18,13 +18,30 @@
 package org.oxycblt.auxio.lyrics
 
 /**
+ * Represents a single word/syllable and its timing.
+ */
+data class WordTiming(
+    val text: String, 
+    val startMs: Long, 
+    val endMs: Long,
+    val startChar: Int = 0,
+    val endChar: Int = 0
+)
+
+/**
  * A single line of a synced lyric file.
  *
  * @param startMs The timestamp in milliseconds when this line should be highlighted.
- * @param text The lyric text to display. An empty string means an instrumental silence marker — the
- *   active-line highlight should be turned off when this line is reached.
+ * @param endMs The timestamp when this line ends (if known), otherwise 0.
+ * @param text The lyric text to display. An empty string means an instrumental silence marker.
+ * @param words The list of words with individual timings, if available (for word-by-word sync).
  */
-data class LrcLine(val startMs: Long, val text: String) {
+data class LrcLine(
+    val startMs: Long, 
+    val endMs: Long = 0L,
+    val text: String,
+    val words: List<WordTiming> = emptyList()
+) {
     /** True when this line represents an instrumental silence (empty text body in the LRC file). */
     val isSilence: Boolean
         get() = text.isEmpty()

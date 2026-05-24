@@ -40,14 +40,12 @@ object LrcParser {
     // Strips timestamp tags from the lyric text line (same tolerant rules as above).
     private val TIMESTAMP_STRIP_REGEX = Regex("\\[\\d{1,3}:\\d{2}(?:\\.\\d+)?]")
 
-    // Strips word-level timing tags like <00:01.23>.
-    private val WORD_TAG_STRIP_REGEX = Regex("<\\d{1,3}:\\d{2}(?:\\.\\d+)?>")
+    // Matches word-level timing tags like <00:01.23>word.
+    private val WORD_PATTERN: Pattern =
+        Pattern.compile("<(\\d{1,3}):(\\d{2})(?:\\.(\\d{2,3}))?>([^<]*)")
 
     /**
      * Parses raw LRC text into a sorted list of [LrcLine].
-     *
-     * Lines whose text is empty after stripping all tags are kept as instrumental silence markers
-     * ([LrcLine.isSilence] = true). The UI turns off the active-line highlight for these.
      *
      * @param content The raw text content of an .lrc file or embedded tag.
      * @return A list of [LrcLine] sorted by [LrcLine.startMs], or empty if unparseable.
@@ -59,37 +57,65 @@ object LrcParser {
             val line = raw.trim()
             if (line.isEmpty()) continue
 
-            // Find all timestamps on this line (there can be multiple)
+            // Find all line-level timestamps (e.g. [mm:ss.xx])
             val matcher = TIMESTAMP_PATTERN.matcher(line)
             val timestamps = mutableListOf<Long>()
 
             while (matcher.find()) {
-                val minutes = matcher.group(1)?.toLongOrNull() ?: continue
-                val seconds = matcher.group(2)?.toLongOrNull() ?: continue
-                // Decimals are optional — treat absence as 0 ms
-                val decRaw = matcher.group(3)
-                val millis =
-                    when {
-                        decRaw == null -> 0L
-                        decRaw.length == 2 -> (decRaw.toLongOrNull() ?: continue) * 10L
-                        else -> decRaw.toLongOrNull() ?: continue
-                    }
-                timestamps.add(minutes * 60_000L + seconds * 1_000L + millis)
+                timestamps.add(parseTimeParts(matcher.group(1), matcher.group(2), matcher.group(3)) ?: continue)
             }
 
             if (timestamps.isEmpty()) continue
 
-            // Strip all timestamp tags and word-level tags to get clean text.
-            // An empty result is an instrumental silence marker — kept intentionally.
-            val text =
-                line.replace(TIMESTAMP_STRIP_REGEX, "").replace(WORD_TAG_STRIP_REGEX, "").trim()
+            // The remaining text after stripping line-level timestamps
+            val textAfterLineTimestamps = line.replace(TIMESTAMP_STRIP_REGEX, "").trim()
 
-            // A line can repeat with multiple timestamps (e.g. chorus repeats)
+            // Try to extract word timings if <mm:ss.xx> tags exist
+            val words = mutableListOf<WordTiming>()
+            val wordMatcher = WORD_PATTERN.matcher(textAfterLineTimestamps)
+            
+            var plainTextBuilder = java.lang.StringBuilder()
+            
+            while (wordMatcher.find()) {
+                val startMs = parseTimeParts(wordMatcher.group(1), wordMatcher.group(2), wordMatcher.group(3)) ?: continue
+                val wordText = wordMatcher.group(4) ?: ""
+                
+                if (words.isNotEmpty()) {
+                    // Previous word's end is current word's start
+                    val prev = words.removeLast()
+                    words.add(prev.copy(endMs = startMs))
+                }
+                val startChar = plainTextBuilder.length
+                val endChar = startChar + wordText.length
+                words.add(WordTiming(text = wordText, startMs = startMs, endMs = startMs + 1000L, startChar = startChar, endChar = endChar)) // 1s fallback endMs
+                plainTextBuilder.append(wordText)
+            }
+
+            // If no word tags were found, we just use the text without tags
+            val finalPlainText = if (words.isEmpty()) {
+                textAfterLineTimestamps.replace(Regex("<[^>]*>"), "")
+            } else {
+                plainTextBuilder.toString()
+            }
+
             for (ts in timestamps) {
-                lines.add(LrcLine(startMs = ts, text = text))
+                // If words were found, adjust their times relative to the line if needed, 
+                // but usually word timestamps are absolute.
+                lines.add(LrcLine(startMs = ts, text = finalPlainText.trim(), words = words.toList()))
             }
         }
 
         return lines.sortedBy { it.startMs }
+    }
+    
+    private fun parseTimeParts(minutesStr: String?, secondsStr: String?, millisStr: String?): Long? {
+        val minutes = minutesStr?.toLongOrNull() ?: return null
+        val seconds = secondsStr?.toLongOrNull() ?: return null
+        val millis = when {
+            millisStr == null -> 0L
+            millisStr.length == 2 -> (millisStr.toLongOrNull() ?: return null) * 10L
+            else -> millisStr.toLongOrNull() ?: return null
+        }
+        return minutes * 60_000L + seconds * 1_000L + millis
     }
 }

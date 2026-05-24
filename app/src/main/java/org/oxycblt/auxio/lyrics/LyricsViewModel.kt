@@ -81,6 +81,12 @@ constructor(
     val currentLineIndex: StateFlow<Int>
         get() = _currentLineIndex
 
+    private val _activeWordIndex = MutableStateFlow(-1)
+
+    /** Index of the active word in the current line. -1 means none. */
+    val activeWordIndex: StateFlow<Int>
+        get() = _activeWordIndex
+
     private var loadJob: Job? = null
     private var prefetchJob: Job? = null
     private var tickerJob: Job? = null
@@ -191,6 +197,7 @@ constructor(
         _lines.value = emptyList()
         _isSynced.value = true
         _currentLineIndex.value = -1
+        _activeWordIndex.value = -1
     }
 
     // -------------------------------------------------------------------------
@@ -203,6 +210,7 @@ constructor(
         _lines.value = emptyList()
         _isSynced.value = true
         _currentLineIndex.value = -1
+        _activeWordIndex.value = -1
 
         if (song == null) return
 
@@ -254,17 +262,34 @@ constructor(
                 while (true) {
                     val posMs = currentProgression?.calculateElapsedPositionMs() ?: break
                     updateCurrentLine(posMs)
-                    // Sleep until just before the next line's timestamp so the highlight
-                    // lands as close as possible to the correct moment.
+                    // Sleep until just before the next line's timestamp or next word's timestamp
                     val lines = _lines.value
+                    
+                    var nextWakeupMs: Long? = null
+                    
+                    // Look for the next line
                     val nextLineMs = lines.firstOrNull { it.startMs > posMs }?.startMs
+                    if (nextLineMs != null) {
+                        nextWakeupMs = nextLineMs
+                    }
+                    
+                    // Look for the next word in the current line
+                    val currentLineIdx = _currentLineIndex.value
+                    if (currentLineIdx in lines.indices) {
+                        val currentLine = lines[currentLineIdx]
+                        val nextWordMs = currentLine.words.firstOrNull { it.startMs > posMs }?.startMs
+                        if (nextWordMs != null) {
+                            nextWakeupMs = if (nextWakeupMs == null) nextWordMs else minOf(nextWakeupMs, nextWordMs)
+                        }
+                    }
+
                     val delayMs =
-                        if (nextLineMs != null) {
+                        if (nextWakeupMs != null) {
                             // Wake 50ms early: tight enough for accurate highlighting,
                             // generous enough to absorb scheduler jitter on slow devices.
-                            (nextLineMs - posMs - 50L).coerceIn(20L, 2000L)
+                            (nextWakeupMs - posMs - 50L).coerceIn(20L, 2000L)
                         } else {
-                            // No next line — check every 2 seconds.
+                            // No next event — check every 2 seconds.
                             2000L
                         }
                     delay(delayMs)
@@ -308,5 +333,17 @@ constructor(
 
         val reported = if (active >= 0 && snapshot[active].isSilence) -1 else active
         if (_currentLineIndex.value != reported) _currentLineIndex.value = reported
+        
+        var wordIdx = -1
+        if (reported >= 0) {
+            val words = snapshot[reported].words
+            for (i in words.indices.reversed()) {
+                if (words[i].startMs <= posMs) {
+                    wordIdx = i
+                    break
+                }
+            }
+        }
+        if (_activeWordIndex.value != wordIdx) _activeWordIndex.value = wordIdx
     }
 }
