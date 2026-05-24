@@ -22,7 +22,6 @@ import android.text.InputType
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.EditText
@@ -65,11 +64,11 @@ import org.oxycblt.auxio.ui.ViewBindingFragment
  * AUDIO tab inside the player panel.
  *
  * Design spec (FLUXIO_CONTEXTO.md §Player — AUDIO tab):
- *  - Cards: bg surface r:18dp. State right 15sp text2. Title left 17sp text1.
- *  - One card open at a time (accordion). Tap header to expand/collapse.
- *  - Sliders: pure color (colorPrimary, will be wired to ambient at step 31).
- *  - EQ: 10 vertical sliders 4dp wide, freq labels 10sp text2, preset spinner.
- *  - Speed: slider + chips [0.5×][0.75×][1×][1.5×][2×]. Active chip: pure color bg.
+ * - Cards: bg surface r:18dp. State right 15sp text2. Title left 17sp text1.
+ * - One card open at a time (accordion). Tap header to expand/collapse.
+ * - Sliders: pure color (colorPrimary, will be wired to ambient at step 31).
+ * - EQ: 10 vertical sliders 4dp wide, freq labels 10sp text2, preset spinner.
+ * - Speed: slider + chips [0.5×][0.75×][1×][1.5×][2×]. Active chip: pure color bg.
  */
 @AndroidEntryPoint
 class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
@@ -178,9 +177,9 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
     }
 
     /**
-     * Animate expand/collapse of a card's content view using [TransitionManager].
-     * AutoTransition handles both the fade and the bounds change so the card
-     * smoothly grows/shrinks without clipping neighbouring cards.
+     * Animate expand/collapse of a card's content view using [TransitionManager]. AutoTransition
+     * handles both the fade and the bounds change so the card smoothly grows/shrinks without
+     * clipping neighbouring cards.
      */
     private fun toggleContent(binding: FragmentAudioTabBinding, content: View, expand: Boolean) {
         TransitionManager.beginDelayedTransition(
@@ -473,8 +472,8 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
     }
 
     /**
-     * Marks the chip matching [speed] as checked; clears the rest.
-     * The Filter chip style handles the visual change (pure color bg when checked) automatically.
+     * Marks the chip matching [speed] as checked; clears the rest. The Filter chip style handles
+     * the visual change (pure color bg when checked) automatically.
      */
     private fun updateSpeedChips(binding: FragmentAudioTabBinding, speed: Float) {
         val tolerance = 0.001f
@@ -490,14 +489,15 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
     // -------------------------------------------------------------------------
 
     private fun setupTimerCard(binding: FragmentAudioTabBinding) {
-        val chips = listOf(
-            binding.audioChipTimer15m to 15,
-            binding.audioChipTimer30m to 30,
-            binding.audioChipTimer45m to 45,
-            binding.audioChipTimer1h to 60,
-            binding.audioChipTimer2h to 120
-        )
-        
+        val chips =
+            listOf(
+                binding.audioChipTimer15m to 15,
+                binding.audioChipTimer30m to 30,
+                binding.audioChipTimer45m to 45,
+                binding.audioChipTimer1h to 60,
+                binding.audioChipTimer2h to 120,
+            )
+
         chips.forEach { (chip, minutes) ->
             chip.setOnClickListener {
                 if (chip.isChecked) {
@@ -507,10 +507,12 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
                 }
             }
         }
-        
+
         binding.audioChipTimerCustom.setOnClickListener {
             // Open custom dialog
-            org.oxycblt.auxio.playback.sleeptimer.SleepTimerDialog().show(childFragmentManager, "sleep_timer")
+            org.oxycblt.auxio.playback.sleeptimer
+                .SleepTimerDialog()
+                .show(childFragmentManager, "sleep_timer")
         }
 
         binding.audioTimerEndOfSongSwitch.setOnCheckedChangeListener { _, isChecked ->
@@ -582,7 +584,8 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
         // Update state text in modes card header
         binding.cardModesState.text =
             if (modes.isEmpty()) "—"
-            else resources.getQuantityString(R.plurals.lbl_x_listening_modes, modes.size, modes.size)
+            else
+                resources.getQuantityString(R.plurals.lbl_x_listening_modes, modes.size, modes.size)
 
         val chipGroup = binding.eqListeningModesChips
         chipGroup.removeAllViews()

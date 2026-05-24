@@ -39,8 +39,8 @@ import org.oxycblt.auxio.ui.ViewBindingBottomSheetDialogFragment
  * user types. Profiles are downloaded from the API once per process lifetime and cached in memory.
  * Extends [ViewBindingBottomSheetDialogFragment] to use the project's backport sheet.
  *
- * Design spec: pill search bar bg element. Real-time results. No results: "No se encontraron perfiles
- * para '[query]'" centered 17sp text3.
+ * Design spec: pill search bar bg element. Real-time results. No results: "No se encontraron
+ * perfiles para '[query]'" centered 17sp text3.
  */
 @AndroidEntryPoint
 class AutoEqBrowserDialog : ViewBindingBottomSheetDialogFragment<DialogAutoeqBrowserBinding>() {
@@ -67,10 +67,8 @@ class AutoEqBrowserDialog : ViewBindingBottomSheetDialogFragment<DialogAutoeqBro
         }
 
         binding.autoeqBrowserRetryButton.setOnClickListener { viewModel.loadAllProfiles() }
-        
-        binding.autoeqBrowserClear.setOnClickListener {
-            binding.autoeqBrowserSearch.text?.clear()
-        }
+
+        binding.autoeqBrowserClear.setOnClickListener { binding.autoeqBrowserSearch.text?.clear() }
 
         binding.autoeqBrowserResults.apply {
             layoutManager = LinearLayoutManager(requireContext())

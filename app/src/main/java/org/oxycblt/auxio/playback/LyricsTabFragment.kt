@@ -45,13 +45,13 @@ import org.oxycblt.musikr.Song
  * LYRICS tab inside the player panel.
  *
  * Design spec (FLUXIO_CONTEXTO.md §Player — LYRICS tab):
- *  - Header: artwork 64dp r:8dp top-left + song title + artist.
- *  - Active line:  #FFFFFF, 22sp Medium, glow shadow 8dp ~30% album color.
- *  - Inactive lines: #FFFFFF at 35% opacity, 20sp Regular. No scale transforms.
- *  - Auto-scroll centered on active line, smooth.
- *  - No lyrics → "Sin letras disponibles" centered 17sp text3.
- *  - Word-by-word highlight inside active line: current word keeps full #FFFFFF,
- *    upcoming words inherit the 35% inactive dimming so they visually "wait".
+ * - Header: artwork 64dp r:8dp top-left + song title + artist.
+ * - Active line: #FFFFFF, 22sp Medium, glow shadow 8dp ~30% album color.
+ * - Inactive lines: #FFFFFF at 35% opacity, 20sp Regular. No scale transforms.
+ * - Auto-scroll centered on active line, smooth.
+ * - No lyrics → "Sin letras disponibles" centered 17sp text3.
+ * - Word-by-word highlight inside active line: current word keeps full #FFFFFF, upcoming words
+ *   inherit the 35% inactive dimming so they visually "wait".
  */
 @AndroidEntryPoint
 class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
@@ -130,7 +130,8 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
     // Adapter
     // -------------------------------------------------------------------------
 
-    private inner class LyricsAdapter : ListAdapter<LrcLine, LyricsAdapter.ViewHolder>(LrcLineDiff) {
+    private inner class LyricsAdapter :
+        ListAdapter<LrcLine, LyricsAdapter.ViewHolder>(LrcLineDiff) {
 
         var activeIndex = -1
             private set
@@ -174,8 +175,14 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
             return ViewHolder(binding)
         }
 
-        override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
-            if (payloads.isNotEmpty() && payloads.all { it == PAYLOAD_WORD || it == PAYLOAD_GLOW }) {
+        override fun onBindViewHolder(
+            holder: ViewHolder,
+            position: Int,
+            payloads: MutableList<Any>,
+        ) {
+            if (
+                payloads.isNotEmpty() && payloads.all { it == PAYLOAD_WORD || it == PAYLOAD_GLOW }
+            ) {
                 // Lightweight re-bind: only update text spans and glow, skip alpha/size.
                 val isActiveLine = position == activeIndex
                 if (isActiveLine) {
@@ -248,8 +255,8 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
              * dimming (they're on the active line so the base text is already #FFFFFF at full
              * alpha; we reduce them to 35% so they visually "wait"). Past words stay full white.
              *
-             * If the line has no word-level timing (plain LRC), this is a no-op and the full
-             * line text is shown as-is at the active-line style.
+             * If the line has no word-level timing (plain LRC), this is a no-op and the full line
+             * text is shown as-is at the active-line style.
              */
             fun applyWordHighlight(line: LrcLine, currentWordIdx: Int) {
                 if (line.words.isEmpty() || currentWordIdx < 0) {
@@ -263,7 +270,8 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
                 for (i in line.words.indices) {
                     val w = line.words[i]
                     // Guard against parser producing out-of-bounds offsets.
-                    if (w.startChar < 0 || w.endChar > line.text.length || w.startChar >= w.endChar) continue
+                    if (w.startChar < 0 || w.endChar > line.text.length || w.startChar >= w.endChar)
+                        continue
 
                     when {
                         i < currentWordIdx -> {
@@ -273,7 +281,8 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
                             // Current word: explicit full white to override any inherited dimming.
                             spannable.setSpan(
                                 ForegroundColorSpan(Color.WHITE),
-                                w.startChar, w.endChar,
+                                w.startChar,
+                                w.endChar,
                                 Spannable.SPAN_EXCLUSIVE_EXCLUSIVE,
                             )
                         }
@@ -282,7 +291,8 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
                             // line glow draws attention to the word being sung.
                             spannable.setSpan(
                                 ForegroundColorSpan(0x59FFFFFF.toInt()), // ~35% white
-                                w.startChar, w.endChar,
+                                w.startChar,
+                                w.endChar,
                                 Spannable.SPAN_EXCLUSIVE_EXCLUSIVE,
                             )
                         }
@@ -293,8 +303,8 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
             }
 
             /**
-             * (Re-)applies the active-line glow using [ambientColor] at 30% opacity.
-             * Called from the lightweight payload path so we don't rebuild spans.
+             * (Re-)applies the active-line glow using [ambientColor] at 30% opacity. Called from
+             * the lightweight payload path so we don't rebuild spans.
              */
             fun applyGlow(ambientColor: Int) {
                 val r = Color.red(ambientColor)

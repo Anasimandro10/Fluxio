@@ -62,7 +62,9 @@ object LrcParser {
             val timestamps = mutableListOf<Long>()
 
             while (matcher.find()) {
-                timestamps.add(parseTimeParts(matcher.group(1), matcher.group(2), matcher.group(3)) ?: continue)
+                timestamps.add(
+                    parseTimeParts(matcher.group(1), matcher.group(2), matcher.group(3)) ?: continue
+                )
             }
 
             if (timestamps.isEmpty()) continue
@@ -73,13 +75,15 @@ object LrcParser {
             // Try to extract word timings if <mm:ss.xx> tags exist
             val words = mutableListOf<WordTiming>()
             val wordMatcher = WORD_PATTERN.matcher(textAfterLineTimestamps)
-            
+
             var plainTextBuilder = java.lang.StringBuilder()
-            
+
             while (wordMatcher.find()) {
-                val startMs = parseTimeParts(wordMatcher.group(1), wordMatcher.group(2), wordMatcher.group(3)) ?: continue
+                val startMs =
+                    parseTimeParts(wordMatcher.group(1), wordMatcher.group(2), wordMatcher.group(3))
+                        ?: continue
                 val wordText = wordMatcher.group(4) ?: ""
-                
+
                 if (words.isNotEmpty()) {
                     // Previous word's end is current word's start
                     val prev = words.removeLast()
@@ -87,35 +91,51 @@ object LrcParser {
                 }
                 val startChar = plainTextBuilder.length
                 val endChar = startChar + wordText.length
-                words.add(WordTiming(text = wordText, startMs = startMs, endMs = startMs + 1000L, startChar = startChar, endChar = endChar)) // 1s fallback endMs
+                words.add(
+                    WordTiming(
+                        text = wordText,
+                        startMs = startMs,
+                        endMs = startMs + 1000L,
+                        startChar = startChar,
+                        endChar = endChar,
+                    )
+                ) // 1s fallback endMs
                 plainTextBuilder.append(wordText)
             }
 
             // If no word tags were found, we just use the text without tags
-            val finalPlainText = if (words.isEmpty()) {
-                textAfterLineTimestamps.replace(Regex("<[^>]*>"), "")
-            } else {
-                plainTextBuilder.toString()
-            }
+            val finalPlainText =
+                if (words.isEmpty()) {
+                    textAfterLineTimestamps.replace(Regex("<[^>]*>"), "")
+                } else {
+                    plainTextBuilder.toString()
+                }
 
             for (ts in timestamps) {
-                // If words were found, adjust their times relative to the line if needed, 
+                // If words were found, adjust their times relative to the line if needed,
                 // but usually word timestamps are absolute.
-                lines.add(LrcLine(startMs = ts, text = finalPlainText.trim(), words = words.toList()))
+                lines.add(
+                    LrcLine(startMs = ts, text = finalPlainText.trim(), words = words.toList())
+                )
             }
         }
 
         return lines.sortedBy { it.startMs }
     }
-    
-    private fun parseTimeParts(minutesStr: String?, secondsStr: String?, millisStr: String?): Long? {
+
+    private fun parseTimeParts(
+        minutesStr: String?,
+        secondsStr: String?,
+        millisStr: String?,
+    ): Long? {
         val minutes = minutesStr?.toLongOrNull() ?: return null
         val seconds = secondsStr?.toLongOrNull() ?: return null
-        val millis = when {
-            millisStr == null -> 0L
-            millisStr.length == 2 -> (millisStr.toLongOrNull() ?: return null) * 10L
-            else -> millisStr.toLongOrNull() ?: return null
-        }
+        val millis =
+            when {
+                millisStr == null -> 0L
+                millisStr.length == 2 -> (millisStr.toLongOrNull() ?: return null) * 10L
+                else -> millisStr.toLongOrNull() ?: return null
+            }
         return minutes * 60_000L + seconds * 1_000L + millis
     }
 }

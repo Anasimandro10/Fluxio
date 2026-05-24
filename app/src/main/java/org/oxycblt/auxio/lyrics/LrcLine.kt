@@ -17,15 +17,13 @@
  */
 package org.oxycblt.auxio.lyrics
 
-/**
- * Represents a single word/syllable and its timing.
- */
+/** Represents a single word/syllable and its timing. */
 data class WordTiming(
-    val text: String, 
-    val startMs: Long, 
+    val text: String,
+    val startMs: Long,
     val endMs: Long,
     val startChar: Int = 0,
-    val endChar: Int = 0
+    val endChar: Int = 0,
 )
 
 /**
@@ -37,10 +35,10 @@ data class WordTiming(
  * @param words The list of words with individual timings, if available (for word-by-word sync).
  */
 data class LrcLine(
-    val startMs: Long, 
+    val startMs: Long,
     val endMs: Long = 0L,
     val text: String,
-    val words: List<WordTiming> = emptyList()
+    val words: List<WordTiming> = emptyList(),
 ) {
     /** True when this line represents an instrumental silence (empty text body in the LRC file). */
     val isSilence: Boolean

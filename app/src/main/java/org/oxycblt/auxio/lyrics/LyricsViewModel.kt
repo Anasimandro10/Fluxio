@@ -264,22 +264,25 @@ constructor(
                     updateCurrentLine(posMs)
                     // Sleep until just before the next line's timestamp or next word's timestamp
                     val lines = _lines.value
-                    
+
                     var nextWakeupMs: Long? = null
-                    
+
                     // Look for the next line
                     val nextLineMs = lines.firstOrNull { it.startMs > posMs }?.startMs
                     if (nextLineMs != null) {
                         nextWakeupMs = nextLineMs
                     }
-                    
+
                     // Look for the next word in the current line
                     val currentLineIdx = _currentLineIndex.value
                     if (currentLineIdx in lines.indices) {
                         val currentLine = lines[currentLineIdx]
-                        val nextWordMs = currentLine.words.firstOrNull { it.startMs > posMs }?.startMs
+                        val nextWordMs =
+                            currentLine.words.firstOrNull { it.startMs > posMs }?.startMs
                         if (nextWordMs != null) {
-                            nextWakeupMs = if (nextWakeupMs == null) nextWordMs else minOf(nextWakeupMs, nextWordMs)
+                            nextWakeupMs =
+                                if (nextWakeupMs == null) nextWordMs
+                                else minOf(nextWakeupMs, nextWordMs)
                         }
                     }
 
@@ -333,7 +336,7 @@ constructor(
 
         val reported = if (active >= 0 && snapshot[active].isSilence) -1 else active
         if (_currentLineIndex.value != reported) _currentLineIndex.value = reported
-        
+
         var wordIdx = -1
         if (reported >= 0) {
             val words = snapshot[reported].words
