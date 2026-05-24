@@ -39,7 +39,7 @@
         <ImageView
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:src="@drawable/ic_search"
+            android:src="@drawable/ic_search_24"
             app:tint="?attr/colorOnSurfaceVariant" />
 
         <EditText
@@ -60,7 +60,7 @@
             android:id="@+id/autoeq_browser_clear"
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:src="@drawable/ic_close"
+            android:src="@drawable/ic_close_24"
             android:visibility="gone"
             app:tint="?attr/colorOnSurfaceVariant" />
 
