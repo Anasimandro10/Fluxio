@@ -147,9 +147,9 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
         private var ambientColor = Color.WHITE
 
         /**
-         * Updates the active line index and triggers targeted rebinds only for the two rows
-         * whose visual state changed (previous active → inactive, new index → active).
-         * Avoids [notifyDataSetChanged] which would rebind every row on each lyric tick.
+         * Updates the active line index and triggers targeted rebinds only for the two rows whose
+         * visual state changed (previous active → inactive, new index → active). Avoids
+         * [notifyDataSetChanged] which would rebind every row on each lyric tick.
          */
         fun setActiveIndex(index: Int) {
             if (activeIndex == index) return
@@ -253,11 +253,7 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
 
                 for (i in line.words.indices) {
                     val w = line.words[i]
-                    if (
-                        w.startChar < 0 ||
-                            w.endChar > line.text.length ||
-                            w.startChar >= w.endChar
-                    )
+                    if (w.startChar < 0 || w.endChar > line.text.length || w.startChar >= w.endChar)
                         continue
 
                     when {
@@ -311,8 +307,8 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
     }
 
     /**
-     * A [LinearSmoothScroller] that positions the target item so its vertical midpoint aligns
-     * with the RecyclerView's vertical midpoint, fulfilling the "centered on active line" spec.
+     * A [LinearSmoothScroller] that positions the target item so its vertical midpoint aligns with
+     * the RecyclerView's vertical midpoint, fulfilling the "centered on active line" spec.
      */
     private class CenterSmoothScroller(context: Context) : LinearSmoothScroller(context) {
         override fun calculateDtToFit(
@@ -321,7 +317,6 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
             boxStart: Int,
             boxEnd: Int,
             snapPreference: Int,
-        ): Int =
-            (boxStart + (boxEnd - boxStart) / 2) - (viewStart + (viewEnd - viewStart) / 2)
+        ): Int = (boxStart + (boxEnd - boxStart) / 2) - (viewStart + (viewEnd - viewStart) / 2)
     }
 }

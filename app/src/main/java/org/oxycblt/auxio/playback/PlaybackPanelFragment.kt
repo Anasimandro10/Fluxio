@@ -167,7 +167,8 @@ class PlaybackPanelFragment :
                             0 -> org.oxycblt.auxio.playback.queue.QueueFragment()
                             1 -> LyricsTabFragment()
                             2 -> AudioTabFragment()
-                            else -> throw IllegalArgumentException("Unknown pager position $position")
+                            else ->
+                                throw IllegalArgumentException("Unknown pager position $position")
                         }
                 }
             registerOnPageChangeCallback(
@@ -322,8 +323,8 @@ class PlaybackPanelFragment :
      * - Swipe L/R when a tab is active → ignored here; ViewPager2 handles it natively.
      * - Swipe down when a tab is active → collapse back to main view.
      *
-     * The touch listener always returns false so child views (ViewPager2, buttons) receive
-     * every event unmodified. The GestureDetector only decides whether to act on a fling.
+     * The touch listener always returns false so child views (ViewPager2, buttons) receive every
+     * event unmodified. The GestureDetector only decides whether to act on a fling.
      */
     @SuppressLint("ClickableViewAccessibility")
     private fun setupGestures(binding: FragmentPlaybackPanelBinding) {
@@ -351,9 +352,10 @@ class PlaybackPanelFragment :
                             // When the pager is visible, ViewPager2 handles its own horizontal
                             // navigation; this detector intentionally stays silent to avoid
                             // double tab changes from the same gesture.
-                            if (currentTab == PlayerTab.NONE &&
-                                absX > SWIPE_THRESHOLD &&
-                                Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD
+                            if (
+                                currentTab == PlayerTab.NONE &&
+                                    absX > SWIPE_THRESHOLD &&
+                                    Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD
                             ) {
                                 if (diffX > 0) shiftTab(-1) else shiftTab(1)
                                 true
@@ -362,9 +364,10 @@ class PlaybackPanelFragment :
                             }
                         } else {
                             // Vertical downward swipe: collapse the active tab back to main view.
-                            if (diffY > SWIPE_THRESHOLD &&
-                                Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD &&
-                                currentTab != PlayerTab.NONE
+                            if (
+                                diffY > SWIPE_THRESHOLD &&
+                                    Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD &&
+                                    currentTab != PlayerTab.NONE
                             ) {
                                 setTab(PlayerTab.NONE)
                                 true
@@ -440,7 +443,7 @@ class PlaybackPanelFragment :
     override fun onDoubleTapEnd() {}
 
     override fun getFastSeekDirection(
-        portion: DisplayPortion,
+        portion: DisplayPortion
     ): PlayerFastSeekOverlay.PerformListener.FastSeekDirection =
         when (portion) {
             DisplayPortion.LEFT,
