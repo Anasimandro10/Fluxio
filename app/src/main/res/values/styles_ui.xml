@@ -37,7 +37,6 @@
     </style>
 
     <style name="Widget.Fluxio.LinearProgressIndicator" parent="Widget.Material3.LinearProgressIndicator">
-<!--        <item name="trackColor">@color/sel_track</item>-->
         <item name="trackCornerRadius">@dimen/m3_shape_corners_full</item>
         <item name="trackStopIndicatorSize">0dp</item>
     </style>
@@ -206,8 +205,7 @@
     </style>
 
     <style name="Widget.Fluxio.TextView.Item.Primary" parent="Widget.Fluxio.TextView.Item.Base">
-        <item name="android:textAppearance">?attr/textAppearanceTitleMedium
-        </item>
+        <item name="android:textAppearance">?attr/textAppearanceTitleMedium</item>
         <item name="android:textColor">?android:attr/textColorPrimary</item>
     </style>
 
@@ -231,7 +229,6 @@
     <style name="Widget.Fluxio.TextView.Secondary.Ellipsize" parent="Widget.Fluxio.TextView.Secondary.Base">
         <item name="android:maxLines">1</item>
         <item name="android:ellipsize">end</item>
-
     </style>
 
     <style name="Widget.Fluxio.TextView.Secondary.Marquee" parent="Widget.Fluxio.TextView.Secondary.Base">
@@ -286,7 +283,7 @@
         <item name="android:background">?attr/selectableItemBackground</item>
     </style>
 
-    <!-- BUTTON STYLES -->
+    <!-- BUTTON STYLES — text/filled/tonal/outlined (unchanged) -->
 
     <style name="Widget.Fluxio.Button" parent="Widget.Material3Expressive.Button">
         <item name="labelTextAppearance">?attr/textAppearanceLabelLargeEmphasized</item>
@@ -354,106 +351,167 @@
         <item name="iconSize">@dimen/size_icon_small</item>
     </style>
 
+    <!-- ═══════════════════════════════════════════════════════════
+         ICON BUTTON STYLES — REWORK
+         Problem fixed: M3Expressive IconButton uses a rounded-rectangle
+         shapeAppearance by default. The ripple is clipped to that shape,
+         producing a visible rectangular "ghost" on press.
+         Fix: force ShapeAppearance.Material3.Corner.Full (perfect circle)
+         on every icon button so the press ripple is always circular.
+         All buttons are icon-only (transparent background at rest).
+    ═══════════════════════════════════════════════════════════ -->
+
+    <!--
+        Base icon button: transparent background, circular ripple, text2 tint.
+        All icon buttons in the app inherit from this directly or indirectly.
+        - backgroundTint transparent  → no visible container at rest
+        - shapeAppearance Corner.Full → ripple clipped to circle, not rectangle
+        - insets zeroed               → no extra invisible padding creating a larger press area
+    -->
     <style name="Widget.Fluxio.Button.Icon.Base" parent="Widget.Material3Expressive.Button.IconButton">
-        <item name="materialThemeOverlay">@style/ThemeOverlay.Auxio.UncheckableIconButton</item>
+        <item name="backgroundTint">@android:color/transparent</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Full</item>
+        <item name="iconTint">?attr/colorControlNormal</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:insetLeft">0dp</item>
+        <item name="android:insetRight">0dp</item>
     </style>
 
-    <style name="ThemeOverlay.Auxio.UncheckableIconButton" parent="">
-        <item name="colorContainer">@android:color/transparent</item>
-        <item name="colorOnContainer">?attr/colorOnSurfaceVariant</item>
-    </style>
-
+    <!-- 24dp icon, 48dp touch target -->
     <style name="Widget.Fluxio.Button.Icon.Small" parent="Widget.Fluxio.Button.Icon.Base">
         <item name="iconSize">@dimen/size_icon_small</item>
         <item name="android:minWidth">@dimen/size_touchable_small</item>
         <item name="android:minHeight">@dimen/size_touchable_small</item>
-        <item name="android:insetTop">@dimen/spacing_tiny</item>
-        <item name="android:insetBottom">@dimen/spacing_tiny</item>
-        <item name="android:insetLeft">@dimen/spacing_tiny</item>
-        <item name="android:insetRight">@dimen/spacing_tiny</item>
-        <item name="android:paddingStart">@dimen/spacing_small</item>
-        <item name="android:paddingEnd">@dimen/spacing_small</item>
-        <item name="android:paddingTop">@dimen/spacing_small</item>
-        <item name="android:paddingBottom">@dimen/spacing_small</item>
-        <!-- Intentional to prevent button from spamming the log console -->
-        <item name="iconTint" tools:ignore="PrivateResource">@color/m3_text_button_foreground_color_selector</item>
     </style>
 
-    <style name="Widget.Fluxio.Button.Icon.Medium" parent="Widget.Material3Expressive.Button.IconButton.Outlined">
+    <!--
+        32dp icon, 48dp touch target.
+        Previously extended Button.IconButton.Outlined — that added a visible
+        stroke/border. Now correctly inherits from Icon.Base (transparent + circle).
+    -->
+    <style name="Widget.Fluxio.Button.Icon.Medium" parent="Widget.Fluxio.Button.Icon.Base">
         <item name="iconSize">@dimen/size_icon_medium</item>
         <item name="android:minWidth">@dimen/size_touchable_small</item>
         <item name="android:minHeight">@dimen/size_touchable_small</item>
-        <item name="android:insetTop">@dimen/spacing_small</item>
-        <item name="android:insetBottom">@dimen/spacing_small</item>
-        <item name="android:insetLeft">0dp</item>
-        <item name="android:insetRight">0dp</item>
-        <item name="android:paddingStart">@dimen/spacing_small</item>
-        <item name="android:paddingEnd">@dimen/spacing_small</item>
-        <item name="android:paddingTop">@dimen/spacing_small</item>
-        <item name="android:paddingBottom">@dimen/spacing_small</item>
-        <item name="iconTint" tools:ignore="PrivateResource">@color/m3_text_button_foreground_color_selector</item>
     </style>
 
+    <!--
+        Filled primary icon button — used for album detail Play CTA and similar.
+        Keeps a visible filled background (this is intentional for CTAs).
+        Circle shape keeps the ripple consistent.
+    -->
     <style name="Widget.Fluxio.Button.Icon.Small.Primary" parent="Widget.Material3Expressive.Button.IconButton.Filled">
         <item name="iconSize">@dimen/size_icon_small</item>
         <item name="android:minWidth">@dimen/size_touchable_small</item>
         <item name="android:minHeight">@dimen/size_touchable_small</item>
-        <item name="android:insetTop">@dimen/spacing_tiny</item>
-        <item name="android:insetBottom">@dimen/spacing_tiny</item>
-        <item name="android:insetLeft">@dimen/spacing_tiny</item>
-        <item name="android:insetRight">@dimen/spacing_tiny</item>
-        <item name="android:paddingStart">@dimen/spacing_small</item>
-        <item name="android:paddingEnd">@dimen/spacing_small</item>
-        <item name="android:paddingTop">@dimen/spacing_small</item>
-        <item name="android:paddingBottom">@dimen/spacing_small</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Full</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:insetLeft">0dp</item>
+        <item name="android:insetRight">0dp</item>
     </style>
 
+    <!-- Tonal secondary icon button — circular -->
     <style name="Widget.Fluxio.Button.Icon.Small.Secondary" parent="Widget.Material3Expressive.Button.IconButton.Tonal">
         <item name="iconSize">@dimen/size_icon_small</item>
         <item name="android:minWidth">@dimen/size_touchable_small</item>
         <item name="android:minHeight">@dimen/size_touchable_small</item>
-        <item name="android:insetTop">@dimen/spacing_tiny</item>
-        <item name="android:insetBottom">@dimen/spacing_tiny</item>
-        <item name="android:insetLeft">@dimen/spacing_tiny</item>
-        <item name="android:insetRight">@dimen/spacing_tiny</item>
-        <item name="android:paddingStart">@dimen/spacing_small</item>
-        <item name="android:paddingEnd">@dimen/spacing_small</item>
-        <item name="android:paddingTop">@dimen/spacing_small</item>
-        <item name="android:paddingBottom">@dimen/spacing_small</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Full</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:insetLeft">0dp</item>
+        <item name="android:insetRight">0dp</item>
     </style>
 
+    <!--
+        Legacy ThemeOverlay kept for compile compatibility.
+        Not used by the new Icon.Base (backgroundTint is set directly).
+    -->
+    <style name="ThemeOverlay.Auxio.UncheckableIconButton" parent="">
+        <item name="colorContainer">@android:color/transparent</item>
+        <item name="colorOnContainer">?attr/colorOnSurfaceVariant</item>
+    </style>
 
     <style name="ThemeOverlay.Auxio.IconButton.Palette.Secondary" parent="">
         <item name="colorContainer">?attr/colorSecondaryContainer</item>
         <item name="colorOnContainer">?attr/colorOnSecondaryContainer</item>
     </style>
 
-    <style name="Widget.Fluxio.Button.PlayPause" parent="Widget.Material3Expressive.Button.IconButton">
+    <!--
+        Legacy play/pause variants kept for compile compat.
+        Full-player uses Playback.PlayPause.Primary below.
+    -->
+    <style name="Widget.Fluxio.Button.PlayPause" parent="Widget.Fluxio.Button.Icon.Base">
         <item name="android:checkable">true</item>
     </style>
 
-    <style name="Widget.Fluxio.Button.PlayPause.Secondary" parent="Widget.Material3Expressive.Button.IconButton">
+    <style name="Widget.Fluxio.Button.PlayPause.Secondary" parent="Widget.Fluxio.Button.Icon.Base">
         <item name="backgroundTint">?attr/colorSecondary</item>
         <item name="iconTint">?attr/colorOnSecondary</item>
         <item name="android:checkable">true</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Full</item>
     </style>
 
+    <!-- ═══════════════════════════════════════════════════════════
+         PLAYBACK BUTTON STYLES
+         All inherit from Icon.Base → transparent + circular by default.
+    ═══════════════════════════════════════════════════════════ -->
+
+    <!--
+        Overflow (⋮): flat icon, no background, text2, circular ripple.
+    -->
     <style name="Widget.Fluxio.Button.Playback.More" parent="Widget.Fluxio.Button.Icon.Base" />
 
-    <!-- Toggle (shuffle / repeat / favourite): flat icon, no container, tint from sel_checkable_icon -->
+    <!--
+        Toggle (shuffle / repeat / favourite):
+        - checkable, toggleCheckedStateOnClick=false (VM drives state)
+        - outline icon when unchecked, solid icon when checked (handled by drawable selectors)
+        - tint from sel_checkable_icon: colorPrimary when checked, colorControlNormal when not
+        - no background at any state
+    -->
     <style name="Widget.Fluxio.Button.Playback.Toggle" parent="Widget.Fluxio.Button.Icon.Base">
         <item name="android:checkable">true</item>
         <item name="toggleCheckedStateOnClick">false</item>
         <item name="iconTint">@color/sel_checkable_icon</item>
-        <item name="backgroundTint">@android:color/transparent</item>
     </style>
 
-    <style name="Widget.Fluxio.Button.Playback.Skip" parent="Widget.Fluxio.Button.Icon.Base" />
+    <!--
+        Skip prev/next in compact layouts (h360dp, default):
+        24dp icon, 48dp touch target, text1 tint (player context).
+    -->
+    <style name="Widget.Fluxio.Button.Playback.Skip" parent="Widget.Fluxio.Button.Icon.Base">
+        <item name="iconSize">@dimen/size_icon_small</item>
+        <item name="iconTint">?attr/colorOnSurface</item>
+    </style>
 
-    <!-- Compact-layout play button: tonal (visible container in 5-button row) -->
-    <style name="Widget.Fluxio.Button.Playback.PlayPause" parent="Widget.Material3Expressive.Button.IconButton.Tonal">
+    <!--
+        Skip prev/next in full player (h520dp):
+        32dp icon per spec, text1 tint, circular ripple.
+    -->
+    <style name="Widget.Fluxio.Button.Playback.Skip.Primary" parent="Widget.Fluxio.Button.Icon.Base">
+        <item name="iconSize">@dimen/size_icon_medium</item>
+        <item name="iconTint">?attr/colorOnSurface</item>
+    </style>
+
+    <!--
+        Play/pause in compact layouts (h360dp, default):
+        Checkable, 24dp icon, no background, circular ripple.
+    -->
+    <style name="Widget.Fluxio.Button.Playback.PlayPause" parent="Widget.Fluxio.Button.Icon.Base">
         <item name="android:checkable">true</item>
-        <item name="backgroundTint">@android:color/transparent</item>
+        <item name="iconSize">@dimen/size_icon_small</item>
+        <item name="iconTint">?attr/colorOnSurface</item>
+    </style>
+
+    <!--
+        Play/pause in full player (h520dp):
+        Spec: "play btn — icon-only, no background". 40dp icon, text1 tint, circular ripple.
+    -->
+    <style name="Widget.Fluxio.Button.Playback.PlayPause.Primary" parent="Widget.Fluxio.Button.Icon.Base">
+        <item name="android:checkable">true</item>
+        <item name="iconSize">@dimen/size_icon_large</item>
+        <item name="iconTint">?attr/colorOnSurface</item>
     </style>
 
     <!-- ═══════════════════════════════════════════════════════════
@@ -473,29 +531,10 @@
         <item name="cornerSize">@dimen/radius_artwork_grid</item>
     </style>
 
-    <!-- Large artwork in player: exactly 14dp (M3 Corner.Large = 16dp — wrong) -->
+    <!-- Large artwork in player: exactly 14dp -->
     <style name="ShapeAppearance.Fluxio.Artwork.Player" parent="">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">@dimen/radius_artwork_player</item>
-    </style>
-
-    <!-- ═══════════════════════════════════════════════════════════
-         FLUXIO — Full-screen player button variants
-         Icon-only, no background (spec: play btn sin fondo)
-    ═══════════════════════════════════════════════════════════ -->
-
-    <!-- Full-player play/pause: icon-only, no container -->
-    <style name="Widget.Fluxio.Button.Playback.PlayPause.Primary" parent="Widget.Fluxio.Button.Icon.Base">
-        <item name="android:checkable">true</item>
-        <item name="iconSize">@dimen/size_icon_large</item>
-        <item name="iconTint">?attr/colorOnSurface</item>
-        <item name="backgroundTint">@android:color/transparent</item>
-    </style>
-
-    <!-- Full-player prev/next: flat, white icon, no container -->
-    <style name="Widget.Fluxio.Button.Playback.Skip.Primary" parent="Widget.Fluxio.Button.Icon.Base">
-        <item name="iconSize">@dimen/size_icon_medium</item>
-        <item name="iconTint">?attr/colorOnSurface</item>
     </style>
 
 </resources>
