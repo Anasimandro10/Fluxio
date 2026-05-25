@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Copyright (C) 2026 Fluxio Project
+    SPDX-License-Identifier: GPL-3.0-or-later
+
+    ShapeAppearance styles for artwork corners.
+    Named after their context so the intent is clear at the call site.
+-->
+<resources>
+
+    <!--
+        Mini artwork in the lyrics tab header (64dp view).
+        Spec: r:8dp — between list (6dp) and grid (10dp).
+    -->
+    <style name="ShapeAppearance.Fluxio.Artwork.LyricsMini" parent="ShapeAppearance.Material3.Small">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/radius_artwork_lyrics_mini</item>
+    </style>
+
+</resources>

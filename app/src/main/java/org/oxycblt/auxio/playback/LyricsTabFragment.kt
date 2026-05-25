@@ -17,6 +17,7 @@
  */
 package org.oxycblt.auxio.playback
 
+import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
 import android.text.Spannable
@@ -28,6 +29,7 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
@@ -60,10 +62,6 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
     private val lyricsModel: LyricsViewModel by activityViewModels()
 
     private var lyricsAdapter: LyricsAdapter? = null
-
-    // Album ambient color for the glow effect. Updated whenever the song changes.
-    // Defaults to white so the glow is visible even before the color is resolved.
-    private var ambientColor: Int = Color.WHITE
 
     override fun onCreateBinding(inflater: LayoutInflater) =
         FragmentLyricsTabBinding.inflate(inflater)
@@ -114,11 +112,9 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
 
     private fun updateCurrentLine(index: Int) {
         val adapter = lyricsAdapter ?: return
-        val previousIndex = adapter.activeIndex
         adapter.setActiveIndex(index)
-        // Smooth-scroll so the active line is roughly centred on screen.
-        if (index >= 0 && index != previousIndex) {
-            requireBinding().lyricsTabRecycler.smoothScrollToPosition(index)
+        if (index >= 0) {
+            scrollToCenter(requireBinding().lyricsTabRecycler, index)
         }
     }
 
@@ -126,12 +122,21 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
         lyricsAdapter?.setActiveWordIndex(index)
     }
 
+    /**
+     * Smooth-scrolls [recyclerView] so that the item at [position] is vertically centered in the
+     * viewport. Uses a [LinearSmoothScroller] that calculates an offset to place the item's
+     * midpoint at the RecyclerView's midpoint, instead of merely scrolling it into view.
+     */
+    private fun scrollToCenter(recyclerView: RecyclerView, position: Int) {
+        val scroller = CenterSmoothScroller(recyclerView.context)
+        scroller.targetPosition = position
+        recyclerView.layoutManager?.startSmoothScroll(scroller)
+    }
+
     // -------------------------------------------------------------------------
     // Adapter
     // -------------------------------------------------------------------------
 
-    // Not `inner` — Kotlin prohibits `companion object` and `object` declarations
-    // inside inner classes. ViewHolder is still `inner` to LyricsAdapter (fine).
     private class LyricsAdapter : ListAdapter<LrcLine, LyricsAdapter.ViewHolder>(LrcLineDiff) {
 
         var activeIndex = -1
@@ -139,26 +144,29 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
 
         private var activeWordIndex = -1
         private var isSynced = true
-
-        // Album ambient color for the active-line glow (30% opacity).
-        // Set externally from updateSong() when DynamicColorManager is wired up (step 31).
         private var ambientColor = Color.WHITE
 
+        /**
+         * Updates the active line index and triggers targeted rebinds only for the two rows
+         * whose visual state changed (previous active → inactive, new index → active).
+         * Avoids [notifyDataSetChanged] which would rebind every row on each lyric tick.
+         */
         fun setActiveIndex(index: Int) {
             if (activeIndex == index) return
+            val previous = activeIndex
             activeIndex = index
-            // Full rebind: every row's alpha/textSize depends on whether it is the active line.
-            notifyDataSetChanged()
+            if (previous >= 0 && previous < itemCount) notifyItemChanged(previous)
+            if (index >= 0 && index < itemCount) notifyItemChanged(index)
         }
 
         fun setActiveWordIndex(wordIndex: Int) {
             if (activeWordIndex == wordIndex) return
             activeWordIndex = wordIndex
-            // Only the active line needs a word-level redraw — use payload to skip full rebind.
             if (activeIndex >= 0) notifyItemChanged(activeIndex, PAYLOAD_WORD)
         }
 
         fun setIsSynced(synced: Boolean) {
+            if (isSynced == synced) return
             isSynced = synced
             notifyDataSetChanged()
         }
@@ -166,7 +174,6 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
         fun setAmbientColor(color: Int) {
             if (ambientColor == color) return
             ambientColor = color
-            // Glow color changed — only the active line shows the glow.
             if (activeIndex >= 0) notifyItemChanged(activeIndex, PAYLOAD_GLOW)
         }
 
@@ -184,7 +191,6 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
             if (
                 payloads.isNotEmpty() && payloads.all { it == PAYLOAD_WORD || it == PAYLOAD_GLOW }
             ) {
-                // Lightweight re-bind: only update text spans and glow, skip alpha/size.
                 val isActiveLine = position == activeIndex
                 if (isActiveLine) {
                     holder.applyWordHighlight(getItem(position), activeWordIndex)
@@ -205,8 +211,6 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
             )
         }
 
-        // ---- ViewHolder ----
-
         inner class ViewHolder(private val binding: ItemLyricLineBinding) :
             RecyclerView.ViewHolder(binding.root) {
 
@@ -217,16 +221,8 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
                 currentWordIdx: Int,
                 ambientColor: Int,
             ) {
-                // Text + word-level spans
                 applyWordHighlight(line, currentWordIdx)
 
-                // Per-spec visual state:
-                //   unsynced  → full opacity, 20sp, no glow
-                //   active    → full opacity, 22sp Medium, glow 8dp @30% album color
-                //   inactive  → 35% opacity, 20sp, no glow, no scale
-                //
-                // Note: NO scaleX / scaleY transforms (context specifies only size+opacity diff).
-                // Reset scale that may have been left from a recycled ViewHolder.
                 binding.lyricLine.scaleX = 1f
                 binding.lyricLine.scaleY = 1f
 
@@ -237,10 +233,8 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
                 } else if (isActiveLine) {
                     binding.lyricLine.alpha = 1f
                     binding.lyricLine.textSize = 22f
-                    // Glow: 8dp radius, 30% opacity of the album's ambient color.
                     applyGlow(ambientColor)
                 } else {
-                    // All inactive lines: flat 35% opacity, 20sp — no cascade.
                     binding.lyricLine.alpha = 0.35f
                     binding.lyricLine.textSize = 20f
                     binding.lyricLine.setShadowLayer(0f, 0f, 0f, Color.TRANSPARENT)
@@ -249,19 +243,8 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
                 binding.lyricLine.isSelected = isActiveLine
             }
 
-            /**
-             * Applies word-by-word highlighting inside the active line.
-             *
-             * Spec: current word = #FFFFFF full opacity. Words yet to be sung inherit the inactive
-             * dimming (they're on the active line so the base text is already #FFFFFF at full
-             * alpha; we reduce them to 35% so they visually "wait"). Past words stay full white.
-             *
-             * If the line has no word-level timing (plain LRC), this is a no-op and the full line
-             * text is shown as-is at the active-line style.
-             */
             fun applyWordHighlight(line: LrcLine, currentWordIdx: Int) {
                 if (line.words.isEmpty() || currentWordIdx < 0) {
-                    // No word timing data — show the whole line text unchanged.
                     binding.lyricLine.text = line.text
                     return
                 }
@@ -270,16 +253,18 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
 
                 for (i in line.words.indices) {
                     val w = line.words[i]
-                    // Guard against parser producing out-of-bounds offsets.
-                    if (w.startChar < 0 || w.endChar > line.text.length || w.startChar >= w.endChar)
+                    if (
+                        w.startChar < 0 ||
+                            w.endChar > line.text.length ||
+                            w.startChar >= w.endChar
+                    )
                         continue
 
                     when {
                         i < currentWordIdx -> {
-                            // Already sung: full #FFFFFF (no span needed — default text color).
+                            // Already sung: full #FFFFFF — no span needed.
                         }
                         i == currentWordIdx -> {
-                            // Current word: explicit full white to override any inherited dimming.
                             spannable.setSpan(
                                 ForegroundColorSpan(Color.WHITE),
                                 w.startChar,
@@ -288,10 +273,9 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
                             )
                         }
                         else -> {
-                            // Upcoming words: 35% white so they visually recede while the active
-                            // line glow draws attention to the word being sung.
+                            // Upcoming: 35% white so they visually recede.
                             spannable.setSpan(
-                                ForegroundColorSpan(0x59FFFFFF.toInt()), // ~35% white
+                                ForegroundColorSpan(0x59FFFFFF.toInt()),
                                 w.startChar,
                                 w.endChar,
                                 Spannable.SPAN_EXCLUSIVE_EXCLUSIVE,
@@ -303,10 +287,6 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
                 binding.lyricLine.text = spannable
             }
 
-            /**
-             * (Re-)applies the active-line glow using [ambientColor] at 30% opacity. Called from
-             * the lightweight payload path so we don't rebuild spans.
-             */
             fun applyGlow(ambientColor: Int) {
                 val r = Color.red(ambientColor)
                 val g = Color.green(ambientColor)
@@ -328,5 +308,20 @@ class LyricsTabFragment : ViewBindingFragment<FragmentLyricsTabBinding>() {
 
             override fun areContentsTheSame(old: LrcLine, new: LrcLine) = old == new
         }
+    }
+
+    /**
+     * A [LinearSmoothScroller] that positions the target item so its vertical midpoint aligns
+     * with the RecyclerView's vertical midpoint, fulfilling the "centered on active line" spec.
+     */
+    private class CenterSmoothScroller(context: Context) : LinearSmoothScroller(context) {
+        override fun calculateDtToFit(
+            viewStart: Int,
+            viewEnd: Int,
+            boxStart: Int,
+            boxEnd: Int,
+            snapPreference: Int,
+        ): Int =
+            (boxStart + (boxEnd - boxStart) / 2) - (viewStart + (viewEnd - viewStart) / 2)
     }
 }

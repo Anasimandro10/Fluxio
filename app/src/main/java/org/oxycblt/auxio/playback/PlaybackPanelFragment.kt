@@ -162,14 +162,13 @@ class PlaybackPanelFragment :
                 object : FragmentStateAdapter(this@PlaybackPanelFragment) {
                     override fun getItemCount() = 3
 
-                    override fun createFragment(position: Int): Fragment {
-                        return when (position) {
+                    override fun createFragment(position: Int): Fragment =
+                        when (position) {
                             0 -> org.oxycblt.auxio.playback.queue.QueueFragment()
                             1 -> LyricsTabFragment()
                             2 -> AudioTabFragment()
-                            else -> throw IllegalArgumentException()
+                            else -> throw IllegalArgumentException("Unknown pager position $position")
                         }
-                    }
                 }
             registerOnPageChangeCallback(
                 object : ViewPager2.OnPageChangeCallback() {
@@ -273,12 +272,13 @@ class PlaybackPanelFragment :
     private fun shiftTab(direction: Int) {
         val tabs = arrayOf(PlayerTab.QUEUE, PlayerTab.LYRICS, PlayerTab.AUDIO)
         val currentIndex = tabs.indexOf(currentTab)
-        if (currentIndex != -1) {
-            val nextIndex = (currentIndex + direction + tabs.size) % tabs.size
-            setTab(tabs[nextIndex])
-        } else {
-            setTab(if (direction > 0) PlayerTab.QUEUE else PlayerTab.AUDIO)
-        }
+        val nextIndex =
+            if (currentIndex != -1) {
+                (currentIndex + direction + tabs.size) % tabs.size
+            } else {
+                if (direction > 0) 0 else tabs.size - 1
+            }
+        setTab(tabs[nextIndex])
     }
 
     private fun updateTabUI() {
@@ -310,10 +310,21 @@ class PlaybackPanelFragment :
         b.playbackSeekBar?.isVisible = showMain
         b.playbackControlsContainer.isVisible = showMain
         b.playbackSecondaryControls?.isVisible = showMain
-
-        b.playbackPager?.isVisible = currentTab != PlayerTab.NONE
+        b.playbackPager?.isVisible = !showMain
     }
 
+    /**
+     * Sets up swipe gesture detection on the player root.
+     *
+     * Gesture semantics:
+     * - Swipe L/R when main view is shown (no active tab) → cycle through tabs. ViewPager2 is
+     *   [View.GONE] in this state so there is no receiver conflict.
+     * - Swipe L/R when a tab is active → ignored here; ViewPager2 handles it natively.
+     * - Swipe down when a tab is active → collapse back to main view.
+     *
+     * The touch listener always returns false so child views (ViewPager2, buttons) receive
+     * every event unmodified. The GestureDetector only decides whether to act on a fling.
+     */
     @SuppressLint("ClickableViewAccessibility")
     private fun setupGestures(binding: FragmentPlaybackPanelBinding) {
         val gestureDetector =
@@ -330,36 +341,47 @@ class PlaybackPanelFragment :
                         velocityY: Float,
                     ): Boolean {
                         if (e1 == null) return false
-                        val diffY = e2.y - e1.y
                         val diffX = e2.x - e1.x
-                        if (Math.abs(diffX) > Math.abs(diffY)) {
-                            if (
-                                Math.abs(diffX) > SWIPE_THRESHOLD &&
-                                    Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD
+                        val diffY = e2.y - e1.y
+                        val absX = Math.abs(diffX)
+                        val absY = Math.abs(diffY)
+
+                        return if (absX > absY) {
+                            // Horizontal swipe: only act when the main player view is shown.
+                            // When the pager is visible, ViewPager2 handles its own horizontal
+                            // navigation; this detector intentionally stays silent to avoid
+                            // double tab changes from the same gesture.
+                            if (currentTab == PlayerTab.NONE &&
+                                absX > SWIPE_THRESHOLD &&
+                                Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD
                             ) {
                                 if (diffX > 0) shiftTab(-1) else shiftTab(1)
-                                return true
+                                true
+                            } else {
+                                false
                             }
-                        } else if (
-                            diffY > 0 &&
-                                Math.abs(diffY) > SWIPE_THRESHOLD &&
-                                Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD
-                        ) {
-                            if (currentTab != PlayerTab.NONE) {
+                        } else {
+                            // Vertical downward swipe: collapse the active tab back to main view.
+                            if (diffY > SWIPE_THRESHOLD &&
+                                Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD &&
+                                currentTab != PlayerTab.NONE
+                            ) {
                                 setTab(PlayerTab.NONE)
-                                return true
+                                true
+                            } else {
+                                false
                             }
                         }
-                        return false
                     }
                 },
             )
-        val touchListener =
-            android.view.View.OnTouchListener { _, event ->
-                gestureDetector.onTouchEvent(event)
-                false
-            }
-        binding.root.setOnTouchListener(touchListener)
+
+        binding.root.setOnTouchListener { _, event ->
+            gestureDetector.onTouchEvent(event)
+            // Always return false: child views (ViewPager2, buttons) receive every event
+            // unmodified regardless of what the gesture detector decides.
+            false
+        }
     }
 
     override fun onSeekConfirmed(positionDs: Long) {
@@ -418,9 +440,9 @@ class PlaybackPanelFragment :
     override fun onDoubleTapEnd() {}
 
     override fun getFastSeekDirection(
-        portion: DisplayPortion
-    ): PlayerFastSeekOverlay.PerformListener.FastSeekDirection {
-        return when (portion) {
+        portion: DisplayPortion,
+    ): PlayerFastSeekOverlay.PerformListener.FastSeekDirection =
+        when (portion) {
             DisplayPortion.LEFT,
             DisplayPortion.LEFT_HALF ->
                 PlayerFastSeekOverlay.PerformListener.FastSeekDirection.BACKWARD
@@ -429,7 +451,6 @@ class PlaybackPanelFragment :
                 PlayerFastSeekOverlay.PerformListener.FastSeekDirection.FORWARD
             else -> PlayerFastSeekOverlay.PerformListener.FastSeekDirection.NONE
         }
-    }
 
     override fun seek(forward: Boolean) {
         if (forward) playbackModel.stepForward() else playbackModel.stepBack()

@@ -15,7 +15,6 @@
     android:layout_height="match_parent"
     android:fillViewport="true">
 
-    <!-- Scene root for TransitionManager accordion animations -->
     <LinearLayout
         android:id="@+id/audio_accordion_root"
         android:layout_width="match_parent"
@@ -41,7 +40,6 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- Header (accordion trigger) -->
                 <LinearLayout
                     android:id="@+id/card_eq_header"
                     android:layout_width="match_parent"
@@ -58,21 +56,19 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="@string/lbl_equalizer"
-                        android:textSize="17sp"
+                        android:textAppearance="@style/TextAppearance.Fluxio.Title"
                         android:textColor="?attr/colorOnSurface" />
 
-                    <!-- State: "Activo" / "Desactivado" — 15sp text2 per spec -->
                     <TextView
                         android:id="@+id/card_eq_state"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textSize="15sp"
+                        android:textAppearance="@style/TextAppearance.Fluxio.Body"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:text="@string/lbl_audio_off" />
 
                 </LinearLayout>
 
-                <!-- Collapsible content (starts visible — EQ is default open) -->
                 <LinearLayout
                     android:id="@+id/card_eq_content"
                     android:layout_width="match_parent"
@@ -82,7 +78,6 @@
                     android:paddingBottom="16dp"
                     android:visibility="visible">
 
-                    <!-- EQ on/off row -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -95,7 +90,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="@string/lbl_equalizer"
-                            android:textSize="15sp"
+                            android:textAppearance="@style/TextAppearance.Fluxio.Body"
                             android:textColor="?attr/colorOnSurface" />
 
                         <com.google.android.material.switchmaterial.SwitchMaterial
@@ -105,14 +100,12 @@
 
                     </LinearLayout>
 
-                    <!-- Preset spinner — spec: bg element r:8dp -->
                     <Spinner
                         android:id="@+id/eq_preset_spinner"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="12dp" />
 
-                    <!-- 10 vertical SeekBar bands (populated programmatically in buildBandViews) -->
                     <LinearLayout
                         android:id="@+id/eq_db_labels"
                         android:layout_width="match_parent"
@@ -126,7 +119,6 @@
                         android:layout_height="190dp"
                         android:orientation="horizontal" />
 
-                    <!-- Freq labels: 10sp text2 per spec -->
                     <LinearLayout
                         android:id="@+id/eq_freq_labels"
                         android:layout_width="match_parent"
@@ -134,20 +126,18 @@
                         android:orientation="horizontal"
                         android:layout_marginBottom="16dp" />
 
-                    <!-- Divider -->
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
                         android:layout_marginBottom="12dp"
                         android:background="?attr/colorOutlineVariant" />
 
-                    <!-- AutoEQ section (spec: btn pure color) -->
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="6dp"
                         android:text="@string/lbl_autoeq"
-                        android:textSize="13sp"
+                        android:textAppearance="@style/TextAppearance.Fluxio.Label"
                         android:textColor="?attr/colorOnSurfaceVariant" />
 
                     <TextView
@@ -155,11 +145,10 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="8dp"
-                        android:textSize="13sp"
+                        android:textAppearance="@style/TextAppearance.Fluxio.Label"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:visibility="gone" />
 
-                    <!-- AutoEQ button: outlined matches pure-color stroke from theme -->
                     <Button
                         android:id="@+id/eq_btn_autoeq_browse"
                         style="?attr/materialButtonOutlinedStyle"
@@ -168,14 +157,12 @@
                         android:layout_marginBottom="12dp"
                         android:text="@string/lbl_autoeq_browse" />
 
-                    <!-- Divider -->
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
                         android:layout_marginBottom="12dp"
                         android:background="?attr/colorOutlineVariant" />
 
-                    <!-- Device profiles row -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -192,14 +179,14 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="@string/set_device_profiles"
-                                android:textSize="15sp"
+                                android:textAppearance="@style/TextAppearance.Fluxio.Body"
                                 android:textColor="?attr/colorOnSurface" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="@string/set_device_profiles_bt"
-                                android:textSize="13sp"
+                                android:textAppearance="@style/TextAppearance.Fluxio.Label"
                                 android:textColor="?attr/colorOnSurfaceVariant" />
 
                         </LinearLayout>
@@ -233,7 +220,6 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- Header -->
                 <LinearLayout
                     android:id="@+id/card_crossfade_header"
                     android:layout_width="match_parent"
@@ -250,21 +236,19 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="@string/lbl_crossfade"
-                        android:textSize="17sp"
+                        android:textAppearance="@style/TextAppearance.Fluxio.Title"
                         android:textColor="?attr/colorOnSurface" />
 
-                    <!-- State: "Off" / "Ns" — reuses audio_crossfade_value ID -->
                     <TextView
                         android:id="@+id/audio_crossfade_value"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textSize="15sp"
+                        android:textAppearance="@style/TextAppearance.Fluxio.Body"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:text="@string/lbl_audio_off" />
 
                 </LinearLayout>
 
-                <!-- Collapsible content -->
                 <LinearLayout
                     android:id="@+id/card_crossfade_content"
                     android:layout_width="match_parent"
@@ -274,7 +258,6 @@
                     android:paddingBottom="20dp"
                     android:visibility="gone">
 
-                    <!-- Slider: pure color via progressTint/thumbTint -->
                     <SeekBar
                         android:id="@+id/audio_crossfade_slider"
                         android:layout_width="match_parent"
@@ -295,14 +278,14 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="@string/lbl_audio_off"
-                            android:textSize="12sp"
+                            android:textAppearance="@style/TextAppearance.Fluxio.Caption"
                             android:textColor="?attr/colorOnSurfaceVariant" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="12s"
-                            android:textSize="12sp"
+                            android:textAppearance="@style/TextAppearance.Fluxio.Caption"
                             android:textColor="?attr/colorOnSurfaceVariant" />
 
                     </LinearLayout>
@@ -326,7 +309,6 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- Header -->
                 <LinearLayout
                     android:id="@+id/card_stereo_header"
                     android:layout_width="match_parent"
@@ -343,20 +325,19 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="@string/lbl_stereo_widening"
-                        android:textSize="17sp"
+                        android:textAppearance="@style/TextAppearance.Fluxio.Title"
                         android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:id="@+id/audio_stereo_value"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textSize="15sp"
+                        android:textAppearance="@style/TextAppearance.Fluxio.Body"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:text="@string/lbl_audio_off" />
 
                 </LinearLayout>
 
-                <!-- Collapsible content -->
                 <LinearLayout
                     android:id="@+id/card_stereo_content"
                     android:layout_width="match_parent"
@@ -386,14 +367,14 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="@string/lbl_audio_off"
-                            android:textSize="12sp"
+                            android:textAppearance="@style/TextAppearance.Fluxio.Caption"
                             android:textColor="?attr/colorOnSurfaceVariant" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="100%"
-                            android:textSize="12sp"
+                            android:textAppearance="@style/TextAppearance.Fluxio.Caption"
                             android:textColor="?attr/colorOnSurfaceVariant" />
 
                     </LinearLayout>
@@ -417,7 +398,6 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- Header -->
                 <LinearLayout
                     android:id="@+id/card_speed_header"
                     android:layout_width="match_parent"
@@ -434,20 +414,19 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="@string/lbl_playback_speed"
-                        android:textSize="17sp"
+                        android:textAppearance="@style/TextAppearance.Fluxio.Title"
                         android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:id="@+id/audio_speed_value"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textSize="15sp"
+                        android:textAppearance="@style/TextAppearance.Fluxio.Body"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:text="1×" />
 
                 </LinearLayout>
 
-                <!-- Collapsible content -->
                 <LinearLayout
                     android:id="@+id/card_speed_content"
                     android:layout_width="match_parent"
@@ -457,7 +436,6 @@
                     android:paddingBottom="20dp"
                     android:visibility="gone">
 
-                    <!-- Slider 0.25×–3.0× (55 steps × 0.05) -->
                     <SeekBar
                         android:id="@+id/audio_speed_slider"
                         android:layout_width="match_parent"
@@ -479,19 +457,18 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="0.25×"
-                            android:textSize="12sp"
+                            android:textAppearance="@style/TextAppearance.Fluxio.Caption"
                             android:textColor="?attr/colorOnSurfaceVariant" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="3×"
-                            android:textSize="12sp"
+                            android:textAppearance="@style/TextAppearance.Fluxio.Caption"
                             android:textColor="?attr/colorOnSurfaceVariant" />
 
                     </LinearLayout>
 
-                    <!-- Speed preset chips — active chip: pure color bg per spec -->
                     <com.google.android.material.chip.ChipGroup
                         android:id="@+id/audio_speed_chips"
                         android:layout_width="match_parent"
@@ -561,7 +538,6 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- Header -->
                 <LinearLayout
                     android:id="@+id/card_timer_header"
                     android:layout_width="match_parent"
@@ -578,21 +554,19 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Sleep timer"
-                        android:textSize="17sp"
+                        android:textAppearance="@style/TextAppearance.Fluxio.Title"
                         android:textColor="?attr/colorOnSurface" />
 
-                    <!-- State: "Off" or countdown -->
                     <TextView
                         android:id="@+id/audio_timer_value"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textSize="15sp"
+                        android:textAppearance="@style/TextAppearance.Fluxio.Body"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:text="@string/lbl_audio_off" />
 
                 </LinearLayout>
 
-                <!-- Collapsible content -->
                 <LinearLayout
                     android:id="@+id/card_timer_content"
                     android:layout_width="match_parent"
@@ -602,7 +576,6 @@
                     android:paddingBottom="16dp"
                     android:visibility="gone">
 
-                    <!-- Stop at end of song toggle -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -615,7 +588,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Parar al final de la canción"
-                            android:textSize="15sp"
+                            android:textAppearance="@style/TextAppearance.Fluxio.Body"
                             android:textColor="?attr/colorOnSurface" />
 
                         <com.google.android.material.switchmaterial.SwitchMaterial
@@ -625,7 +598,6 @@
 
                     </LinearLayout>
 
-                    <!-- Timer chips -->
                     <com.google.android.material.chip.ChipGroup
                         android:id="@+id/audio_timer_chips"
                         android:layout_width="match_parent"
@@ -703,7 +675,6 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- Header -->
                 <LinearLayout
                     android:id="@+id/card_modes_header"
                     android:layout_width="match_parent"
@@ -720,20 +691,19 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="@string/lbl_listening_modes"
-                        android:textSize="17sp"
+                        android:textAppearance="@style/TextAppearance.Fluxio.Title"
                         android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:id="@+id/card_modes_state"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textSize="15sp"
+                        android:textAppearance="@style/TextAppearance.Fluxio.Body"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:text="—" />
 
                 </LinearLayout>
 
-                <!-- Collapsible content -->
                 <LinearLayout
                     android:id="@+id/card_modes_content"
                     android:layout_width="match_parent"
@@ -755,7 +725,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="@string/lbl_listening_modes"
-                            android:textSize="13sp"
+                            android:textAppearance="@style/TextAppearance.Fluxio.Label"
                             android:textColor="?attr/colorOnSurfaceVariant" />
 
                         <Button
@@ -779,7 +749,7 @@
                         android:layout_height="wrap_content"
                         android:alpha="0.5"
                         android:text="@string/lbl_listening_modes_empty"
-                        android:textSize="13sp"
+                        android:textAppearance="@style/TextAppearance.Fluxio.Label"
                         android:textColor="?attr/colorOnSurfaceVariant" />
 
                 </LinearLayout>

@@ -22,13 +22,7 @@
         app:titleTextAppearance="?attr/textAppearanceLabelLargeEmphasized"
         tools:subtitle="@string/lbl_all_songs" />
 
-    <!-- ── Artwork: cuadrado dominante, 24dp márgenes, r:14dp ── -->
-    <!--
-        layout_width/height = 0dp + DimensionRatio="1:1" hace que el alto iguale
-        al ancho definido por las restricciones horizontales (pantalla - 48dp).
-        verticalChainStyle=packed + bias=0.0 empaca todos los elementos desde
-        debajo del toolbar hacia abajo.
-    -->
+    <!-- ── Artwork ── -->
     <org.oxycblt.auxio.playback.ui.ControlledCoverView
         android:id="@+id/playback_cover"
         style="@style/Widget.Fluxio.Image.Full"
@@ -47,7 +41,7 @@
         app:layout_constraintVertical_chainStyle="packed"
         app:layout_constraintVertical_bias="0.0" />
 
-    <!-- ── Overlay fast-seek (mismo bounds que el artwork) ── -->
+    <!-- ── Fast-seek overlay (mismo bounds que el artwork) ── -->
     <org.oxycblt.auxio.playback.ui.stepper.PlayerFastSeekOverlay
         android:id="@+id/playback_fast_seek_overlay"
         android:layout_width="0dp"
@@ -60,7 +54,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@+id/playback_info_container" />
 
-    <!-- ── Info: título + corazón (fila horizontal) + artista ── -->
+    <!-- ── Info: título + corazón + artista ── -->
     <LinearLayout
         android:id="@+id/playback_info_container"
         android:layout_width="0dp"
@@ -73,7 +67,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@+id/playback_seek_bar">
 
-        <!-- Fila: título (izquierda, ocupa el espacio disponible) + corazón (derecha) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -91,10 +84,6 @@
                 android:ellipsize="end"
                 tools:text="Song Name" />
 
-            <!--
-                Placeholder del botón favorito. El icono real (corazón outline/solid)
-                y la lógica de toggle se añaden en el paso 30e-2.
-            -->
             <org.oxycblt.auxio.ui.RippleFixMaterialButton
                 android:id="@+id/playback_favorite"
                 style="@style/Widget.Fluxio.Button.Playback.Toggle"
@@ -106,7 +95,6 @@
 
         </LinearLayout>
 
-        <!-- Artista: 17sp text2, 4dp debajo del título -->
         <TextView
             android:id="@+id/playback_artist"
             android:layout_width="match_parent"
@@ -120,12 +108,7 @@
 
     </LinearLayout>
 
-    <!-- ── Seek bar: track 4dp, thumb 12dp, etiquetas 12sp text2 ── -->
-    <!--
-        StyledSeekBar incluye internamente el WavySlider y las etiquetas
-        de posición/duración (view_seek_bar.xml). El estilo del track y
-        thumb se controla desde el tema y StyledSeekBar.kt.
-    -->
+    <!-- ── Seek bar ── -->
     <org.oxycblt.auxio.playback.ui.StyledSeekBar
         android:id="@+id/playback_seek_bar"
         android:layout_width="match_parent"
@@ -136,7 +119,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@+id/playback_controls_container" />
 
-    <!-- ── Controles primarios: ← play → (iconos grandes, sin fondo en play) ── -->
+    <!-- ── Controles primarios ── -->
     <org.oxycblt.auxio.playback.ui.ForcedLTRFrameLayout
         android:id="@+id/playback_controls_container"
         android:layout_width="0dp"
@@ -185,7 +168,7 @@
 
     </org.oxycblt.auxio.playback.ui.ForcedLTRFrameLayout>
 
-    <!-- ── Controles secundarios: shuffle | repeat | overflow ── -->
+    <!-- ── Controles secundarios ── -->
     <org.oxycblt.auxio.playback.ui.ForcedLTRFrameLayout
         android:id="@+id/playback_secondary_controls"
         android:layout_width="0dp"
@@ -234,12 +217,7 @@
 
     </org.oxycblt.auxio.playback.ui.ForcedLTRFrameLayout>
 
-    <!-- ── Barra de tabs: COLA / LETRAS / AUDIO ── -->
-    <!--
-        El texto se establece programáticamente en el paso 30e-3.
-        tools:text muestra etiquetas en el editor de layouts.
-        La lógica de tab activo (subrayado + color puro) va en 30e-3.
-    -->
+    <!-- ── Barra de tabs ── -->
     <LinearLayout
         android:id="@+id/playback_tab_bar"
         android:layout_width="match_parent"
@@ -249,7 +227,7 @@
         app:layout_constraintTop_toBottomOf="@+id/playback_secondary_controls"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/playback_lyrics">
+        app:layout_constraintBottom_toTopOf="@+id/playback_pager">
 
         <TextView
             android:id="@+id/playback_tab_queue"
@@ -286,12 +264,7 @@
 
     </LinearLayout>
 
-    <!-- ── RecyclerView de letras (oculto por defecto, se muestra al activar tab) ── -->
-    <!--
-        height=0dp + constraintTop/Bottom: cuando está visible se expande para
-        rellenar el espacio entre la barra de tabs y el borde inferior de pantalla.
-        Cuando está gone ocupa 0dp y no desplaza ningún elemento.
-    -->
+    <!-- ── ViewPager con las tres tabs ── -->
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/playback_pager"
         android:layout_width="match_parent"

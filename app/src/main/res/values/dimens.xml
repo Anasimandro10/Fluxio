@@ -3,11 +3,13 @@
 
     <!-- ═══════════════════════════════════════════════════════════
          FLUXIO DESIGN SYSTEM — Corner Radii
-         6 / 10 / 14 / 18 / 20 / 26 dp
+         6 / 8 / 10 / 14 / 18 / 20 / 26 dp
     ═══════════════════════════════════════════════════════════ -->
 
     <!-- Artwork in list items (songs, queue rows) -->
     <dimen name="radius_artwork_list">6dp</dimen>
+    <!-- Mini artwork in lyrics tab header -->
+    <dimen name="radius_artwork_lyrics_mini">8dp</dimen>
     <!-- Artwork in grid, collage cells, add-to-playlist rows -->
     <dimen name="radius_artwork_grid">10dp</dimen>
     <!-- Large artwork in player -->
@@ -149,8 +151,6 @@
 
     <!-- ═══════════════════════════════════════════════════════════
          AUXIO LEGACY — Spacing
-         Kept as-is: referenced in existing layouts and Kotlin code.
-         Do NOT remove until all layouts are migrated.
     ═══════════════════════════════════════════════════════════ -->
 
     <dimen name="spacing_tiny">4dp</dimen>
@@ -187,7 +187,7 @@
     <dimen name="m3_shape_corners_full">128dp</dimen>
 
     <!-- ═══════════════════════════════════════════════════════════
-         AUXIO LEGACY — Text Sizes (auto-sizing track number)
+         AUXIO LEGACY — Text Sizes
     ═══════════════════════════════════════════════════════════ -->
 
     <dimen name="text_size_track_number_min">14sp</dimen>
