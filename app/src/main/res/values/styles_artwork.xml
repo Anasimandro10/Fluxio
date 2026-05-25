@@ -12,7 +12,7 @@
         Mini artwork in the lyrics tab header (64dp view).
         Spec: r:8dp — between list (6dp) and grid (10dp).
     -->
-    <style name="ShapeAppearance.Fluxio.Artwork.LyricsMini" parent="ShapeAppearance.Material3.Small">
+    <style name="ShapeAppearance.Fluxio.Artwork.LyricsMini" parent="ShapeAppearance.Material3.Corner.Small">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">@dimen/radius_artwork_lyrics_mini</item>
     </style>
