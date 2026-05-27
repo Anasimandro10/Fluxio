@@ -38,27 +38,19 @@ import androidx.core.graphics.ColorUtils
  */
 class FastSeekOverlay
 @JvmOverloads
-constructor(
-    context: Context,
-    attrs: AttributeSet? = null,
-    defStyleAttr: Int = 0,
-) : View(context, attrs, defStyleAttr) {
+constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0) :
+    View(context, attrs, defStyleAttr) {
 
     private var accentColor: Int = resolvePrimaryColor(context)
 
-    private val circlePaint =
-        Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    private val circlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
 
     private val textPaint =
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
             textAlign = Paint.Align.CENTER
             textSize =
-                TypedValue.applyDimension(
-                    TypedValue.COMPLEX_UNIT_SP,
-                    22f,
-                    resources.displayMetrics,
-                )
+                TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 22f, resources.displayMetrics)
             // SemiBold; will be replaced by Inter SemiBold once the font is loaded at this site
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
@@ -75,10 +67,7 @@ constructor(
      *
      * If the view is already visible the label is updated without restarting the fade.
      */
-    fun show(
-        seconds: Int,
-        isForward: Boolean,
-    ) {
+    fun show(seconds: Int, isForward: Boolean) {
         seekSeconds = seconds
         seekForward = isForward
         animate().cancel()
@@ -93,11 +82,7 @@ constructor(
     /** Fade out over 200 ms then set visibility to GONE. */
     fun hide() {
         animate().cancel()
-        animate()
-            .alpha(0f)
-            .setDuration(200)
-            .withEndAction { visibility = GONE }
-            .start()
+        animate().alpha(0f).setDuration(200).withEndAction { visibility = GONE }.start()
     }
 
     /**
