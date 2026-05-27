@@ -18,7 +18,9 @@
 package org.oxycblt.auxio.playback.ui.swipe
 
 import android.content.Context
+import android.content.res.ColorStateList
 import android.util.AttributeSet
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -116,6 +118,10 @@ class PlayerSwipeIndicatorOverlay(context: Context, attrs: AttributeSet?) :
         leftSwipeClipView.updatePosition(true)
         rightSwipeClipView.updatePosition(false)
         updateIndicatorDirections()
+
+        // Apply accent color to arrows. DynamicColorManager (step 31) will call
+        // applyAccentColor() again whenever the album art color changes.
+        applyAccentColor(resolvePrimaryColor(context))
     }
 
     private fun updateIndicatorDirections() {
@@ -124,6 +130,17 @@ class PlayerSwipeIndicatorOverlay(context: Context, attrs: AttributeSet?) :
         leftSwipeIndicator.setIsNext(isRtl)
         // Right indicator: next in LTR, previous in RTL
         rightSwipeIndicator.setIsNext(!isRtl)
+    }
+
+    /**
+     * Update the accent color used for the arrow icons inside both swipe indicators.
+     *
+     * Should be called by DynamicColorManager whenever the album art color changes.
+     */
+    fun applyAccentColor(color: Int) {
+        val tint = ColorStateList.valueOf(color)
+        leftSwipeIndicator.binding.swipeIcon.imageTintList = tint
+        rightSwipeIndicator.binding.swipeIcon.imageTintList = tint
     }
 
     /**
@@ -290,5 +307,13 @@ class PlayerSwipeIndicatorOverlay(context: Context, attrs: AttributeSet?) :
     enum class SwipeDirection {
         LEFT,
         RIGHT,
+    }
+
+    private companion object {
+        fun resolvePrimaryColor(context: Context): Int {
+            val tv = TypedValue()
+            context.theme.resolveAttribute(android.R.attr.colorPrimary, tv, true)
+            return tv.data
+        }
     }
 }
