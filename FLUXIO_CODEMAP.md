@@ -1,5 +1,5 @@
 # FLUXIO_CODEMAP.md
-> Commit: 51f586f3eb3f  |  Generado: 2026-05-28 00:42  |  Roadmap: 43/107 completados  |  Archivos totales: 694
+> Commit: d804dd817f64  |  Generado: 2026-05-28 02:32  |  Roadmap: 44/107 completados  |  Archivos totales: 695
 > **Este archivo es el INDICE.** Fetchea la parte que necesites para ver los archivos.
 
 ---
@@ -18,12 +18,12 @@
 | 30e-1 | Player — Layout XML | OK | `fragment_playback_panel.xml (rework)` |
 | 30e-2 | Player — Controles y datos | OK | `PlaybackPanelFragment.kt (rework)` |
 | 30e-3 | Player — Secundarios y tabs | OK | `PlaybackPanelFragment.kt (rework)` |
-| 30e-4 | Player — Fast Seek y Swipe Indicator | SIGUIENTE | `FastSeekOverlay.kt (nuevo), PlayerSwipeIndicatorOverlay.kt` |
+| 30e-4 | Player — Fast Seek y Swipe Indicator | OK | `FastSeekOverlay.kt (nuevo), PlayerSwipeIndicatorOverlay.kt` |
 | 30e-a-1 | Player LYRICS — Layout y estructura | OK | `LyricsTabFragment.kt, fragment_lyrics_tab.xml (rework)` |
 | 30e-a-2 | Player LYRICS — Resaltado y scroll | OK | `LyricsTabFragment.kt, WordHighlighter.kt (rework)` |
 | 30e-b-1 | Player AUDIO — Shell + tarjeta EQ | OK | `AudioTabFragment.kt, fragment_audio_tab.xml` |
 | 30e-b-2 | Player AUDIO — Crossfade, Stereo, Speed | OK | `AudioTabFragment.kt` |
-| 30e-b-3 | Player AUDIO — Timer + acordeón | pendiente | `AudioTabFragment.kt` |
+| 30e-b-3 | Player AUDIO — Timer + acordeón | SIGUIENTE | `AudioTabFragment.kt` |
 | 30e-b-4 | Player AUDIO — AutoEQ Browser | pendiente | `AutoEqBottomSheetFragment.kt (nuevo)` |
 | 30f-1 | Mini player — Layout y display | pendiente | `MiniPlayerFragment.kt, fragment_mini_player.xml` |
 | 30f-2 | Mini player — Expansión | pendiente | `MiniPlayerFragment.kt, MainFragment.kt` |
@@ -93,23 +93,23 @@
 
 | Parte | Contenido | Archivos | Link |
 |---|---|---|---|
-| **Codigo principal** | CI & Config | Material Components | Playback & Audio DSP | Lyrics | Statistics | 87 | [CODEMAP_part1.md](https://raw.githubusercontent.com/Anasimandro10/fluxio/51f586f3eb3f29115872f8361ce2923021afa2cd/FLUXIO_CODEMAP_part1.md) |
-| **UI & Features** | UI Details/Library/Search/Settings | Tags | Backup | Image | Music/Data | Lists | Widgets | App Root | Otros | 207 | [CODEMAP_part2.md](https://raw.githubusercontent.com/Anasimandro10/fluxio/51f586f3eb3f29115872f8361ce2923021afa2cd/FLUXIO_CODEMAP_part2.md) |
-| **Resources** | Drawables (XML vectoriales) | Layouts | Values | Preferences XML | Menus | Navigation | Other | 243 | [CODEMAP_part3.md](https://raw.githubusercontent.com/Anasimandro10/fluxio/51f586f3eb3f29115872f8361ce2923021afa2cd/FLUXIO_CODEMAP_part3.md) |
-| **Fastlane / Metadata** | Descripciones de Play Store / F-Droid en todos los idiomas | 157 | [CODEMAP_part4.md](https://raw.githubusercontent.com/Anasimandro10/fluxio/51f586f3eb3f29115872f8361ce2923021afa2cd/FLUXIO_CODEMAP_part4.md) |
+| **Codigo principal** | CI & Config | Material Components | Playback & Audio DSP | Lyrics | Statistics | 88 | [CODEMAP_part1.md](https://raw.githubusercontent.com/Anasimandro10/fluxio/d804dd817f646ee3629a82b41eef5a4d83c5231e/FLUXIO_CODEMAP_part1.md) |
+| **UI & Features** | UI Details/Library/Search/Settings | Tags | Backup | Image | Music/Data | Lists | Widgets | App Root | Otros | 207 | [CODEMAP_part2.md](https://raw.githubusercontent.com/Anasimandro10/fluxio/d804dd817f646ee3629a82b41eef5a4d83c5231e/FLUXIO_CODEMAP_part2.md) |
+| **Resources** | Drawables (XML vectoriales) | Layouts | Values | Preferences XML | Menus | Navigation | Other | 243 | [CODEMAP_part3.md](https://raw.githubusercontent.com/Anasimandro10/fluxio/d804dd817f646ee3629a82b41eef5a4d83c5231e/FLUXIO_CODEMAP_part3.md) |
+| **Fastlane / Metadata** | Descripciones de Play Store / F-Droid en todos los idiomas | 157 | [CODEMAP_part4.md](https://raw.githubusercontent.com/Anasimandro10/fluxio/d804dd817f646ee3629a82b41eef5a4d83c5231e/FLUXIO_CODEMAP_part4.md) |
 
 ---
 
 ## Detalle por parte
 
-### Part 1 — [Codigo principal](https://raw.githubusercontent.com/Anasimandro10/fluxio/51f586f3eb3f29115872f8361ce2923021afa2cd/FLUXIO_CODEMAP_part1.md) (87 archivos)
+### Part 1 — [Codigo principal](https://raw.githubusercontent.com/Anasimandro10/fluxio/d804dd817f646ee3629a82b41eef5a4d83c5231e/FLUXIO_CODEMAP_part1.md) (88 archivos)
   - CI & Config (3 archivos)
   - Material Components (patched) (6 archivos)
-  - Playback & Audio DSP (67 archivos)
+  - Playback & Audio DSP (68 archivos)
   - Lyrics (8 archivos)
   - Statistics (3 archivos)
 
-### Part 2 — [UI & Features](https://raw.githubusercontent.com/Anasimandro10/fluxio/51f586f3eb3f29115872f8361ce2923021afa2cd/FLUXIO_CODEMAP_part2.md) (207 archivos)
+### Part 2 — [UI & Features](https://raw.githubusercontent.com/Anasimandro10/fluxio/d804dd817f646ee3629a82b41eef5a4d83c5231e/FLUXIO_CODEMAP_part2.md) (207 archivos)
   - UI -- Details (25 archivos)
   - UI -- Library (25 archivos)
   - UI -- Search (6 archivos)
@@ -124,7 +124,7 @@
   - App Root (11 archivos)
   - Otros (23 archivos)
 
-### Part 3 — [Resources](https://raw.githubusercontent.com/Anasimandro10/fluxio/51f586f3eb3f29115872f8361ce2923021afa2cd/FLUXIO_CODEMAP_part3.md) (243 archivos)
+### Part 3 — [Resources](https://raw.githubusercontent.com/Anasimandro10/fluxio/d804dd817f646ee3629a82b41eef5a4d83c5231e/FLUXIO_CODEMAP_part3.md) (243 archivos)
   - Resources -- Drawables (93 archivos)
   - Resources -- Layouts (72 archivos)
   - Resources -- Values (29 archivos)
@@ -133,5 +133,5 @@
   - Resources -- Navigation (2 archivos)
   - Resources -- Other (14 archivos)
 
-### Part 4 — [Fastlane / Metadata](https://raw.githubusercontent.com/Anasimandro10/fluxio/51f586f3eb3f29115872f8361ce2923021afa2cd/FLUXIO_CODEMAP_part4.md) (157 archivos)
+### Part 4 — [Fastlane / Metadata](https://raw.githubusercontent.com/Anasimandro10/fluxio/d804dd817f646ee3629a82b41eef5a4d83c5231e/FLUXIO_CODEMAP_part4.md) (157 archivos)
   - Fastlane / Metadata (157 archivos)
