@@ -39,7 +39,9 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@+id/playback_info_container"
         app:layout_constraintVertical_chainStyle="packed"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintVertical_bias="0.0"
+        app:layout_constraintWidth_percent="0.82"
+        app:layout_constraintHeight_percent="0.57" />
 
     <!-- ── Fast-seek overlay (mismo bounds que el artwork) ── -->
     <org.oxycblt.auxio.playback.ui.stepper.PlayerFastSeekOverlay
@@ -90,7 +92,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:contentDescription=""
-                app:icon="@drawable/ic_add_24"
+                app:icon="@drawable/ic_playlist_add_24"
                 app:materialSizeOverlay="@style/SizeOverlay.Material3Expressive.Button.IconButton.Medium" />
 
         </LinearLayout>
@@ -229,38 +231,86 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@+id/playback_pager">
 
-        <TextView
-            android:id="@+id/playback_tab_queue"
+        <!-- COLA tab -->
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:gravity="center"
-            android:text="@string/lbl_tab_queue"
-            android:textAppearance="@style/TextAppearance.Fluxio.Label"
-            android:textColor="?android:attr/textColorSecondary"
-            tools:text="COLA" />
+            android:orientation="vertical"
+            android:gravity="center">
 
-        <TextView
-            android:id="@+id/playback_tab_lyrics"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="@string/lbl_tab_lyrics"
-            android:textAppearance="@style/TextAppearance.Fluxio.Label"
-            android:textColor="?android:attr/textColorSecondary"
-            tools:text="LETRAS" />
+            <TextView
+                android:id="@+id/playback_tab_queue"
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="@string/lbl_tab_queue"
+                android:textAppearance="@style/TextAppearance.Fluxio.Label"
+                android:textColor="?android:attr/textColorSecondary" />
 
-        <TextView
-            android:id="@+id/playback_tab_audio"
+            <View
+                android:id="@+id/playback_tab_queue_indicator"
+                android:layout_width="24dp"
+                android:layout_height="2dp"
+                android:background="?attr/colorPrimary"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <!-- LETRAS tab -->
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:gravity="center"
-            android:text="@string/lbl_tab_audio"
-            android:textAppearance="@style/TextAppearance.Fluxio.Label"
-            android:textColor="?android:attr/textColorSecondary"
-            tools:text="AUDIO" />
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/playback_tab_lyrics"
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="@string/lbl_tab_lyrics"
+                android:textAppearance="@style/TextAppearance.Fluxio.Label"
+                android:textColor="?android:attr/textColorSecondary" />
+
+            <View
+                android:id="@+id/playback_tab_lyrics_indicator"
+                android:layout_width="24dp"
+                android:layout_height="2dp"
+                android:background="?attr/colorPrimary"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <!-- AUDIO tab -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/playback_tab_audio"
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="@string/lbl_tab_audio"
+                android:textAppearance="@style/TextAppearance.Fluxio.Label"
+                android:textColor="?android:attr/textColorSecondary" />
+
+            <View
+                android:id="@+id/playback_tab_audio_indicator"
+                android:layout_width="24dp"
+                android:layout_height="2dp"
+                android:background="?attr/colorPrimary"
+                android:visibility="gone" />
+
+        </LinearLayout>
 
     </LinearLayout>
 

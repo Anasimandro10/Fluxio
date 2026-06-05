@@ -536,5 +536,24 @@
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">@dimen/radius_artwork_player</item>
     </style>
+    <!-- Large artwork in lyrics mini header: 8dp -->
+    <style name="ShapeAppearance.Fluxio.Artwork.LyricsMini" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/radius_artwork_grid</item>
+    </style>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         FLUXIO CHIP STYLES
+         Widget.Fluxio.Chip.Filter: extends Material3 Filter chip.
+         - unchecked: bg = colorSurfaceVariant (fluxio_element), text = colorOnSurface
+         - checked:   bg = colorPrimary (album color at step 31), text = colorOnPrimary
+    ═══════════════════════════════════════════════════════════ -->
+    <style name="Widget.Fluxio.Chip.Filter" parent="Widget.Material3.Chip.Filter">
+        <!-- Background: transparent outline border removed -->
+        <item name="chipStrokeWidth">0dp</item>
+        <!-- Checked state uses colorPrimary via the M3 tonal surface mechanism -->
+        <item name="chipBackgroundColor">@color/sel_chip_bg_fluxio</item>
+        <item name="android:textColor">@color/sel_chip_text_fluxio</item>
+    </style>
 
 </resources>

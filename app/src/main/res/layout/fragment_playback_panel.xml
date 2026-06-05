@@ -74,7 +74,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:contentDescription=""
-                app:icon="@drawable/ic_add_24"
+                app:icon="@drawable/ic_playlist_add_24"
                 app:materialSizeOverlay="@style/SizeOverlay.Material3Expressive.Button.IconButton.Xsmall" />
 
         </LinearLayout>

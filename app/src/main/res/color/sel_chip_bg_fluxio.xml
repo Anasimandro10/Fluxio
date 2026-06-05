@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Chip background selector for Widget.Fluxio.Chip.Filter.
+    checked   → colorPrimary (wired to album color at step 31)
+    unchecked → colorSurfaceVariant (fluxio_element = #212124 dark / #E5E5EA light)
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="?attr/colorPrimary"        android:state_checked="true" />
+    <item android:color="?attr/colorSurfaceVariant" />
+</selector>

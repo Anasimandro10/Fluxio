@@ -149,6 +149,15 @@ class PlaybackPanelFragment :
                 listModel.openMenu(R.menu.playback_song, it, PlaySong.ByItself)
             }
         }
+        // Favourite / add-to-playlist shortcut button
+        binding.playbackFavorite?.apply {
+            setIconResource(R.drawable.ic_playlist_add_24)
+            setOnClickListener {
+                playbackModel.song.value?.let {
+                    listModel.openMenu(R.menu.playback_song, it, PlaySong.ByItself)
+                }
+            }
+        }
 
         binding.playbackTabQueue?.setOnClickListener { setTab(PlayerTab.QUEUE) }
         binding.playbackTabLyrics?.setOnClickListener { setTab(PlayerTab.LYRICS) }
@@ -289,20 +298,22 @@ class PlaybackPanelFragment :
         val inactiveColor =
             context.getAttrColorCompat(android.R.attr.textColorSecondary).defaultColor
 
-        fun updateTextView(tv: android.widget.TextView?, tab: PlayerTab) {
+        fun applyTab(
+            tv: android.widget.TextView?,
+            indicator: android.view.View?,
+            tab: PlayerTab,
+        ) {
             if (tv == null) return
-            if (currentTab == tab) {
-                tv.setTextColor(activeColor)
-                tv.paintFlags = tv.paintFlags or android.graphics.Paint.UNDERLINE_TEXT_FLAG
-            } else {
-                tv.setTextColor(inactiveColor)
-                tv.paintFlags = tv.paintFlags and android.graphics.Paint.UNDERLINE_TEXT_FLAG.inv()
-            }
+            val isActive = currentTab == tab
+            tv.setTextColor(if (isActive) activeColor else inactiveColor)
+            // Remove legacy paint underline if it was previously set
+            tv.paintFlags = tv.paintFlags and android.graphics.Paint.UNDERLINE_TEXT_FLAG.inv()
+            indicator?.visibility = if (isActive) android.view.View.VISIBLE else android.view.View.GONE
         }
 
-        updateTextView(b.playbackTabQueue, PlayerTab.QUEUE)
-        updateTextView(b.playbackTabLyrics, PlayerTab.LYRICS)
-        updateTextView(b.playbackTabAudio, PlayerTab.AUDIO)
+        applyTab(b.playbackTabQueue,  b.playbackTabQueueIndicator,  PlayerTab.QUEUE)
+        applyTab(b.playbackTabLyrics, b.playbackTabLyricsIndicator, PlayerTab.LYRICS)
+        applyTab(b.playbackTabAudio,  b.playbackTabAudioIndicator,  PlayerTab.AUDIO)
 
         val showMain = currentTab == PlayerTab.NONE
         b.playbackCover.isVisible = showMain
