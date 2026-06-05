@@ -298,22 +298,19 @@ class PlaybackPanelFragment :
         val inactiveColor =
             context.getAttrColorCompat(android.R.attr.textColorSecondary).defaultColor
 
-        fun applyTab(
-            tv: android.widget.TextView?,
-            indicator: android.view.View?,
-            tab: PlayerTab,
-        ) {
+        fun applyTab(tv: android.widget.TextView?, indicator: android.view.View?, tab: PlayerTab) {
             if (tv == null) return
             val isActive = currentTab == tab
             tv.setTextColor(if (isActive) activeColor else inactiveColor)
             // Remove legacy paint underline if it was previously set
             tv.paintFlags = tv.paintFlags and android.graphics.Paint.UNDERLINE_TEXT_FLAG.inv()
-            indicator?.visibility = if (isActive) android.view.View.VISIBLE else android.view.View.GONE
+            indicator?.visibility =
+                if (isActive) android.view.View.VISIBLE else android.view.View.GONE
         }
 
-        applyTab(b.playbackTabQueue,  b.playbackTabQueueIndicator,  PlayerTab.QUEUE)
+        applyTab(b.playbackTabQueue, b.playbackTabQueueIndicator, PlayerTab.QUEUE)
         applyTab(b.playbackTabLyrics, b.playbackTabLyricsIndicator, PlayerTab.LYRICS)
-        applyTab(b.playbackTabAudio,  b.playbackTabAudioIndicator,  PlayerTab.AUDIO)
+        applyTab(b.playbackTabAudio, b.playbackTabAudioIndicator, PlayerTab.AUDIO)
 
         val showMain = currentTab == PlayerTab.NONE
         b.playbackCover.isVisible = showMain
