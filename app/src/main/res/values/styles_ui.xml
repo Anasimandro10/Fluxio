@@ -536,11 +536,6 @@
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">@dimen/radius_artwork_player</item>
     </style>
-    <!-- Large artwork in lyrics mini header: 8dp -->
-    <style name="ShapeAppearance.Fluxio.Artwork.LyricsMini" parent="">
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">@dimen/radius_artwork_grid</item>
-    </style>
 
     <!-- ═══════════════════════════════════════════════════════════
          FLUXIO CHIP STYLES
