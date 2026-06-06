@@ -89,12 +89,7 @@ fun PlaybackTabs(currentTab: PlayerTab, onTabSelected: (PlayerTab) -> Unit) {
         ) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 when (currentTab) {
-                    PlayerTab.QUEUE ->
-                        Text(
-                            "Queue Compose Content (WIP)",
-                            style = FluxioTheme.typography.bodyMedium,
-                            color = FluxioTheme.colors.text1,
-                        )
+                    PlayerTab.QUEUE -> org.oxycblt.auxio.playback.queue.QueueTab()
                     PlayerTab.LYRICS ->
                         Text(
                             "Lyrics Compose Content (WIP)",
