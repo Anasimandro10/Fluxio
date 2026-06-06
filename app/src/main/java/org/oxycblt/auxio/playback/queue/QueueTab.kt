@@ -50,10 +50,7 @@ import org.oxycblt.auxio.ui.theme.FluxioTheme
 import org.oxycblt.musikr.Song
 
 @Composable
-fun QueueTab(
-    queueModel: QueueViewModel,
-    playbackModel: PlaybackViewModel
-) {
+fun QueueTab(queueModel: QueueViewModel, playbackModel: PlaybackViewModel) {
     val queue by queueModel.queue.collectAsState()
     val currentIndex by queueModel.index.collectAsState()
     val isPlaying by playbackModel.isPlaying.collectAsState()
@@ -150,10 +147,7 @@ fun QueueItem(
         // Artwork
         Box(modifier = Modifier.size(48.dp).clip(RoundedCornerShape(8.dp))) {
             AsyncImage(
-                model =
-                    ImageRequest.Builder(context)
-                        .data(song.album.coverUri)
-                        .build(),
+                model = ImageRequest.Builder(context).data(song.album.coverUri).build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),

@@ -35,16 +35,16 @@ import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.dynamicanimation.animation.SpringForce
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
 import dagger.hilt.android.AndroidEntryPoint
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.databinding.FragmentPlaybackPanelBinding
 import org.oxycblt.auxio.detail.DetailViewModel
 import org.oxycblt.auxio.list.ListViewModel
 import org.oxycblt.auxio.lyrics.LyricsViewModel
-import org.oxycblt.auxio.playback.queue.QueueViewModel
-import androidx.fragment.app.viewModels
 import org.oxycblt.auxio.music.resolve
 import org.oxycblt.auxio.music.resolveNames
+import org.oxycblt.auxio.playback.queue.QueueViewModel
 import org.oxycblt.auxio.playback.sleeptimer.SleepTimerDialog
 import org.oxycblt.auxio.playback.state.RepeatMode
 import org.oxycblt.auxio.playback.ui.StyledSeekBar
@@ -174,7 +174,7 @@ class PlaybackPanelFragment :
                         currentTab = currentTabState.value,
                         onTabSelected = ::setTab,
                         playbackModel = playbackModel,
-                        queueModel = queueModel
+                        queueModel = queueModel,
                     )
                 }
             }

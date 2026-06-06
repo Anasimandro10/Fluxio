@@ -38,16 +38,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.playback.PlaybackPanelFragment.PlayerTab
-import org.oxycblt.auxio.ui.theme.FluxioTheme
-
 import org.oxycblt.auxio.playback.queue.QueueViewModel
+import org.oxycblt.auxio.ui.theme.FluxioTheme
 
 @Composable
 fun PlaybackTabs(
     currentTab: PlayerTab,
     onTabSelected: (PlayerTab) -> Unit,
     playbackModel: PlaybackViewModel,
-    queueModel: QueueViewModel
+    queueModel: QueueViewModel,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         // Tab Bar
@@ -96,7 +95,8 @@ fun PlaybackTabs(
         ) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 when (currentTab) {
-                    PlayerTab.QUEUE -> org.oxycblt.auxio.playback.queue.QueueTab(queueModel, playbackModel)
+                    PlayerTab.QUEUE ->
+                        org.oxycblt.auxio.playback.queue.QueueTab(queueModel, playbackModel)
                     PlayerTab.LYRICS ->
                         Text(
                             "Lyrics Compose Content (WIP)",
