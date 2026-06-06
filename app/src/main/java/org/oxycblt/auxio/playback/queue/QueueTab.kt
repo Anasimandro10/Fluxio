@@ -150,10 +150,7 @@ fun QueueItem(
         // Artwork
         Box(modifier = Modifier.size(48.dp).clip(RoundedCornerShape(8.dp))) {
             AsyncImage(
-                model =
-                    ImageRequest.Builder(context)
-                        .data(song.cover)
-                        .build(),
+                model = ImageRequest.Builder(context).data(song.cover).build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
