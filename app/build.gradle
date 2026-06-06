@@ -20,8 +20,9 @@ android {
 
     defaultConfig {
         applicationId "io.fluxio.app"
-        versionName "4.0.10"
-        versionCode 69
+        def runNumber = System.getenv("GITHUB_RUN_NUMBER")
+        versionCode 69 + (runNumber ? runNumber.toInteger() : 0)
+        versionName "4.0.10" + (runNumber ? "-build${runNumber}" : "")
 
         minSdk min_sdk
         targetSdk target_sdk
