@@ -51,7 +51,6 @@ import org.oxycblt.auxio.playback.ui.stepper.PlayerFastSeekOverlay
 import org.oxycblt.auxio.ui.ViewBindingFragment
 import org.oxycblt.auxio.ui.theme.FluxioTheme
 import org.oxycblt.auxio.util.collectImmediately
-import org.oxycblt.auxio.util.getAttrColorCompat
 import org.oxycblt.auxio.util.showToast
 import org.oxycblt.auxio.util.systemBarInsetsCompat
 import org.oxycblt.musikr.MusicParent
@@ -163,7 +162,6 @@ class PlaybackPanelFragment :
                 }
             }
         }
-
 
         binding.playbackComposeTabs?.apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
