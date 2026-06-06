@@ -34,14 +34,15 @@ import androidx.core.view.updatePadding
 import androidx.dynamicanimation.animation.SpringForce
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.viewpager2.adapter.FragmentStateAdapter
-import androidx.viewpager2.widget.ViewPager2
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import dagger.hilt.android.AndroidEntryPoint
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.databinding.FragmentPlaybackPanelBinding
 import org.oxycblt.auxio.detail.DetailViewModel
 import org.oxycblt.auxio.list.ListViewModel
 import org.oxycblt.auxio.lyrics.LyricsViewModel
+import org.oxycblt.auxio.ui.theme.FluxioTheme
 import org.oxycblt.auxio.music.resolve
 import org.oxycblt.auxio.music.resolveNames
 import org.oxycblt.auxio.playback.sleeptimer.SleepTimerDialog
@@ -87,7 +88,12 @@ class PlaybackPanelFragment :
         AUDIO,
     }
 
-    private var currentTab = PlayerTab.NONE
+    private val currentTabState = mutableStateOf(PlayerTab.NONE)
+    private var currentTab: PlayerTab
+        get() = currentTabState.value
+        set(value) {
+            currentTabState.value = value
+        }
 
     override fun onCreateBinding(inflater: LayoutInflater) =
         FragmentPlaybackPanelBinding.inflate(inflater)
@@ -163,40 +169,20 @@ class PlaybackPanelFragment :
         binding.playbackTabLyrics?.setOnClickListener { setTab(PlayerTab.LYRICS) }
         binding.playbackTabAudio?.setOnClickListener { setTab(PlayerTab.AUDIO) }
 
+        binding.playbackComposeTabs?.apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                FluxioTheme {
+                    PlaybackTabs(
+                        currentTab = currentTabState.value,
+                        onTabSelected = ::setTab
+                    )
+                }
+            }
+        }
+
         setupGestures(binding)
         updateTabUI()
-
-        binding.playbackPager?.apply {
-            adapter =
-                object : FragmentStateAdapter(this@PlaybackPanelFragment) {
-                    override fun getItemCount() = 3
-
-                    override fun createFragment(position: Int): Fragment =
-                        when (position) {
-                            0 -> org.oxycblt.auxio.playback.queue.QueueFragment()
-                            1 -> LyricsTabFragment()
-                            2 -> AudioTabFragment()
-                            else ->
-                                throw IllegalArgumentException("Unknown pager position $position")
-                        }
-                }
-            registerOnPageChangeCallback(
-                object : ViewPager2.OnPageChangeCallback() {
-                    override fun onPageSelected(position: Int) {
-                        val tab =
-                            when (position) {
-                                0 -> PlayerTab.QUEUE
-                                1 -> PlayerTab.LYRICS
-                                else -> PlayerTab.AUDIO
-                            }
-                        if (currentTab != tab) {
-                            currentTab = tab
-                            updateTabUI()
-                        }
-                    }
-                }
-            )
-        }
 
         collectImmediately(playbackModel.song, ::updateSong)
         collectImmediately(playbackModel.parent, ::updateParent)
@@ -231,7 +217,6 @@ class PlaybackPanelFragment :
 
     override fun onDestroyBinding(binding: FragmentPlaybackPanelBinding) {
         equalizerLauncher = null
-        binding.playbackPager?.adapter = null
         binding.playbackRepeat.clearPendingIcon()
         binding.playbackSong.isSelected = false
         binding.playbackArtist.isSelected = false
@@ -264,19 +249,6 @@ class PlaybackPanelFragment :
     private fun setTab(tab: PlayerTab) {
         currentTab = if (currentTab == tab) PlayerTab.NONE else tab
         updateTabUI()
-        val pager = binding?.playbackPager ?: return
-        if (currentTab != PlayerTab.NONE) {
-            val target =
-                when (currentTab) {
-                    PlayerTab.QUEUE -> 0
-                    PlayerTab.LYRICS -> 1
-                    PlayerTab.AUDIO -> 2
-                    else -> 0
-                }
-            if (pager.currentItem != target) {
-                pager.setCurrentItem(target, true)
-            }
-        }
     }
 
     private fun shiftTab(direction: Int) {
@@ -319,7 +291,7 @@ class PlaybackPanelFragment :
         b.playbackSeekBar?.isVisible = showMain
         b.playbackControlsContainer.isVisible = showMain
         b.playbackSecondaryControls?.isVisible = showMain
-        b.playbackPager?.isVisible = !showMain
+        b.playbackComposeTabs?.isVisible = true
     }
 
     /**
