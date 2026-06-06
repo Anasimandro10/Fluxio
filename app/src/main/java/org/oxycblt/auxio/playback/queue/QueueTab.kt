@@ -38,9 +38,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
 import kotlinx.coroutines.flow.collectLatest
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.music.resolve
@@ -52,8 +51,8 @@ import org.oxycblt.musikr.Song
 
 @Composable
 fun QueueTab(
-    queueModel: QueueViewModel = hiltViewModel(),
-    playbackModel: PlaybackViewModel = hiltViewModel(),
+    queueModel: QueueViewModel,
+    playbackModel: PlaybackViewModel
 ) {
     val queue by queueModel.queue.collectAsState()
     val currentIndex by queueModel.index.collectAsState()
@@ -152,7 +151,9 @@ fun QueueItem(
         Box(modifier = Modifier.size(48.dp).clip(RoundedCornerShape(8.dp))) {
             AsyncImage(
                 model =
-                    ImageRequest.Builder(context).data(song.album.coverUri).crossfade(true).build(),
+                    ImageRequest.Builder(context)
+                        .data(song.album.coverUri)
+                        .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),

@@ -40,8 +40,15 @@ import org.oxycblt.auxio.R
 import org.oxycblt.auxio.playback.PlaybackPanelFragment.PlayerTab
 import org.oxycblt.auxio.ui.theme.FluxioTheme
 
+import org.oxycblt.auxio.playback.queue.QueueViewModel
+
 @Composable
-fun PlaybackTabs(currentTab: PlayerTab, onTabSelected: (PlayerTab) -> Unit) {
+fun PlaybackTabs(
+    currentTab: PlayerTab,
+    onTabSelected: (PlayerTab) -> Unit,
+    playbackModel: PlaybackViewModel,
+    queueModel: QueueViewModel
+) {
     Column(modifier = Modifier.fillMaxSize()) {
         // Tab Bar
         Row(
@@ -89,7 +96,7 @@ fun PlaybackTabs(currentTab: PlayerTab, onTabSelected: (PlayerTab) -> Unit) {
         ) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 when (currentTab) {
-                    PlayerTab.QUEUE -> org.oxycblt.auxio.playback.queue.QueueTab()
+                    PlayerTab.QUEUE -> org.oxycblt.auxio.playback.queue.QueueTab(queueModel, playbackModel)
                     PlayerTab.LYRICS ->
                         Text(
                             "Lyrics Compose Content (WIP)",

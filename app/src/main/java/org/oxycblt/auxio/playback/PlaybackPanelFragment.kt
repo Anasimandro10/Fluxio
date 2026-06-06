@@ -41,6 +41,8 @@ import org.oxycblt.auxio.databinding.FragmentPlaybackPanelBinding
 import org.oxycblt.auxio.detail.DetailViewModel
 import org.oxycblt.auxio.list.ListViewModel
 import org.oxycblt.auxio.lyrics.LyricsViewModel
+import org.oxycblt.auxio.playback.queue.QueueViewModel
+import androidx.fragment.app.viewModels
 import org.oxycblt.auxio.music.resolve
 import org.oxycblt.auxio.music.resolveNames
 import org.oxycblt.auxio.playback.sleeptimer.SleepTimerDialog
@@ -75,6 +77,7 @@ class PlaybackPanelFragment :
     private val detailModel: DetailViewModel by activityViewModels()
     private val listModel: ListViewModel by activityViewModels()
     private val lyricsModel: LyricsViewModel by activityViewModels()
+    private val queueModel: QueueViewModel by viewModels()
 
     private var equalizerLauncher: ActivityResultLauncher<Intent>? = null
     private var lastCoverWidth = 0
@@ -167,7 +170,12 @@ class PlaybackPanelFragment :
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 FluxioTheme {
-                    PlaybackTabs(currentTab = currentTabState.value, onTabSelected = ::setTab)
+                    PlaybackTabs(
+                        currentTab = currentTabState.value,
+                        onTabSelected = ::setTab,
+                        playbackModel = playbackModel,
+                        queueModel = queueModel
+                    )
                 }
             }
         }

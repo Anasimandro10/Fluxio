@@ -159,6 +159,7 @@ dependencies {
 
     // Image loading
     implementation 'io.coil-kt.coil3:coil-core:3.3.0'
+    implementation 'io.coil-kt.coil3:coil-compose:3.3.0'
 
     // Material
     implementation "com.google.android.material:material:1.14.0-alpha09"
@@ -168,6 +169,7 @@ dependencies {
     kapt "com.google.dagger:dagger-compiler:$hilt_version"
     implementation "com.google.dagger:hilt-android:$hilt_version"
     kapt "com.google.dagger:hilt-android-compiler:$hilt_version"
+    implementation "androidx.hilt:hilt-navigation-compose:1.2.0"
 
     // Logging
     implementation "androidx.work:work-runtime-ktx:2.10.0"
