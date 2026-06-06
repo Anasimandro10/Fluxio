@@ -58,12 +58,15 @@ fun QueueTab(queueModel: QueueViewModel, playbackModel: PlaybackViewModel) {
     val listState = rememberLazyListState()
 
     LaunchedEffect(queueModel.scrollTo) {
-        queueModel.scrollTo.consumeAsFlow().collectLatest { targetIndex ->
-            if (targetIndex in queue.indices) {
-                // Determine if we need to scroll upwards or downwards for better UX
-                val firstVisible = listState.firstVisibleItemIndex
-                if (targetIndex < firstVisible || targetIndex > firstVisible + 10) {
-                    listState.scrollToItem(targetIndex)
+        queueModel.scrollTo.flow.collectLatest { targetIndex ->
+            if (targetIndex != null) {
+                queueModel.scrollTo.consume()
+                if (targetIndex in queue.indices) {
+                    // Determine if we need to scroll upwards or downwards for better UX
+                    val firstVisible = listState.firstVisibleItemIndex
+                    if (targetIndex < firstVisible || targetIndex > firstVisible + 10) {
+                        listState.scrollToItem(targetIndex)
+                    }
                 }
             }
         }
@@ -147,7 +150,10 @@ fun QueueItem(
         // Artwork
         Box(modifier = Modifier.size(48.dp).clip(RoundedCornerShape(8.dp))) {
             AsyncImage(
-                model = ImageRequest.Builder(context).data(song.album.coverUri).build(),
+                model =
+                    ImageRequest.Builder(context)
+                        .data(song.cover)
+                        .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
