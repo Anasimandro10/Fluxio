@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2026 Fluxio Project
+ * PlaybackTabs.kt is part of Fluxio.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.oxycblt.auxio.playback
 
 import androidx.compose.animation.AnimatedVisibility
@@ -24,35 +41,42 @@ import org.oxycblt.auxio.playback.PlaybackPanelFragment.PlayerTab
 import org.oxycblt.auxio.ui.theme.FluxioTheme
 
 @Composable
-fun PlaybackTabs(
-    currentTab: PlayerTab,
-    onTabSelected: (PlayerTab) -> Unit
-) {
+fun PlaybackTabs(currentTab: PlayerTab, onTabSelected: (PlayerTab) -> Unit) {
     Column(modifier = Modifier.fillMaxSize()) {
         // Tab Bar
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             TabItem(
                 text = stringResource(R.string.lbl_tab_queue),
                 isSelected = currentTab == PlayerTab.QUEUE,
-                onClick = { onTabSelected(if (currentTab == PlayerTab.QUEUE) PlayerTab.NONE else PlayerTab.QUEUE) },
-                modifier = Modifier.weight(1f)
+                onClick = {
+                    onTabSelected(
+                        if (currentTab == PlayerTab.QUEUE) PlayerTab.NONE else PlayerTab.QUEUE
+                    )
+                },
+                modifier = Modifier.weight(1f),
             )
             TabItem(
                 text = stringResource(R.string.lbl_tab_lyrics),
                 isSelected = currentTab == PlayerTab.LYRICS,
-                onClick = { onTabSelected(if (currentTab == PlayerTab.LYRICS) PlayerTab.NONE else PlayerTab.LYRICS) },
-                modifier = Modifier.weight(1f)
+                onClick = {
+                    onTabSelected(
+                        if (currentTab == PlayerTab.LYRICS) PlayerTab.NONE else PlayerTab.LYRICS
+                    )
+                },
+                modifier = Modifier.weight(1f),
             )
             TabItem(
                 text = stringResource(R.string.lbl_tab_audio),
                 isSelected = currentTab == PlayerTab.AUDIO,
-                onClick = { onTabSelected(if (currentTab == PlayerTab.AUDIO) PlayerTab.NONE else PlayerTab.AUDIO) },
-                modifier = Modifier.weight(1f)
+                onClick = {
+                    onTabSelected(
+                        if (currentTab == PlayerTab.AUDIO) PlayerTab.NONE else PlayerTab.AUDIO
+                    )
+                },
+                modifier = Modifier.weight(1f),
             )
         }
 
@@ -61,13 +85,28 @@ fun PlaybackTabs(
             visible = currentTab != PlayerTab.NONE,
             enter = fadeIn() + slideInVertically(initialOffsetY = { it / 4 }),
             exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 4 }),
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
         ) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 when (currentTab) {
-                    PlayerTab.QUEUE -> Text("Queue Compose Content (WIP)", style = FluxioTheme.typography.bodyMedium, color = FluxioTheme.colors.text1)
-                    PlayerTab.LYRICS -> Text("Lyrics Compose Content (WIP)", style = FluxioTheme.typography.bodyMedium, color = FluxioTheme.colors.text1)
-                    PlayerTab.AUDIO -> Text("Audio Compose Content (WIP)", style = FluxioTheme.typography.bodyMedium, color = FluxioTheme.colors.text1)
+                    PlayerTab.QUEUE ->
+                        Text(
+                            "Queue Compose Content (WIP)",
+                            style = FluxioTheme.typography.bodyMedium,
+                            color = FluxioTheme.colors.text1,
+                        )
+                    PlayerTab.LYRICS ->
+                        Text(
+                            "Lyrics Compose Content (WIP)",
+                            style = FluxioTheme.typography.bodyMedium,
+                            color = FluxioTheme.colors.text1,
+                        )
+                    PlayerTab.AUDIO ->
+                        Text(
+                            "Audio Compose Content (WIP)",
+                            style = FluxioTheme.typography.bodyMedium,
+                            color = FluxioTheme.colors.text1,
+                        )
                     else -> {}
                 }
             }
@@ -80,27 +119,23 @@ private fun TabItem(
     text: String,
     isSelected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .clickable(onClick = onClick)
-            .fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = modifier.clickable(onClick = onClick).fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
             Text(
                 text = text,
                 style = FluxioTheme.typography.labelMedium,
-                color = if (isSelected) FluxioTheme.colors.text1 else FluxioTheme.colors.text2
+                color = if (isSelected) FluxioTheme.colors.text1 else FluxioTheme.colors.text2,
             )
         }
         if (isSelected) {
             Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.3f)
-                    .height(2.dp)
-                    .background(FluxioTheme.colors.text1)
+                modifier =
+                    Modifier.fillMaxWidth(0.3f).height(2.dp).background(FluxioTheme.colors.text1)
             )
         }
     }
