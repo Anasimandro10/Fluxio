@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2026 Fluxio Project
+ * QueueTab.kt is part of Fluxio.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.oxycblt.auxio.playback.queue
 
 import androidx.compose.foundation.background
@@ -36,14 +53,14 @@ import org.oxycblt.musikr.Song
 @Composable
 fun QueueTab(
     queueModel: QueueViewModel = hiltViewModel(),
-    playbackModel: PlaybackViewModel = hiltViewModel()
+    playbackModel: PlaybackViewModel = hiltViewModel(),
 ) {
     val queue by queueModel.queue.collectAsState()
     val currentIndex by queueModel.index.collectAsState()
     val isPlaying by playbackModel.isPlaying.collectAsState()
-    
+
     val listState = rememberLazyListState()
-    
+
     LaunchedEffect(queueModel.scrollTo) {
         queueModel.scrollTo.consumeAsFlow().collectLatest { targetIndex ->
             if (targetIndex in queue.indices) {
@@ -59,33 +76,31 @@ fun QueueTab(
     Column(modifier = Modifier.fillMaxSize()) {
         // Top Bar
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = "Siguiente",
                 style = FluxioTheme.typography.labelMedium,
-                color = FluxioTheme.colors.text2
+                color = FluxioTheme.colors.text2,
             )
-            
+
             // "Borrar" button
             Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(FluxioTheme.colors.element)
-                    .clickable {
-                        // TODO: Implement clear queue if possible, or clear after current
-                    }
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier.clip(RoundedCornerShape(percent = 50))
+                        .background(FluxioTheme.colors.element)
+                        .clickable {
+                            // TODO: Implement clear queue if possible, or clear after current
+                        }
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = "Borrar",
                     style = FluxioTheme.typography.labelSmall,
-                    color = FluxioTheme.colors.text2
+                    color = FluxioTheme.colors.text2,
                 )
             }
         }
@@ -94,18 +109,18 @@ fun QueueTab(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             state = listState,
-            contentPadding = PaddingValues(bottom = 80.dp) // extra padding for scrolling
+            contentPadding = PaddingValues(bottom = 80.dp), // extra padding for scrolling
         ) {
             itemsIndexed(queue, key = { index, song -> "${song.uid}_$index" }) { index, song ->
                 val isCurrent = index == currentIndex
                 val isPast = index < currentIndex
-                
+
                 QueueItem(
                     song = song,
                     isCurrent = isCurrent,
                     isPlaying = isPlaying,
                     isPast = isPast,
-                    onClick = { queueModel.goto(index) }
+                    onClick = { queueModel.goto(index) },
                 )
             }
         }
@@ -118,73 +133,67 @@ fun QueueItem(
     isCurrent: Boolean,
     isPlaying: Boolean,
     isPast: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     val context = LocalContext.current
-    val backgroundColor = if (isCurrent) FluxioTheme.colors.element.copy(alpha = 0.5f) else FluxioTheme.colors.bg
-    
+    val backgroundColor =
+        if (isCurrent) FluxioTheme.colors.element.copy(alpha = 0.5f) else FluxioTheme.colors.bg
+
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .background(backgroundColor)
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .alpha(if (isPast) 0.5f else 1f),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier.fillMaxWidth()
+                .clickable(onClick = onClick)
+                .background(backgroundColor)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .alpha(if (isPast) 0.5f else 1f),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         // Artwork
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(8.dp))
-        ) {
+        Box(modifier = Modifier.size(48.dp).clip(RoundedCornerShape(8.dp))) {
             AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(song.album.coverUri)
-                    .crossfade(true)
-                    .build(),
+                model =
+                    ImageRequest.Builder(context).data(song.album.coverUri).crossfade(true).build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
-                error = painterResource(id = R.drawable.ic_album_24)
+                error = painterResource(id = R.drawable.ic_album_24),
             )
-            
+
             if (isCurrent) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(FluxioTheme.colors.bg.copy(alpha = 0.6f)),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier.fillMaxSize().background(FluxioTheme.colors.bg.copy(alpha = 0.6f)),
+                    contentAlignment = Alignment.Center,
                 ) {
                     EqualizerIndicator(isPlaying = isPlaying)
                 }
             }
         }
-        
+
         Spacer(modifier = Modifier.width(16.dp))
-        
+
         // Text
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = song.name.resolve(context),
                 style = FluxioTheme.typography.bodyMedium,
                 color = FluxioTheme.colors.text1,
-                maxLines = 1
+                maxLines = 1,
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = song.artists.resolveNames(context),
                 style = FluxioTheme.typography.labelMedium,
                 color = FluxioTheme.colors.text2,
-                maxLines = 1
+                maxLines = 1,
             )
         }
-        
+
         // Drag handle (just visual for v1)
         Icon(
             painter = painterResource(id = R.drawable.ic_handle_24),
             contentDescription = "Reordenar",
-            tint = FluxioTheme.colors.text2
+            tint = FluxioTheme.colors.text2,
         )
     }
 }
