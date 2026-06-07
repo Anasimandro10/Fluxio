@@ -71,8 +71,8 @@ import org.oxycblt.auxio.ui.ViewBindingFragment
  * - Sliders: pure color (colorPrimary, will be wired to ambient at step 31).
  * - EQ: 10 vertical sliders 4dp wide, freq labels 10sp text2, preset spinner.
  * - Speed: slider + chips [0.5×][0.75×][1×][1.5×][2×]. Active chip: pure color bg.
- * - Timer: chips [15m][30m][45m][1h][2h][Custom] + toggle fin-canción.
- *   Active chip shows countdown in header. Custom chip opens inline dialog.
+ * - Timer: chips [15m][30m][45m][1h][2h][Custom] + toggle fin-canción. Active chip shows countdown
+ *   in header. Custom chip opens inline dialog.
  */
 @AndroidEntryPoint
 class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
@@ -514,9 +514,7 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
             }
         }
 
-        binding.audioChipTimerCustom.setOnClickListener {
-            showCustomTimerDialog(binding)
-        }
+        binding.audioChipTimerCustom.setOnClickListener { showCustomTimerDialog(binding) }
 
         binding.audioTimerEndOfSongSwitch.setOnCheckedChangeListener { _, isChecked ->
             playbackModel.setStopAtEndOfSong(isChecked)
@@ -545,8 +543,8 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
      * Updates the timer card header text and chip checked states to match [remaining].
      *
      * When a timer is active, the chip whose preset rounded-minutes match the remaining time is
-     * checked. If no preset matches (custom duration), the Custom chip is checked instead.
-     * When [remaining] is null the header shows "Off" and all chips are unchecked.
+     * checked. If no preset matches (custom duration), the Custom chip is checked instead. When
+     * [remaining] is null the header shows "Off" and all chips are unchecked.
      */
     private fun onTimerStateChanged(
         binding: FragmentAudioTabBinding,
