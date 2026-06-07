@@ -29,6 +29,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
@@ -70,6 +71,8 @@ import org.oxycblt.auxio.ui.ViewBindingFragment
  * - Sliders: pure color (colorPrimary, will be wired to ambient at step 31).
  * - EQ: 10 vertical sliders 4dp wide, freq labels 10sp text2, preset spinner.
  * - Speed: slider + chips [0.5×][0.75×][1×][1.5×][2×]. Active chip: pure color bg.
+ * - Timer: chips [15m][30m][45m][1h][2h][Custom] + toggle fin-canción.
+ *   Active chip shows countdown in header. Custom chip opens inline dialog.
  */
 @AndroidEntryPoint
 class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
@@ -491,7 +494,7 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
     // -------------------------------------------------------------------------
 
     private fun setupTimerCard(binding: FragmentAudioTabBinding) {
-        val chips =
+        val chipMinutes =
             listOf(
                 binding.audioChipTimer15m to 15,
                 binding.audioChipTimer30m to 30,
@@ -500,34 +503,116 @@ class AudioTabFragment : ViewBindingFragment<FragmentAudioTabBinding>() {
                 binding.audioChipTimer2h to 120,
             )
 
-        chips.forEach { (chip, minutes) ->
+        chipMinutes.forEach { (chip, minutes) ->
             chip.setOnClickListener {
                 if (chip.isChecked) {
                     playbackModel.startSleepTimer(minutes)
                 } else {
+                    // Tapping the already-checked chip cancels the timer.
                     playbackModel.cancelSleepTimer()
                 }
             }
         }
 
         binding.audioChipTimerCustom.setOnClickListener {
-            // Open custom dialog
-            org.oxycblt.auxio.playback.sleeptimer
-                .SleepTimerDialog()
-                .show(childFragmentManager, "sleep_timer")
+            showCustomTimerDialog(binding)
         }
 
         binding.audioTimerEndOfSongSwitch.setOnCheckedChangeListener { _, isChecked ->
-            // Assume PlaybackViewModel has setStopAtEnd(Boolean) or similar.
-            // Fluxio usually manages this via PlaybackSpeedSettings or PlaybackViewModel
+            playbackModel.setStopAtEndOfSong(isChecked)
         }
 
+        // Observe countdown — updates header text and chip checked states every second.
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                // Assuming playbackModel has sleepTimerTimeRemaining flow or LiveData
-                // This will be wired to audio_timer_value
+                playbackModel.timerRemainingMs.collect { remaining ->
+                    onTimerStateChanged(binding, remaining, chipMinutes)
+                }
             }
         }
+
+        // Keep the switch in sync with the ViewModel flag.
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                playbackModel.stopAtEndOfSong.collect { enabled ->
+                    binding.audioTimerEndOfSongSwitch.isChecked = enabled
+                }
+            }
+        }
+    }
+
+    /**
+     * Updates the timer card header text and chip checked states to match [remaining].
+     *
+     * When a timer is active, the chip whose preset rounded-minutes match the remaining time is
+     * checked. If no preset matches (custom duration), the Custom chip is checked instead.
+     * When [remaining] is null the header shows "Off" and all chips are unchecked.
+     */
+    private fun onTimerStateChanged(
+        binding: FragmentAudioTabBinding,
+        remaining: Long?,
+        chipMinutes: List<Pair<Chip, Int>>,
+    ) {
+        if (remaining == null) {
+            binding.audioTimerValue.text = getString(R.string.lbl_audio_off)
+            chipMinutes.forEach { (chip, _) -> chip.isChecked = false }
+            binding.audioChipTimerCustom.isChecked = false
+            return
+        }
+
+        // Show countdown in header.
+        val totalMins = (remaining / 60_000L).toInt()
+        val secs = ((remaining % 60_000L) / 1_000L).toInt()
+        binding.audioTimerValue.text =
+            if (totalMins > 0) {
+                getString(R.string.fmt_sleep_timer_remaining, totalMins, secs)
+            } else {
+                // Less than a minute left — show only seconds.
+                "${secs}s"
+            }
+
+        // Check the chip whose preset matches remaining time (rounded to nearest minute).
+        val remainingMins = ((remaining + 30_000L) / 60_000L).toInt()
+        var matched = false
+        chipMinutes.forEach { (chip, minutes) ->
+            val isMatch = remainingMins == minutes
+            chip.isChecked = isMatch
+            if (isMatch) matched = true
+        }
+        // No preset matched → must be a custom duration.
+        binding.audioChipTimerCustom.isChecked = !matched
+    }
+
+    /** Shows a number-input dialog where the user types a custom number of minutes. */
+    private fun showCustomTimerDialog(binding: FragmentAudioTabBinding) {
+        val ctx = requireContext()
+        val paddingPx = (16 * resources.displayMetrics.density).toInt()
+
+        val editText =
+            EditText(ctx).apply {
+                hint = getString(R.string.hint_sleep_custom_minutes)
+                inputType = InputType.TYPE_CLASS_NUMBER
+                setPadding(paddingPx, paddingPx / 2, paddingPx, paddingPx / 2)
+            }
+
+        MaterialAlertDialogBuilder(ctx)
+            .setTitle(R.string.lbl_sleep_timer)
+            .setView(editText)
+            .setPositiveButton(R.string.lbl_sleep_start_timer) { _, _ ->
+                val minutes = editText.text?.toString()?.trim()?.toIntOrNull()
+                if (minutes != null && minutes > 0) {
+                    playbackModel.startSleepTimer(minutes)
+                } else {
+                    Toast.makeText(ctx, R.string.err_sleep_timer_invalid, Toast.LENGTH_SHORT).show()
+                    // Un-check the Custom chip since no timer was started.
+                    binding.audioChipTimerCustom.isChecked = false
+                }
+            }
+            .setNegativeButton(R.string.lbl_cancel) { _, _ ->
+                // Un-check the Custom chip on cancel.
+                binding.audioChipTimerCustom.isChecked = false
+            }
+            .show()
     }
 
     // -------------------------------------------------------------------------

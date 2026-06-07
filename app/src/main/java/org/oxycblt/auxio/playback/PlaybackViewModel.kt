@@ -75,6 +75,22 @@ constructor(
 
     private var pendingSleepStop = false
 
+    /**
+     * When true the app will pause at the end of the current song regardless of the countdown
+     * timer. This is the "stop at end of song" toggle in the Audio tab.
+     */
+    private val _stopAtEndOfSong = MutableStateFlow(false)
+    val stopAtEndOfSong: StateFlow<Boolean> = _stopAtEndOfSong.asStateFlow()
+
+    /** Toggle the "stop at end of current song" mode. Does not start a countdown. */
+    fun setStopAtEndOfSong(enabled: Boolean) {
+        _stopAtEndOfSong.value = enabled
+        if (!enabled) {
+            pendingSleepStop = false
+        }
+        L.d("stopAtEndOfSong=$enabled")
+    }
+
     private val _song = MutableStateFlow<Song?>(null)
     /** The currently playing song. */
     val song: StateFlow<Song?>
@@ -144,11 +160,14 @@ constructor(
     override fun onIndexMoved(index: Int) {
         L.d("Index moved, updating current song")
         _song.value = playbackManager.currentSong
-        if (pendingSleepStop) {
+        if (pendingSleepStop || _stopAtEndOfSong.value) {
             pendingSleepStop = false
             _timerRemainingMs.value = null
             L.d("Sleep timer: pausing after song transition")
             playbackManager.playing(false)
+            // If it was the "stop at end" toggle (not a countdown), keep the switch on
+            // so the user can see it's still armed for the next song. Clear it only when
+            // they manually turn it off.
         }
     }
 
