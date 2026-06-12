@@ -135,20 +135,29 @@ fun QueueItem(
     onClick: () -> Unit,
 ) {
     val context = LocalContext.current
+    // Active: bg-tinte-8%
     val backgroundColor =
-        if (isCurrent) FluxioTheme.colors.element.copy(alpha = 0.5f) else FluxioTheme.colors.bg
+        if (isCurrent) FluxioTheme.colors.text1.copy(alpha = 0.08f) else FluxioTheme.colors.bg
 
     Row(
         modifier =
             Modifier.fillMaxWidth()
+                .height(72.dp)
                 .clickable(onClick = onClick)
                 .background(backgroundColor)
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 16.dp)
                 .alpha(if (isPast) 0.5f else 1f),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Artwork
-        Box(modifier = Modifier.size(48.dp).clip(RoundedCornerShape(8.dp))) {
+        // Artwork 48dp, r:6dp. Active: borde-artwork-puro
+        val artworkModifier = Modifier.size(48.dp)
+        val finalArtworkModifier = if (isCurrent) {
+            artworkModifier.androidx.compose.foundation.border(2.dp, FluxioTheme.colors.text1, RoundedCornerShape(6.dp))
+        } else {
+            artworkModifier
+        }
+
+        Box(modifier = finalArtworkModifier.clip(RoundedCornerShape(6.dp))) {
             AsyncImage(
                 model = ImageRequest.Builder(context).data(song.cover).build(),
                 contentDescription = null,
@@ -172,26 +181,28 @@ fun QueueItem(
 
         // Text
         Column(modifier = Modifier.weight(1f)) {
+            // Título: 17sp (titleMedium)
             Text(
                 text = song.name.resolve(context),
-                style = FluxioTheme.typography.bodyMedium,
+                style = FluxioTheme.typography.titleMedium,
                 color = FluxioTheme.colors.text1,
                 maxLines = 1,
             )
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(4.dp))
+            // Artista: 15sp text2 (bodyMedium)
             Text(
                 text = song.artists.resolveNames(context),
-                style = FluxioTheme.typography.labelMedium,
+                style = FluxioTheme.typography.bodyMedium,
                 color = FluxioTheme.colors.text2,
                 maxLines = 1,
             )
         }
 
-        // Drag handle (just visual for v1)
+        // Drag handle (drag-text3-right)
         Icon(
             painter = painterResource(id = R.drawable.ic_handle_24),
             contentDescription = "Reordenar",
-            tint = FluxioTheme.colors.text2,
+            tint = FluxioTheme.colors.text3,
         )
     }
 }
