@@ -97,10 +97,13 @@ fun PlaybackTabs(
             modifier = Modifier.weight(1f),
         ) {
             val tabs = listOf(PlayerTab.QUEUE, PlayerTab.LYRICS, PlayerTab.AUDIO)
-            val pagerState = androidx.compose.foundation.pager.rememberPagerState(
-                initialPage = if (currentTab != PlayerTab.NONE) tabs.indexOf(currentTab).coerceAtLeast(0) else 0,
-                pageCount = { tabs.size }
-            )
+            val pagerState =
+                androidx.compose.foundation.pager.rememberPagerState(
+                    initialPage =
+                        if (currentTab != PlayerTab.NONE) tabs.indexOf(currentTab).coerceAtLeast(0)
+                        else 0,
+                    pageCount = { tabs.size },
+                )
 
             androidx.compose.runtime.LaunchedEffect(currentTab) {
                 val targetPage = tabs.indexOf(currentTab)
@@ -109,7 +112,10 @@ fun PlaybackTabs(
                 }
             }
 
-            androidx.compose.runtime.LaunchedEffect(pagerState.currentPage, pagerState.isScrollInProgress) {
+            androidx.compose.runtime.LaunchedEffect(
+                pagerState.currentPage,
+                pagerState.isScrollInProgress,
+            ) {
                 if (!pagerState.isScrollInProgress) {
                     val newTab = tabs[pagerState.currentPage]
                     if (currentTab != PlayerTab.NONE && currentTab != newTab) {
@@ -120,7 +126,7 @@ fun PlaybackTabs(
 
             androidx.compose.foundation.pager.HorizontalPager(
                 state = pagerState,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             ) { page ->
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     when (tabs[page]) {
