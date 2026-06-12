@@ -194,7 +194,8 @@ class AutoEqBrowserDialog : ViewBindingBottomSheetDialogFragment<DialogAutoeqBro
 
         if (results.isEmpty()) {
             // Context spec: "No se encontraron perfiles para '[query]'" centered 17sp text3.
-            binding.autoeqBrowserStatus.text = getString(R.string.fmt_autoeq_no_results, currentQuery)
+            binding.autoeqBrowserStatus.text =
+                getString(R.string.fmt_autoeq_no_results, currentQuery)
             binding.autoeqBrowserErrorLayout.isVisible = true
             binding.autoeqBrowserRetryButton.isVisible = false
             binding.autoeqBrowserResults.isVisible = false
