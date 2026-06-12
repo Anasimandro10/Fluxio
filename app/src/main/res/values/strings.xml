@@ -142,6 +142,10 @@
     <string name="lbl_sleep_cancel_timer">Cancel timer</string>
     <string name="fmt_sleep_timer_remaining">Active — %1$d min %2$02d s remaining</string>
     <string name="err_sleep_timer_invalid">Enter a number of minutes</string>
+    <!-- Stop playback at the end of the current song (timer card toggle label) -->
+    <string name="lbl_timer_stop_at_end">Stop at end of song</string>
+    <!-- Custom duration chip in the timer card -->
+    <string name="lbl_timer_custom">Custom</string>
     <string name="desc_sleep_timer">Sleep timer</string>
     <string name="lbl_play">Play</string>
     <string name="lbl_shuffle">Shuffle</string>

@@ -543,7 +543,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Sleep timer"
+                        android:text="@string/lbl_sleep_timer"
                         android:textAppearance="@style/TextAppearance.Fluxio.Title"
                         android:textColor="?attr/colorOnSurface" />
 
@@ -577,7 +577,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Parar al final de la canción"
+                            android:text="@string/lbl_timer_stop_at_end"
                             android:textAppearance="@style/TextAppearance.Fluxio.Body"
                             android:textColor="?attr/colorOnSurface" />
 
@@ -641,7 +641,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:checkable="true"
-                            android:text="Custom" />
+                            android:text="@string/lbl_timer_custom" />
 
                     </com.google.android.material.chip.ChipGroup>
 
