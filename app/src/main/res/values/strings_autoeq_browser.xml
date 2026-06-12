@@ -5,4 +5,8 @@
     <string name="lbl_autoeq_title">AutoEQ</string>
     <string name="lbl_autoeq_recent">Recent</string>
     <string name="lbl_autoeq_retry">Retry</string>
+    <!-- Fallback when a headphone profile has no source field -->
+    <string name="lbl_autoeq_unknown_source">Unknown source</string>
+    <!-- No-results message — %s is the search query typed by the user -->
+    <string name="fmt_autoeq_no_results">No profiles found for \'%s\'</string>
 </resources>
