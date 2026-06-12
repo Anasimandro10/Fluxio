@@ -40,6 +40,8 @@ import org.oxycblt.auxio.R
 import org.oxycblt.auxio.playback.PlaybackPanelFragment.PlayerTab
 import org.oxycblt.auxio.playback.queue.QueueViewModel
 import org.oxycblt.auxio.ui.theme.FluxioTheme
+import org.oxycblt.auxio.lyrics.LyricsViewModel
+import org.oxycblt.auxio.playback.lyrics.LyricsTab
 
 @Composable
 fun PlaybackTabs(
@@ -47,6 +49,7 @@ fun PlaybackTabs(
     onTabSelected: (PlayerTab) -> Unit,
     playbackModel: PlaybackViewModel,
     queueModel: QueueViewModel,
+    lyricsModel: LyricsViewModel,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         // Tab Bar
@@ -98,11 +101,7 @@ fun PlaybackTabs(
                     PlayerTab.QUEUE ->
                         org.oxycblt.auxio.playback.queue.QueueTab(queueModel, playbackModel)
                     PlayerTab.LYRICS ->
-                        Text(
-                            "Lyrics Compose Content (WIP)",
-                            style = FluxioTheme.typography.bodyMedium,
-                            color = FluxioTheme.colors.text1,
-                        )
+                        LyricsTab(lyricsModel, playbackModel)
                     PlayerTab.AUDIO ->
                         Text(
                             "Audio Compose Content (WIP)",

@@ -175,6 +175,7 @@ class PlaybackPanelFragment :
                         onTabSelected = ::setTab,
                         playbackModel = playbackModel,
                         queueModel = queueModel,
+                        lyricsModel = lyricsModel,
                     )
                 }
             }
