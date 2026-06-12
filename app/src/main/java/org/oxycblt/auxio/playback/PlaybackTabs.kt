@@ -89,25 +89,52 @@ fun PlaybackTabs(
             )
         }
 
-        // Pager Content Placeholder
+        // Pager Content
         AnimatedVisibility(
             visible = currentTab != PlayerTab.NONE,
             enter = fadeIn() + slideInVertically(initialOffsetY = { it / 4 }),
             exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 4 }),
             modifier = Modifier.weight(1f),
         ) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                when (currentTab) {
-                    PlayerTab.QUEUE ->
-                        org.oxycblt.auxio.playback.queue.QueueTab(queueModel, playbackModel)
-                    PlayerTab.LYRICS -> LyricsTab(lyricsModel, playbackModel)
-                    PlayerTab.AUDIO ->
-                        Text(
-                            "Audio Compose Content (WIP)",
-                            style = FluxioTheme.typography.bodyMedium,
-                            color = FluxioTheme.colors.text1,
-                        )
-                    else -> {}
+            val tabs = listOf(PlayerTab.QUEUE, PlayerTab.LYRICS, PlayerTab.AUDIO)
+            val pagerState = androidx.compose.foundation.pager.rememberPagerState(
+                initialPage = if (currentTab != PlayerTab.NONE) tabs.indexOf(currentTab).coerceAtLeast(0) else 0,
+                pageCount = { tabs.size }
+            )
+
+            androidx.compose.runtime.LaunchedEffect(currentTab) {
+                val targetPage = tabs.indexOf(currentTab)
+                if (targetPage != -1 && pagerState.currentPage != targetPage) {
+                    pagerState.animateScrollToPage(targetPage)
+                }
+            }
+
+            androidx.compose.runtime.LaunchedEffect(pagerState.currentPage, pagerState.isScrollInProgress) {
+                if (!pagerState.isScrollInProgress) {
+                    val newTab = tabs[pagerState.currentPage]
+                    if (currentTab != PlayerTab.NONE && currentTab != newTab) {
+                        onTabSelected(newTab)
+                    }
+                }
+            }
+
+            androidx.compose.foundation.pager.HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    when (tabs[page]) {
+                        PlayerTab.QUEUE ->
+                            org.oxycblt.auxio.playback.queue.QueueTab(queueModel, playbackModel)
+                        PlayerTab.LYRICS -> LyricsTab(lyricsModel, playbackModel)
+                        PlayerTab.AUDIO ->
+                            Text(
+                                "Audio Compose Content (WIP)",
+                                style = FluxioTheme.typography.bodyMedium,
+                                color = FluxioTheme.colors.text1,
+                            )
+                        else -> {}
+                    }
                 }
             }
         }
