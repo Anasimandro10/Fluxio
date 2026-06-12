@@ -17,8 +17,6 @@
  */
 package org.oxycblt.auxio.playback.lyrics
 
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -74,10 +72,7 @@ fun LyricsTab(lyricsModel: LyricsViewModel, playbackModel: PlaybackViewModel) {
             val offset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
 
             coroutineScope.launch {
-                listState.animateScrollToItem(
-                    index = currentLineIndex,
-                    scrollOffset = -offset
-                )
+                listState.animateScrollToItem(index = currentLineIndex, scrollOffset = -offset)
             }
         }
     }
@@ -85,18 +80,14 @@ fun LyricsTab(lyricsModel: LyricsViewModel, playbackModel: PlaybackViewModel) {
     Column(modifier = Modifier.fillMaxSize()) {
         // Header
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             AsyncImage(
                 model = ImageRequest.Builder(context).data(song?.cover).build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(RoundedCornerShape(8.dp)),
+                modifier = Modifier.size(64.dp).clip(RoundedCornerShape(8.dp)),
                 error = painterResource(id = R.drawable.ic_album_48),
             )
             Spacer(modifier = Modifier.width(16.dp))
@@ -105,14 +96,14 @@ fun LyricsTab(lyricsModel: LyricsViewModel, playbackModel: PlaybackViewModel) {
                     text = song?.name?.resolve(context) ?: "",
                     style = FluxioTheme.typography.titleMedium,
                     color = FluxioTheme.colors.text1,
-                    maxLines = 1
+                    maxLines = 1,
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = song?.artists?.resolveNames(context) ?: "",
                     style = FluxioTheme.typography.labelMedium,
                     color = FluxioTheme.colors.text2,
-                    maxLines = 1
+                    maxLines = 1,
                 )
             }
         }
@@ -129,20 +120,22 @@ fun LyricsTab(lyricsModel: LyricsViewModel, playbackModel: PlaybackViewModel) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 state = listState,
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 32.dp)
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 32.dp),
             ) {
-                itemsIndexed(lines, key = { _, line -> "${line.startMs}_${line.text}" }) { index, line ->
+                itemsIndexed(lines, key = { _, line -> "${line.startMs}_${line.text}" }) {
+                    index,
+                    line ->
                     val isActive = isSynced && index == currentLineIndex
                     val currentWordIdx = if (isActive) activeWordIndex else -1
                     // TODO: Dynamically pass ambient color when DynamicColorManager is implemented
-                    val ambientColor = Color.White 
+                    val ambientColor = Color.White
 
                     LyricLineView(
                         line = line,
                         isActiveLine = isActive,
                         isSynced = isSynced,
                         currentWordIdx = currentWordIdx,
-                        ambientColor = ambientColor
+                        ambientColor = ambientColor,
                     )
                 }
             }
@@ -156,60 +149,64 @@ fun LyricLineView(
     isActiveLine: Boolean,
     isSynced: Boolean,
     currentWordIdx: Int,
-    ambientColor: Color
+    ambientColor: Color,
 ) {
     val alpha = if (!isSynced) 1f else if (isActiveLine) 1f else 0.35f
     val fontSize = if (!isSynced) 20.sp else if (isActiveLine) 22.sp else 20.sp
-    
-    val shadow = if (isSynced && isActiveLine) {
-        Shadow(
-            color = ambientColor.copy(alpha = 0.3f), // 30% opacity glow
-            blurRadius = 8f
-        )
-    } else null
 
-    val annotatedText = remember(line.text, line.words, currentWordIdx, isSynced, isActiveLine) {
-        if (line.words.isEmpty() || currentWordIdx < 0 || !isActiveLine) {
-            AnnotatedString(line.text)
-        } else {
-            buildAnnotatedString {
-                var lastEnd = 0
-                for (i in line.words.indices) {
-                    val w = line.words[i]
-                    if (w.startChar < 0 || w.endChar > line.text.length || w.startChar >= w.endChar) continue
-                    
-                    if (w.startChar > lastEnd) {
-                        append(line.text.substring(lastEnd, w.startChar))
-                    }
-                    
-                    if (i <= currentWordIdx) {
-                        // Already sung or current: full white
-                        withStyle(SpanStyle(color = Color.White)) {
-                            append(line.text.substring(w.startChar, w.endChar))
+    val shadow =
+        if (isSynced && isActiveLine) {
+            Shadow(
+                color = ambientColor.copy(alpha = 0.3f), // 30% opacity glow
+                blurRadius = 8f,
+            )
+        } else null
+
+    val annotatedText =
+        remember(line.text, line.words, currentWordIdx, isSynced, isActiveLine) {
+            if (line.words.isEmpty() || currentWordIdx < 0 || !isActiveLine) {
+                AnnotatedString(line.text)
+            } else {
+                buildAnnotatedString {
+                    var lastEnd = 0
+                    for (i in line.words.indices) {
+                        val w = line.words[i]
+                        if (
+                            w.startChar < 0 ||
+                                w.endChar > line.text.length ||
+                                w.startChar >= w.endChar
+                        )
+                            continue
+
+                        if (w.startChar > lastEnd) {
+                            append(line.text.substring(lastEnd, w.startChar))
                         }
-                    } else {
-                        // Upcoming: 35% white
-                        withStyle(SpanStyle(color = Color.White.copy(alpha = 0.35f))) {
-                            append(line.text.substring(w.startChar, w.endChar))
+
+                        if (i <= currentWordIdx) {
+                            // Already sung or current: full white
+                            withStyle(SpanStyle(color = Color.White)) {
+                                append(line.text.substring(w.startChar, w.endChar))
+                            }
+                        } else {
+                            // Upcoming: 35% white
+                            withStyle(SpanStyle(color = Color.White.copy(alpha = 0.35f))) {
+                                append(line.text.substring(w.startChar, w.endChar))
+                            }
                         }
+                        lastEnd = w.endChar
                     }
-                    lastEnd = w.endChar
-                }
-                if (lastEnd < line.text.length) {
-                    append(line.text.substring(lastEnd))
+                    if (lastEnd < line.text.length) {
+                        append(line.text.substring(lastEnd))
+                    }
                 }
             }
         }
-    }
 
     Text(
         text = annotatedText,
         fontSize = fontSize,
         color = Color.White,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp)
-            .alpha(alpha),
-        style = FluxioTheme.typography.bodyMedium.copy(shadow = shadow)
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp).alpha(alpha),
+        style = FluxioTheme.typography.bodyMedium.copy(shadow = shadow),
     )
 }

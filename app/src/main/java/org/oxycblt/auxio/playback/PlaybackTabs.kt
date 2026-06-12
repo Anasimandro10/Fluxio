@@ -37,11 +37,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import org.oxycblt.auxio.R
+import org.oxycblt.auxio.lyrics.LyricsViewModel
 import org.oxycblt.auxio.playback.PlaybackPanelFragment.PlayerTab
+import org.oxycblt.auxio.playback.lyrics.LyricsTab
 import org.oxycblt.auxio.playback.queue.QueueViewModel
 import org.oxycblt.auxio.ui.theme.FluxioTheme
-import org.oxycblt.auxio.lyrics.LyricsViewModel
-import org.oxycblt.auxio.playback.lyrics.LyricsTab
 
 @Composable
 fun PlaybackTabs(
@@ -100,8 +100,7 @@ fun PlaybackTabs(
                 when (currentTab) {
                     PlayerTab.QUEUE ->
                         org.oxycblt.auxio.playback.queue.QueueTab(queueModel, playbackModel)
-                    PlayerTab.LYRICS ->
-                        LyricsTab(lyricsModel, playbackModel)
+                    PlayerTab.LYRICS -> LyricsTab(lyricsModel, playbackModel)
                     PlayerTab.AUDIO ->
                         Text(
                             "Audio Compose Content (WIP)",
