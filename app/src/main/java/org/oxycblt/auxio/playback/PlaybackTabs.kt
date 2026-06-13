@@ -40,6 +40,7 @@ import org.oxycblt.auxio.R
 import org.oxycblt.auxio.lyrics.LyricsViewModel
 import org.oxycblt.auxio.playback.PlaybackPanelFragment.PlayerTab
 import org.oxycblt.auxio.playback.lyrics.LyricsTab
+import org.oxycblt.auxio.playback.equalizer.EqualizerViewModel
 import org.oxycblt.auxio.playback.queue.QueueViewModel
 import org.oxycblt.auxio.ui.theme.FluxioTheme
 
@@ -50,6 +51,7 @@ fun PlaybackTabs(
     playbackModel: PlaybackViewModel,
     queueModel: QueueViewModel,
     lyricsModel: LyricsViewModel,
+    equalizerModel: EqualizerViewModel,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         // Tab Bar
@@ -133,7 +135,7 @@ fun PlaybackTabs(
                         PlayerTab.QUEUE ->
                             org.oxycblt.auxio.playback.queue.QueueTab(queueModel, playbackModel)
                         PlayerTab.LYRICS -> LyricsTab(lyricsModel, playbackModel)
-                        PlayerTab.AUDIO -> org.oxycblt.auxio.playback.audio.AudioTab()
+                        PlayerTab.AUDIO -> org.oxycblt.auxio.playback.audio.AudioTab(equalizerModel)
                         else -> {}
                     }
                 }
