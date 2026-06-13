@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2026 Fluxio Project
+ * AudioTab.kt is part of Fluxio.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.oxycblt.auxio.playback.audio
 
 import androidx.compose.animation.AnimatedVisibility
@@ -18,7 +35,12 @@ import org.oxycblt.auxio.R
 import org.oxycblt.auxio.ui.theme.FluxioTheme
 
 enum class AudioCard {
-    NONE, EQUALIZER, SPEED, CROSSFADE, STEREO, TIMER
+    NONE,
+    EQUALIZER,
+    SPEED,
+    CROSSFADE,
+    STEREO,
+    TIMER,
 }
 
 @Composable
@@ -27,16 +49,16 @@ fun AudioTab() {
     val scrollState = rememberScrollState()
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = Modifier.fillMaxSize().verticalScroll(scrollState).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         AudioAccordionCard(
             title = stringResource(R.string.lbl_equalizer),
             isExpanded = expandedCard == AudioCard.EQUALIZER,
-            onClick = { expandedCard = if (expandedCard == AudioCard.EQUALIZER) AudioCard.NONE else AudioCard.EQUALIZER }
+            onClick = {
+                expandedCard =
+                    if (expandedCard == AudioCard.EQUALIZER) AudioCard.NONE else AudioCard.EQUALIZER
+            },
         ) {
             Text("Equalizer WIP", color = FluxioTheme.colors.text2)
         }
@@ -44,7 +66,10 @@ fun AudioTab() {
         AudioAccordionCard(
             title = stringResource(R.string.lbl_playback_speed),
             isExpanded = expandedCard == AudioCard.SPEED,
-            onClick = { expandedCard = if (expandedCard == AudioCard.SPEED) AudioCard.NONE else AudioCard.SPEED }
+            onClick = {
+                expandedCard =
+                    if (expandedCard == AudioCard.SPEED) AudioCard.NONE else AudioCard.SPEED
+            },
         ) {
             Text("Speed WIP", color = FluxioTheme.colors.text2)
         }
@@ -52,7 +77,10 @@ fun AudioTab() {
         AudioAccordionCard(
             title = stringResource(R.string.lbl_crossfade),
             isExpanded = expandedCard == AudioCard.CROSSFADE,
-            onClick = { expandedCard = if (expandedCard == AudioCard.CROSSFADE) AudioCard.NONE else AudioCard.CROSSFADE }
+            onClick = {
+                expandedCard =
+                    if (expandedCard == AudioCard.CROSSFADE) AudioCard.NONE else AudioCard.CROSSFADE
+            },
         ) {
             Text("Crossfade WIP", color = FluxioTheme.colors.text2)
         }
@@ -60,7 +88,10 @@ fun AudioTab() {
         AudioAccordionCard(
             title = stringResource(R.string.lbl_stereo_widening),
             isExpanded = expandedCard == AudioCard.STEREO,
-            onClick = { expandedCard = if (expandedCard == AudioCard.STEREO) AudioCard.NONE else AudioCard.STEREO }
+            onClick = {
+                expandedCard =
+                    if (expandedCard == AudioCard.STEREO) AudioCard.NONE else AudioCard.STEREO
+            },
         ) {
             Text("Stereo Widening WIP", color = FluxioTheme.colors.text2)
         }
@@ -68,7 +99,10 @@ fun AudioTab() {
         AudioAccordionCard(
             title = stringResource(R.string.lbl_sleep_timer),
             isExpanded = expandedCard == AudioCard.TIMER,
-            onClick = { expandedCard = if (expandedCard == AudioCard.TIMER) AudioCard.NONE else AudioCard.TIMER }
+            onClick = {
+                expandedCard =
+                    if (expandedCard == AudioCard.TIMER) AudioCard.NONE else AudioCard.TIMER
+            },
         ) {
             Text("Timer WIP", color = FluxioTheme.colors.text2)
         }
@@ -80,26 +114,23 @@ fun AudioAccordionCard(
     title: String,
     isExpanded: Boolean,
     onClick: () -> Unit,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(FluxioTheme.colors.surface)
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .background(FluxioTheme.colors.surface)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = title,
                 style = FluxioTheme.typography.titleMedium,
                 color = FluxioTheme.colors.text1,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
         }
 
