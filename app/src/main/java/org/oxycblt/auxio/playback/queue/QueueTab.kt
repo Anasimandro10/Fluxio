@@ -42,6 +42,10 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import kotlinx.coroutines.flow.collectLatest
+import org.burnoutcrew.reorderable.ReorderableItem
+import org.burnoutcrew.reorderable.detectReorder
+import org.burnoutcrew.reorderable.rememberReorderableLazyListState
+import org.burnoutcrew.reorderable.reorderable
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.music.resolve
 import org.oxycblt.auxio.music.resolveNames
@@ -56,7 +60,10 @@ fun QueueTab(queueModel: QueueViewModel, playbackModel: PlaybackViewModel) {
     val currentIndex by queueModel.index.collectAsState()
     val isPlaying by playbackModel.isPlaying.collectAsState()
 
-    val listState = rememberLazyListState()
+    val reorderState = rememberReorderableLazyListState(onMove = { from, to ->
+        queueModel.moveQueueDataItems(from.index, to.index)
+    })
+    val listState = reorderState.listState
 
     LaunchedEffect(queueModel.scrollTo) {
         queueModel.scrollTo.flow.collectLatest { targetIndex ->
@@ -107,21 +114,25 @@ fun QueueTab(queueModel: QueueViewModel, playbackModel: PlaybackViewModel) {
 
         // List
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().reorderable(reorderState),
             state = listState,
             contentPadding = PaddingValues(bottom = 80.dp), // extra padding for scrolling
         ) {
             itemsIndexed(queue, key = { index, song -> "${song.uid}_$index" }) { index, song ->
-                val isCurrent = index == currentIndex
-                val isPast = index < currentIndex
+                ReorderableItem(reorderState, key = "${song.uid}_$index") { isDragging ->
+                    val isCurrent = index == currentIndex
+                    val isPast = index < currentIndex
 
-                QueueItem(
-                    song = song,
-                    isCurrent = isCurrent,
-                    isPlaying = isPlaying,
-                    isPast = isPast,
-                    onClick = { queueModel.goto(index) },
-                )
+                    QueueItem(
+                        song = song,
+                        isCurrent = isCurrent,
+                        isPlaying = isPlaying,
+                        isPast = isPast,
+                        isDragging = isDragging,
+                        dragModifier = Modifier.detectReorder(reorderState),
+                        onClick = { queueModel.goto(index) },
+                    )
+                }
             }
         }
     }
@@ -133,6 +144,8 @@ fun QueueItem(
     isCurrent: Boolean,
     isPlaying: Boolean,
     isPast: Boolean,
+    isDragging: Boolean = false,
+    dragModifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -145,9 +158,9 @@ fun QueueItem(
             Modifier.fillMaxWidth()
                 .height(72.dp)
                 .clickable(onClick = onClick)
-                .background(backgroundColor)
+                .background(if (isDragging) FluxioTheme.colors.element else backgroundColor)
                 .padding(horizontal = 16.dp)
-                .alpha(if (isPast) 0.5f else 1f),
+                .alpha(if (isPast && !isDragging) 0.5f else 1f),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Artwork 48dp, r:6dp. Active: borde-artwork-puro
@@ -205,6 +218,7 @@ fun QueueItem(
             painter = painterResource(id = R.drawable.ic_handle_24),
             contentDescription = "Reordenar",
             tint = FluxioTheme.colors.text3,
+            modifier = dragModifier
         )
     }
 }
