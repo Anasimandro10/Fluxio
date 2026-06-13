@@ -17,6 +17,7 @@
  */
 package org.oxycblt.auxio.playback.lyrics
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -37,6 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -136,6 +138,11 @@ fun LyricsTab(lyricsModel: LyricsViewModel, playbackModel: PlaybackViewModel) {
                         isSynced = isSynced,
                         currentWordIdx = currentWordIdx,
                         ambientColor = ambientColor,
+                        onClick = {
+                            if (isSynced && line.startMs >= 0) {
+                                playbackModel.seekTo(line.startMs / 100L)
+                            }
+                        }
                     )
                 }
             }
@@ -150,9 +157,11 @@ fun LyricLineView(
     isSynced: Boolean,
     currentWordIdx: Int,
     ambientColor: Color,
+    onClick: () -> Unit,
 ) {
     val alpha = if (!isSynced) 1f else if (isActiveLine) 1f else 0.35f
     val fontSize = if (!isSynced) 20.sp else if (isActiveLine) 22.sp else 20.sp
+    val fontWeight = if (isSynced && isActiveLine) FontWeight.Medium else FontWeight.Normal
 
     val shadow =
         if (isSynced && isActiveLine) {
@@ -205,8 +214,9 @@ fun LyricLineView(
     Text(
         text = annotatedText,
         fontSize = fontSize,
+        fontWeight = fontWeight,
         color = Color.White,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp).alpha(alpha),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp).alpha(alpha).clickable(enabled = isSynced) { onClick() },
         style = FluxioTheme.typography.bodyMedium.copy(shadow = shadow),
     )
 }
