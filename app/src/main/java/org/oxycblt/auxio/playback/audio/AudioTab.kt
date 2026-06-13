@@ -72,11 +72,14 @@ fun AudioTab(equalizerModel: EqualizerViewModel) {
         // EQ Card
         AudioAccordionCard(
             title = stringResource(R.string.lbl_equalizer),
-            stateLabel = if (enabled) {
-                profileName ?: EqualizerSettings.PRESET_NAMES.getOrNull(activePreset) ?: stringResource(R.string.lbl_eq_custom)
-            } else {
-                stringResource(R.string.lbl_sleep_timer_off).let { "Off" }
-            },
+            stateLabel =
+                if (enabled) {
+                    profileName
+                        ?: EqualizerSettings.PRESET_NAMES.getOrNull(activePreset)
+                        ?: stringResource(R.string.lbl_eq_custom)
+                } else {
+                    stringResource(R.string.lbl_sleep_timer_off).let { "Off" }
+                },
             isExpanded = expandedCard == AudioCard.EQUALIZER,
             onClick = {
                 expandedCard =
@@ -89,7 +92,7 @@ fun AudioTab(equalizerModel: EqualizerViewModel) {
                 activePreset = activePreset,
                 onToggle = { equalizerModel.setEnabled(it) },
                 onBandChange = { i, v -> equalizerModel.setBand(i, v) },
-                onPreset = { equalizerModel.applyPreset(it) }
+                onPreset = { equalizerModel.applyPreset(it) },
             )
         }
 
@@ -106,7 +109,7 @@ fun AudioTab(equalizerModel: EqualizerViewModel) {
             Text(
                 text = "— (30-C-8c) —",
                 color = FluxioTheme.colors.text3,
-                style = FluxioTheme.typography.bodyMedium
+                style = FluxioTheme.typography.bodyMedium,
             )
         }
 
@@ -123,7 +126,7 @@ fun AudioTab(equalizerModel: EqualizerViewModel) {
             Text(
                 text = "— (30-C-8c) —",
                 color = FluxioTheme.colors.text3,
-                style = FluxioTheme.typography.bodyMedium
+                style = FluxioTheme.typography.bodyMedium,
             )
         }
 
@@ -140,7 +143,7 @@ fun AudioTab(equalizerModel: EqualizerViewModel) {
             Text(
                 text = "— (30-C-8c) —",
                 color = FluxioTheme.colors.text3,
-                style = FluxioTheme.typography.bodyMedium
+                style = FluxioTheme.typography.bodyMedium,
             )
         }
 
@@ -157,7 +160,7 @@ fun AudioTab(equalizerModel: EqualizerViewModel) {
             Text(
                 text = "— (30-C-8d) —",
                 color = FluxioTheme.colors.text3,
-                style = FluxioTheme.typography.bodyMedium
+                style = FluxioTheme.typography.bodyMedium,
             )
         }
     }
@@ -177,37 +180,33 @@ private fun EqCardContent(
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // Enable toggle
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = stringResource(R.string.lbl_equalizer),
                 style = FluxioTheme.typography.bodyMedium,
                 color = FluxioTheme.colors.text1,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
             Switch(
                 checked = enabled,
                 onCheckedChange = onToggle,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = Color.White,
-                    checkedTrackColor = pureColor
-                )
+                colors =
+                    SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = pureColor,
+                    ),
             )
         }
 
         // 10 vertical sliders side by side
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(180.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
+            modifier = Modifier.fillMaxWidth().height(180.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
             bands.forEachIndexed { i, gain ->
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     // Gain label
                     Text(
@@ -215,29 +214,26 @@ private fun EqCardContent(
                         fontSize = 9.sp,
                         color = FluxioTheme.colors.text2,
                         textAlign = TextAlign.Center,
-                        maxLines = 1
+                        maxLines = 1,
                     )
                     Spacer(Modifier.height(2.dp))
                     // Vertical slider via rotation
                     Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth(),
-                        contentAlignment = Alignment.Center
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Slider(
                             value = gain,
                             onValueChange = { onBandChange(i, it) },
                             valueRange = -12f..12f,
                             enabled = enabled,
-                            colors = SliderDefaults.colors(
-                                thumbColor = pureColor,
-                                activeTrackColor = pureColor,
-                                inactiveTrackColor = FluxioTheme.colors.element
-                            ),
-                            modifier = Modifier
-                                .width(120.dp)
-                                .rotate(-90f)
+                            colors =
+                                SliderDefaults.colors(
+                                    thumbColor = pureColor,
+                                    activeTrackColor = pureColor,
+                                    inactiveTrackColor = FluxioTheme.colors.element,
+                                ),
+                            modifier = Modifier.width(120.dp).rotate(-90f),
                         )
                     }
                     Spacer(Modifier.height(4.dp))
@@ -246,7 +242,7 @@ private fun EqCardContent(
                         text = FREQ_LABELS[i],
                         fontSize = 10.sp,
                         color = FluxioTheme.colors.text2,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
                     )
                 }
             }
@@ -259,16 +255,16 @@ private fun EqCardContent(
             items(presetNames.size) { idx ->
                 val isActive = activePreset == idx
                 Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (isActive) pureColor else FluxioTheme.colors.element)
-                        .clickable(enabled = enabled) { onPreset(idx) }
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                    modifier =
+                        Modifier.clip(RoundedCornerShape(8.dp))
+                            .background(if (isActive) pureColor else FluxioTheme.colors.element)
+                            .clickable(enabled = enabled) { onPreset(idx) }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Text(
                         text = presetNames[idx],
                         style = FluxioTheme.typography.labelMedium,
-                        color = if (isActive) FluxioTheme.colors.bg else FluxioTheme.colors.text2
+                        color = if (isActive) FluxioTheme.colors.bg else FluxioTheme.colors.text2,
                     )
                 }
             }
@@ -304,7 +300,7 @@ fun AudioAccordionCard(
                 Text(
                     text = stateLabel,
                     style = FluxioTheme.typography.bodyMedium,
-                    color = FluxioTheme.colors.text2
+                    color = FluxioTheme.colors.text2,
                 )
             }
         }

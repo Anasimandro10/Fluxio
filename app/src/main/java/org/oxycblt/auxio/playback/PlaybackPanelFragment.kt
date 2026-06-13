@@ -78,7 +78,8 @@ class PlaybackPanelFragment :
     private val listModel: ListViewModel by activityViewModels()
     private val lyricsModel: LyricsViewModel by activityViewModels()
     private val queueModel: QueueViewModel by viewModels()
-    private val equalizerModel: org.oxycblt.auxio.playback.equalizer.EqualizerViewModel by viewModels()
+    private val equalizerModel: org.oxycblt.auxio.playback.equalizer.EqualizerViewModel by
+        viewModels()
 
     private var equalizerLauncher: ActivityResultLauncher<Intent>? = null
     private var lastCoverWidth = 0
