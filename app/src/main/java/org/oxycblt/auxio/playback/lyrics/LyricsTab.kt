@@ -142,7 +142,7 @@ fun LyricsTab(lyricsModel: LyricsViewModel, playbackModel: PlaybackViewModel) {
                             if (isSynced && line.startMs >= 0) {
                                 playbackModel.seekTo(line.startMs / 100L)
                             }
-                        }
+                        },
                     )
                 }
             }
@@ -216,7 +216,12 @@ fun LyricLineView(
         fontSize = fontSize,
         fontWeight = fontWeight,
         color = Color.White,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp).alpha(alpha).clickable(enabled = isSynced) { onClick() },
+        modifier =
+            Modifier.fillMaxWidth().padding(vertical = 12.dp).alpha(alpha).clickable(
+                enabled = isSynced
+            ) {
+                onClick()
+            },
         style = FluxioTheme.typography.bodyMedium.copy(shadow = shadow),
     )
 }
