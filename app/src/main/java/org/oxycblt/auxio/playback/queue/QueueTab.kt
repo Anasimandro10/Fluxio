@@ -151,11 +151,16 @@ fun QueueItem(
     ) {
         // Artwork 48dp, r:6dp. Active: borde-artwork-puro
         val artworkModifier = Modifier.size(48.dp)
-        val finalArtworkModifier = if (isCurrent) {
-            artworkModifier.androidx.compose.foundation.border(2.dp, FluxioTheme.colors.text1, RoundedCornerShape(6.dp))
-        } else {
-            artworkModifier
-        }
+        val finalArtworkModifier =
+            if (isCurrent) {
+                artworkModifier.androidx.compose.foundation.border(
+                    2.dp,
+                    FluxioTheme.colors.text1,
+                    RoundedCornerShape(6.dp),
+                )
+            } else {
+                artworkModifier
+            }
 
         Box(modifier = finalArtworkModifier.clip(RoundedCornerShape(6.dp))) {
             AsyncImage(
