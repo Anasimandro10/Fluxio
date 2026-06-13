@@ -133,12 +133,7 @@ fun PlaybackTabs(
                         PlayerTab.QUEUE ->
                             org.oxycblt.auxio.playback.queue.QueueTab(queueModel, playbackModel)
                         PlayerTab.LYRICS -> LyricsTab(lyricsModel, playbackModel)
-                        PlayerTab.AUDIO ->
-                            Text(
-                                "Audio Compose Content (WIP)",
-                                style = FluxioTheme.typography.bodyMedium,
-                                color = FluxioTheme.colors.text1,
-                            )
+                        PlayerTab.AUDIO -> org.oxycblt.auxio.playback.audio.AudioTab()
                         else -> {}
                     }
                 }
