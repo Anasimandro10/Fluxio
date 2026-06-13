@@ -18,6 +18,7 @@
 package org.oxycblt.auxio.playback.queue
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -153,7 +154,7 @@ fun QueueItem(
         val artworkModifier = Modifier.size(48.dp)
         val finalArtworkModifier =
             if (isCurrent) {
-                artworkModifier.androidx.compose.foundation.border(
+                artworkModifier.border(
                     2.dp,
                     FluxioTheme.colors.text1,
                     RoundedCornerShape(6.dp),
