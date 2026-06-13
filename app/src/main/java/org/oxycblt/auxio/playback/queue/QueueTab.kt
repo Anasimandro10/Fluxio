@@ -23,7 +23,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -60,9 +59,10 @@ fun QueueTab(queueModel: QueueViewModel, playbackModel: PlaybackViewModel) {
     val currentIndex by queueModel.index.collectAsState()
     val isPlaying by playbackModel.isPlaying.collectAsState()
 
-    val reorderState = rememberReorderableLazyListState(onMove = { from, to ->
-        queueModel.moveQueueDataItems(from.index, to.index)
-    })
+    val reorderState =
+        rememberReorderableLazyListState(
+            onMove = { from, to -> queueModel.moveQueueDataItems(from.index, to.index) }
+        )
     val listState = reorderState.listState
 
     LaunchedEffect(queueModel.scrollTo) {
@@ -218,7 +218,7 @@ fun QueueItem(
             painter = painterResource(id = R.drawable.ic_handle_24),
             contentDescription = "Reordenar",
             tint = FluxioTheme.colors.text3,
-            modifier = dragModifier
+            modifier = dragModifier,
         )
     }
 }
