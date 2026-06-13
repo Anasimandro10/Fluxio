@@ -154,11 +154,7 @@ fun QueueItem(
         val artworkModifier = Modifier.size(48.dp)
         val finalArtworkModifier =
             if (isCurrent) {
-                artworkModifier.border(
-                    2.dp,
-                    FluxioTheme.colors.text1,
-                    RoundedCornerShape(6.dp),
-                )
+                artworkModifier.border(2.dp, FluxioTheme.colors.text1, RoundedCornerShape(6.dp))
             } else {
                 artworkModifier
             }
