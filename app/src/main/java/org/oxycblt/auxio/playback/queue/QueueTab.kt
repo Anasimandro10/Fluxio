@@ -61,7 +61,9 @@ fun QueueTab(queueModel: QueueViewModel, playbackModel: PlaybackViewModel) {
 
     val reorderState =
         rememberReorderableLazyListState(
-            onMove = { from, to -> queueModel.moveQueueDataItems(from.index, to.index) }
+            onMove = { from: org.burnoutcrew.reorderable.ItemPosition, to: org.burnoutcrew.reorderable.ItemPosition -> 
+                queueModel.moveQueueDataItems(from.index, to.index) 
+            }
         )
     val listState = reorderState.listState
 
