@@ -1,5 +1,5 @@
 # FLUXIO_CODEMAP.md
-> Commit: 56590aca0cc4  |  Generado: 2026-06-14 05:09  |  Roadmap: 15/93 completados  |  Archivos: 697
+> Commit: b6c570f935ba  |  Generado: 2026-06-14 05:27  |  Roadmap: 29/93 completados  |  Archivos: 697
 > **INDICE** — fetchea la parte que necesites.
 
 ---
@@ -23,21 +23,21 @@
 | 30e-a-2 | lyrics-highlight | ✅ |
 | 30e-b-1 | audio-shell-EQ | ✅ |
 | 30e-b-2 | audio-crossfade-stereo-speed | ✅ |
-| 30e-b-3 | audio-timer-acordeón | ⏭ SIGUIENTE |
-| 30e-b-4 | audio-autoeq-browser | pendiente |
-| 30-C-1 | compose-setup | pendiente |
-| 30-C-2 | compose-tema-base | pendiente |
-| 30-C-3 | compose-tema-dinámico | pendiente |
-| 30-C-4 | compose-composeview-scaffold | pendiente |
-| 30-C-5a | compose-tabbar-ui | pendiente |
-| 30-C-5b | compose-tabbar-lógica | pendiente |
-| 30-C-6a | compose-queue-layout | pendiente |
-| 30-C-6b | compose-queue-drag | pendiente |
-| 30-C-7a | compose-lyrics-layout | pendiente |
-| 30-C-7b | compose-lyrics-highlight | pendiente |
-| 30-C-8a | compose-audio-acordeón | pendiente |
-| 30-C-8b | compose-audio-EQ | pendiente |
-| 30-C-8c | compose-audio-crossfade-stereo-speed | pendiente |
+| 30e-b-3 | audio-timer-acordeón | ✅ |
+| 30e-b-4 | audio-autoeq-browser | ✅ |
+| 30-C-1 | compose-setup | ✅ |
+| 30-C-2 | compose-tema-base | ✅ |
+| 30-C-3 | compose-tema-dinámico | ✅ |
+| 30-C-4 | compose-composeview-scaffold | ✅ |
+| 30-C-5a | compose-tabbar-ui | ✅ |
+| 30-C-5b | compose-tabbar-lógica | ✅ |
+| 30-C-6a | compose-queue-layout | ✅ |
+| 30-C-6b | compose-queue-drag | ✅ |
+| 30-C-7a | compose-lyrics-layout | ✅ |
+| 30-C-7b | compose-lyrics-highlight | ✅ |
+| 30-C-8a | compose-audio-acordeón | ✅ |
+| 30-C-8b | compose-audio-EQ | ✅ |
+| 30-C-8c | compose-audio-crossfade-stereo-speed | ⏭ SIGUIENTE |
 | 30-C-8d | compose-audio-timer | pendiente |
 | 30-C-9 | compose-full-player | pendiente |
 | 30f-1 | miniplayer-layout | pendiente |
@@ -108,10 +108,10 @@
 
 | Parte | Contenido | Archivos | Link |
 |---|---|---|---|
-| **CI/Playback/DSP/Lyrics/Stats** | CI & Config | Material Components | Playback & Audio DSP | Lyrics | Statistics | 88 | [part1](https://raw.githubusercontent.com/Anasimandro10/fluxio/56590aca0cc41f9de5686215a7a75dc34e15660b/FLUXIO_CODEMAP_part1.md) |
-| **UI/Fragments/ViewModels/Tags/Backup** | UI Details/Library/Search/Settings | Tags | Backup | Image | Music/Data | Lists | Widgets | App Root | Otros | 209 | [part2](https://raw.githubusercontent.com/Anasimandro10/fluxio/56590aca0cc41f9de5686215a7a75dc34e15660b/FLUXIO_CODEMAP_part2.md) |
-| **Drawables/Layouts/Values/Menus/Nav** | Drawables XML | Layouts | Values | Preferences XML | Menus | Navigation | Other | 243 | [part3](https://raw.githubusercontent.com/Anasimandro10/fluxio/56590aca0cc41f9de5686215a7a75dc34e15660b/FLUXIO_CODEMAP_part3.md) |
-| **Fastlane/Metadata** | Descripciones Play Store / F-Droid | 157 | [part4](https://raw.githubusercontent.com/Anasimandro10/fluxio/56590aca0cc41f9de5686215a7a75dc34e15660b/FLUXIO_CODEMAP_part4.md) |
+| **CI/Playback/DSP/Lyrics/Stats** | CI & Config | Material Components | Playback & Audio DSP | Lyrics | Statistics | 88 | [part1](https://raw.githubusercontent.com/Anasimandro10/fluxio/b6c570f935badcdc4288afecf3a6ef41233b0dd1/FLUXIO_CODEMAP_part1.md) |
+| **UI/Fragments/ViewModels/Tags/Backup** | UI Details/Library/Search/Settings | Tags | Backup | Image | Music/Data | Lists | Widgets | App Root | Otros | 209 | [part2](https://raw.githubusercontent.com/Anasimandro10/fluxio/b6c570f935badcdc4288afecf3a6ef41233b0dd1/FLUXIO_CODEMAP_part2.md) |
+| **Drawables/Layouts/Values/Menus/Nav** | Drawables XML | Layouts | Values | Preferences XML | Menus | Navigation | Other | 243 | [part3](https://raw.githubusercontent.com/Anasimandro10/fluxio/b6c570f935badcdc4288afecf3a6ef41233b0dd1/FLUXIO_CODEMAP_part3.md) |
+| **Fastlane/Metadata** | Descripciones Play Store / F-Droid | 157 | [part4](https://raw.githubusercontent.com/Anasimandro10/fluxio/b6c570f935badcdc4288afecf3a6ef41233b0dd1/FLUXIO_CODEMAP_part4.md) |
 
 ---
 
