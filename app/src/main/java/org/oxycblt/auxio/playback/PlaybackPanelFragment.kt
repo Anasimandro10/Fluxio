@@ -37,6 +37,7 @@ import androidx.dynamicanimation.animation.SpringForce
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.databinding.FragmentPlaybackPanelBinding
 import org.oxycblt.auxio.detail.DetailViewModel
@@ -44,9 +45,13 @@ import org.oxycblt.auxio.list.ListViewModel
 import org.oxycblt.auxio.lyrics.LyricsViewModel
 import org.oxycblt.auxio.music.resolve
 import org.oxycblt.auxio.music.resolveNames
+import org.oxycblt.auxio.playback.crossfade.CrossfadeSettings
+import org.oxycblt.auxio.playback.equalizer.EqualizerViewModel
 import org.oxycblt.auxio.playback.queue.QueueViewModel
 import org.oxycblt.auxio.playback.sleeptimer.SleepTimerDialog
+import org.oxycblt.auxio.playback.speed.PlaybackSpeedSettings
 import org.oxycblt.auxio.playback.state.RepeatMode
+import org.oxycblt.auxio.playback.stereowidening.StereoWideningSettings
 import org.oxycblt.auxio.playback.ui.StyledSeekBar
 import org.oxycblt.auxio.playback.ui.stepper.DisplayPortion
 import org.oxycblt.auxio.playback.ui.stepper.PlayerFastSeekOverlay
@@ -78,8 +83,11 @@ class PlaybackPanelFragment :
     private val listModel: ListViewModel by activityViewModels()
     private val lyricsModel: LyricsViewModel by activityViewModels()
     private val queueModel: QueueViewModel by viewModels()
-    private val equalizerModel: org.oxycblt.auxio.playback.equalizer.EqualizerViewModel by
-        viewModels()
+    private val equalizerModel: EqualizerViewModel by viewModels()
+
+    @Inject lateinit var crossfadeSettings: CrossfadeSettings
+    @Inject lateinit var stereoSettings: StereoWideningSettings
+    @Inject lateinit var speedSettings: PlaybackSpeedSettings
 
     private var equalizerLauncher: ActivityResultLauncher<Intent>? = null
     private var lastCoverWidth = 0
@@ -158,7 +166,6 @@ class PlaybackPanelFragment :
                 listModel.openMenu(R.menu.playback_song, it, PlaySong.ByItself)
             }
         }
-        // Favourite / add-to-playlist shortcut button
         binding.playbackFavorite?.apply {
             setIconResource(R.drawable.ic_playlist_add_24)
             setOnClickListener {
@@ -179,6 +186,9 @@ class PlaybackPanelFragment :
                         queueModel = queueModel,
                         lyricsModel = lyricsModel,
                         equalizerModel = equalizerModel,
+                        crossfadeSettings = crossfadeSettings,
+                        stereoSettings = stereoSettings,
+                        speedSettings = speedSettings,
                     )
                 }
             }
@@ -279,18 +289,6 @@ class PlaybackPanelFragment :
         b.playbackComposeTabs?.isVisible = true
     }
 
-    /**
-     * Sets up swipe gesture detection on the player root.
-     *
-     * Gesture semantics:
-     * - Swipe L/R when main view is shown (no active tab) → cycle through tabs. ViewPager2 is
-     *   [View.GONE] in this state so there is no receiver conflict.
-     * - Swipe L/R when a tab is active → ignored here; ViewPager2 handles it natively.
-     * - Swipe down when a tab is active → collapse back to main view.
-     *
-     * The touch listener always returns false so child views (ViewPager2, buttons) receive every
-     * event unmodified. The GestureDetector only decides whether to act on a fling.
-     */
     @SuppressLint("ClickableViewAccessibility")
     private fun setupGestures(binding: FragmentPlaybackPanelBinding) {
         val gestureDetector =
@@ -313,10 +311,6 @@ class PlaybackPanelFragment :
                         val absY = Math.abs(diffY)
 
                         return if (absX > absY) {
-                            // Horizontal swipe: only act when the main player view is shown.
-                            // When the pager is visible, ViewPager2 handles its own horizontal
-                            // navigation; this detector intentionally stays silent to avoid
-                            // double tab changes from the same gesture.
                             if (
                                 currentTab == PlayerTab.NONE &&
                                     absX > SWIPE_THRESHOLD &&
@@ -328,7 +322,6 @@ class PlaybackPanelFragment :
                                 false
                             }
                         } else {
-                            // Vertical downward swipe: collapse the active tab back to main view.
                             if (
                                 diffY > SWIPE_THRESHOLD &&
                                     Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD &&
@@ -346,8 +339,6 @@ class PlaybackPanelFragment :
 
         binding.root.setOnTouchListener { _, event ->
             gestureDetector.onTouchEvent(event)
-            // Always return false: child views (ViewPager2, buttons) receive every event
-            // unmodified regardless of what the gesture detector decides.
             false
         }
     }
