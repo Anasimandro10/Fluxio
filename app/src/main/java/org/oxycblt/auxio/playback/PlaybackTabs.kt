@@ -40,12 +40,9 @@ import org.oxycblt.auxio.R
 import org.oxycblt.auxio.lyrics.LyricsViewModel
 import org.oxycblt.auxio.playback.PlaybackPanelFragment.PlayerTab
 import org.oxycblt.auxio.playback.audio.AudioTab
-import org.oxycblt.auxio.playback.crossfade.CrossfadeSettings
 import org.oxycblt.auxio.playback.equalizer.EqualizerViewModel
 import org.oxycblt.auxio.playback.lyrics.LyricsTab
 import org.oxycblt.auxio.playback.queue.QueueViewModel
-import org.oxycblt.auxio.playback.speed.PlaybackSpeedSettings
-import org.oxycblt.auxio.playback.stereowidening.StereoWideningSettings
 import org.oxycblt.auxio.ui.theme.FluxioTheme
 
 @Composable
@@ -56,9 +53,6 @@ fun PlaybackTabs(
     queueModel: QueueViewModel,
     lyricsModel: LyricsViewModel,
     equalizerModel: EqualizerViewModel,
-    crossfadeSettings: CrossfadeSettings,
-    stereoSettings: StereoWideningSettings,
-    speedSettings: PlaybackSpeedSettings,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         // Tab Bar
@@ -142,13 +136,7 @@ fun PlaybackTabs(
                         PlayerTab.QUEUE ->
                             org.oxycblt.auxio.playback.queue.QueueTab(queueModel, playbackModel)
                         PlayerTab.LYRICS -> LyricsTab(lyricsModel, playbackModel)
-                        PlayerTab.AUDIO ->
-                            AudioTab(
-                                equalizerModel = equalizerModel,
-                                crossfadeSettings = crossfadeSettings,
-                                stereoSettings = stereoSettings,
-                                speedSettings = speedSettings,
-                            )
+                        PlayerTab.AUDIO -> AudioTab(equalizerModel)
                         else -> {}
                     }
                 }

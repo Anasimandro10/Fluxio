@@ -85,8 +85,8 @@ fun LyricsTab(lyricsModel: LyricsViewModel, playbackModel: PlaybackViewModel) {
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // FIX: song?.cover is Cover? (nullable). Coil 3 crashes with null data.
-            // Use the cover when available, fall back to the album placeholder drawable.
+            // FIX: song?.cover is Cover? (nullable). Never pass null to Coil — fall back to
+            // the placeholder drawable ID so Coil always receives a valid data object.
             AsyncImage(
                 model =
                     ImageRequest.Builder(context)

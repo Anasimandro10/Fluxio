@@ -59,7 +59,7 @@ fun QueueTab(queueModel: QueueViewModel, playbackModel: PlaybackViewModel) {
     val currentIndex by queueModel.index.collectAsState()
     val isPlaying by playbackModel.isPlaying.collectAsState()
 
-    // FIX 1: onMove must return Unit. Ignore the Boolean returned by moveQueueDataItems.
+    // FIX: onMove must return Unit — ignore the Boolean from moveQueueDataItems.
     val reorderState =
         rememberReorderableLazyListState(
             onMove = { from, to ->
@@ -173,8 +173,8 @@ fun QueueItem(
             }
 
         Box(modifier = finalArtworkModifier.clip(RoundedCornerShape(6.dp))) {
-            // FIX 2: Never pass null to AsyncImage data. Use song.cover only when non-null;
-            // fall back to the error placeholder drawable otherwise so Coil never receives null.
+            // FIX: song.cover is Cover? (nullable). Never pass null to Coil — fall back to
+            // the placeholder drawable ID so Coil always receives a valid data object.
             AsyncImage(
                 model =
                     ImageRequest.Builder(context)
