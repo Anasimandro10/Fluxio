@@ -85,8 +85,13 @@ fun LyricsTab(lyricsModel: LyricsViewModel, playbackModel: PlaybackViewModel) {
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // FIX: song?.cover is Cover? (nullable). Coil 3 crashes with null data.
+            // Use the cover when available, fall back to the album placeholder drawable.
             AsyncImage(
-                model = ImageRequest.Builder(context).data(song?.cover).build(),
+                model =
+                    ImageRequest.Builder(context)
+                        .data(song?.cover ?: R.drawable.ic_album_48)
+                        .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.size(64.dp).clip(RoundedCornerShape(8.dp)),
@@ -129,7 +134,6 @@ fun LyricsTab(lyricsModel: LyricsViewModel, playbackModel: PlaybackViewModel) {
                     line ->
                     val isActive = isSynced && index == currentLineIndex
                     val currentWordIdx = if (isActive) activeWordIndex else -1
-                    // TODO: Dynamically pass ambient color when DynamicColorManager is implemented
                     val ambientColor = Color.White
 
                     LyricLineView(
@@ -166,7 +170,7 @@ fun LyricLineView(
     val shadow =
         if (isSynced && isActiveLine) {
             Shadow(
-                color = ambientColor.copy(alpha = 0.3f), // 30% opacity glow
+                color = ambientColor.copy(alpha = 0.3f),
                 blurRadius = 8f,
             )
         } else null
@@ -192,12 +196,10 @@ fun LyricLineView(
                         }
 
                         if (i <= currentWordIdx) {
-                            // Already sung or current: full white
                             withStyle(SpanStyle(color = Color.White)) {
                                 append(line.text.substring(w.startChar, w.endChar))
                             }
                         } else {
-                            // Upcoming: 35% white
                             withStyle(SpanStyle(color = Color.White.copy(alpha = 0.35f))) {
                                 append(line.text.substring(w.startChar, w.endChar))
                             }

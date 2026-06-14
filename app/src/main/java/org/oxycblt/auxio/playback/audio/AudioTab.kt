@@ -40,11 +40,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.oxycblt.auxio.R
+import org.oxycblt.auxio.playback.crossfade.CrossfadeSettings
 import org.oxycblt.auxio.playback.equalizer.EqualizerSettings
 import org.oxycblt.auxio.playback.equalizer.EqualizerViewModel
+import org.oxycblt.auxio.playback.speed.PlaybackSpeedSettings
+import org.oxycblt.auxio.playback.stereowidening.StereoWideningSettings
 import org.oxycblt.auxio.ui.theme.FluxioTheme
 
-private val FREQ_LABELS = listOf("31", "63", "125", "250", "500", "1k", "2k", "4k", "8k", "16k")
+private val FREQ_LABELS =
+    listOf("31", "63", "125", "250", "500", "1k", "2k", "4k", "8k", "16k")
 
 enum class AudioCard {
     NONE,
@@ -56,39 +60,51 @@ enum class AudioCard {
 }
 
 @Composable
-fun AudioTab(equalizerModel: EqualizerViewModel) {
+fun AudioTab(
+    equalizerModel: EqualizerViewModel,
+    crossfadeSettings: CrossfadeSettings,
+    stereoSettings: StereoWideningSettings,
+    speedSettings: PlaybackSpeedSettings,
+) {
     var expandedCard by remember { mutableStateOf(AudioCard.EQUALIZER) }
     val scrollState = rememberScrollState()
 
     val bands by equalizerModel.bands.collectAsState()
-    val enabled by equalizerModel.enabled.collectAsState()
+    val eqEnabled by equalizerModel.enabled.collectAsState()
     val activePreset by equalizerModel.activePreset.collectAsState()
     val profileName by equalizerModel.autoEqProfileName.collectAsState()
+
+    var speedValue by remember { mutableFloatStateOf(speedSettings.speedX) }
+    var crossfadeSecs by remember { mutableIntStateOf(crossfadeSettings.durationSeconds) }
+    var crossfadeEnabled by remember { mutableStateOf(crossfadeSettings.enabled) }
+    var stereoAmount by remember { mutableIntStateOf(stereoSettings.amountPercent) }
 
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(scrollState).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        // EQ Card
+        // EQ card
+        val eqLabel =
+            if (eqEnabled) {
+                profileName
+                    ?: EqualizerSettings.PRESET_NAMES.getOrNull(activePreset)
+                    ?: stringResource(R.string.lbl_eq_custom)
+            } else {
+                "Off"
+            }
         AudioAccordionCard(
             title = stringResource(R.string.lbl_equalizer),
-            stateLabel =
-                if (enabled) {
-                    profileName
-                        ?: EqualizerSettings.PRESET_NAMES.getOrNull(activePreset)
-                        ?: stringResource(R.string.lbl_eq_custom)
-                } else {
-                    stringResource(R.string.lbl_sleep_timer_off).let { "Off" }
-                },
+            stateLabel = eqLabel,
             isExpanded = expandedCard == AudioCard.EQUALIZER,
             onClick = {
                 expandedCard =
-                    if (expandedCard == AudioCard.EQUALIZER) AudioCard.NONE else AudioCard.EQUALIZER
+                    if (expandedCard == AudioCard.EQUALIZER) AudioCard.NONE
+                    else AudioCard.EQUALIZER
             },
         ) {
             EqCardContent(
                 bands = bands,
-                enabled = enabled,
+                enabled = eqEnabled,
                 activePreset = activePreset,
                 onToggle = { equalizerModel.setEnabled(it) },
                 onBandChange = { i, v -> equalizerModel.setBand(i, v) },
@@ -96,58 +112,74 @@ fun AudioTab(equalizerModel: EqualizerViewModel) {
             )
         }
 
-        // Speed Card (placeholder for 30-C-8c)
+        // Speed card
+        val speedLabel = run {
+            val s = String.format("%.2f", speedValue).trimEnd('0').trimEnd('.')
+            "${s}\u00d7"
+        }
         AudioAccordionCard(
             title = stringResource(R.string.lbl_playback_speed),
-            stateLabel = "",
+            stateLabel = speedLabel,
             isExpanded = expandedCard == AudioCard.SPEED,
             onClick = {
                 expandedCard =
                     if (expandedCard == AudioCard.SPEED) AudioCard.NONE else AudioCard.SPEED
             },
         ) {
-            Text(
-                text = "— (30-C-8c) —",
-                color = FluxioTheme.colors.text3,
-                style = FluxioTheme.typography.bodyMedium,
+            SpeedCardContent(
+                speedValue = speedValue,
+                onSpeedChange = {
+                    speedValue = it
+                    speedSettings.setSpeed(it)
+                },
             )
         }
 
-        // Crossfade Card (placeholder for 30-C-8c)
+        // Crossfade card
+        val crossfadeLabel =
+            if (!crossfadeEnabled || crossfadeSecs == 0) "Off" else "${crossfadeSecs}s"
         AudioAccordionCard(
             title = stringResource(R.string.lbl_crossfade),
-            stateLabel = "",
+            stateLabel = crossfadeLabel,
             isExpanded = expandedCard == AudioCard.CROSSFADE,
             onClick = {
                 expandedCard =
-                    if (expandedCard == AudioCard.CROSSFADE) AudioCard.NONE else AudioCard.CROSSFADE
+                    if (expandedCard == AudioCard.CROSSFADE) AudioCard.NONE
+                    else AudioCard.CROSSFADE
             },
         ) {
-            Text(
-                text = "— (30-C-8c) —",
-                color = FluxioTheme.colors.text3,
-                style = FluxioTheme.typography.bodyMedium,
+            CrossfadeCardContent(
+                durationSecs = crossfadeSecs,
+                onDurationChange = { secs ->
+                    crossfadeSecs = secs
+                    crossfadeEnabled = secs > 0
+                    crossfadeSettings.setEnabled(secs > 0)
+                    crossfadeSettings.setDuration(secs)
+                },
             )
         }
 
-        // Stereo Card (placeholder for 30-C-8c)
+        // Stereo card
+        val stereoLabel = if (stereoAmount == 0) "Off" else "${stereoAmount}%"
         AudioAccordionCard(
             title = stringResource(R.string.lbl_stereo_widening),
-            stateLabel = "",
+            stateLabel = stereoLabel,
             isExpanded = expandedCard == AudioCard.STEREO,
             onClick = {
                 expandedCard =
                     if (expandedCard == AudioCard.STEREO) AudioCard.NONE else AudioCard.STEREO
             },
         ) {
-            Text(
-                text = "— (30-C-8c) —",
-                color = FluxioTheme.colors.text3,
-                style = FluxioTheme.typography.bodyMedium,
+            StereoCardContent(
+                amount = stereoAmount,
+                onAmountChange = {
+                    stereoAmount = it
+                    stereoSettings.setAmount(it)
+                },
             )
         }
 
-        // Timer Card (placeholder for 30-C-8d)
+        // Timer card (30-C-8d)
         AudioAccordionCard(
             title = stringResource(R.string.lbl_sleep_timer),
             stateLabel = "",
@@ -165,6 +197,123 @@ fun AudioTab(equalizerModel: EqualizerViewModel) {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Speed
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun SpeedCardContent(
+    speedValue: Float,
+    onSpeedChange: (Float) -> Unit,
+) {
+    val pureColor = FluxioTheme.colors.text1
+    val chips = listOf(0.5f, 0.75f, 1.0f, 1.5f, 2.0f)
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Slider(
+            value = speedValue,
+            onValueChange = onSpeedChange,
+            valueRange = 0.25f..3.0f,
+            colors =
+                SliderDefaults.colors(
+                    thumbColor = pureColor,
+                    activeTrackColor = pureColor,
+                    inactiveTrackColor = FluxioTheme.colors.element,
+                ),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            chips.forEach { speed ->
+                val isActive = kotlin.math.abs(speedValue - speed) < 0.01f
+                val label =
+                    "${String.format("%.2f", speed).trimEnd('0').trimEnd('.')}\u00d7"
+                Box(
+                    modifier =
+                        Modifier.clip(RoundedCornerShape(8.dp))
+                            .background(
+                                if (isActive) pureColor else FluxioTheme.colors.element
+                            )
+                            .clickable { onSpeedChange(speed) }
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                ) {
+                    Text(
+                        text = label,
+                        style = FluxioTheme.typography.labelMedium,
+                        color = if (isActive) FluxioTheme.colors.bg else FluxioTheme.colors.text2,
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Crossfade
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun CrossfadeCardContent(
+    durationSecs: Int,
+    onDurationChange: (Int) -> Unit,
+) {
+    val pureColor = FluxioTheme.colors.text1
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = if (durationSecs == 0) "Off" else "${durationSecs}s",
+            style = FluxioTheme.typography.bodyMedium,
+            color = FluxioTheme.colors.text2,
+        )
+        Slider(
+            value = durationSecs.toFloat(),
+            onValueChange = { onDurationChange(it.toInt()) },
+            valueRange = 0f..12f,
+            steps = 11,
+            colors =
+                SliderDefaults.colors(
+                    thumbColor = pureColor,
+                    activeTrackColor = pureColor,
+                    inactiveTrackColor = FluxioTheme.colors.element,
+                ),
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Stereo
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun StereoCardContent(
+    amount: Int,
+    onAmountChange: (Int) -> Unit,
+) {
+    val pureColor = FluxioTheme.colors.text1
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = if (amount == 0) "Off" else "${amount}%",
+            style = FluxioTheme.typography.bodyMedium,
+            color = FluxioTheme.colors.text2,
+        )
+        Slider(
+            value = amount.toFloat(),
+            onValueChange = { onAmountChange(it.toInt()) },
+            valueRange = 0f..100f,
+            colors =
+                SliderDefaults.colors(
+                    thumbColor = pureColor,
+                    activeTrackColor = pureColor,
+                    inactiveTrackColor = FluxioTheme.colors.element,
+                ),
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+// ---------------------------------------------------------------------------
+// EQ
+// ---------------------------------------------------------------------------
 
 @Composable
 private fun EqCardContent(
@@ -198,7 +347,7 @@ private fun EqCardContent(
             )
         }
 
-        // 10 vertical sliders side by side
+        // 10 vertical sliders
         Row(
             modifier = Modifier.fillMaxWidth().height(180.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
@@ -208,7 +357,6 @@ private fun EqCardContent(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.weight(1f),
                 ) {
-                    // Gain label
                     Text(
                         text = if (gain >= 0) "+${gain.toInt()}" else "${gain.toInt()}",
                         fontSize = 9.sp,
@@ -217,7 +365,6 @@ private fun EqCardContent(
                         maxLines = 1,
                     )
                     Spacer(Modifier.height(2.dp))
-                    // Vertical slider via rotation
                     Box(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                         contentAlignment = Alignment.Center,
@@ -237,7 +384,6 @@ private fun EqCardContent(
                         )
                     }
                     Spacer(Modifier.height(4.dp))
-                    // Freq label
                     Text(
                         text = FREQ_LABELS[i],
                         fontSize = 10.sp,
@@ -248,7 +394,7 @@ private fun EqCardContent(
             }
         }
 
-        // Preset chips (scrollable row)
+        // Preset chips
         androidx.compose.foundation.lazy.LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -259,7 +405,7 @@ private fun EqCardContent(
                         Modifier.clip(RoundedCornerShape(8.dp))
                             .background(if (isActive) pureColor else FluxioTheme.colors.element)
                             .clickable(enabled = enabled) { onPreset(idx) }
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
                 ) {
                     Text(
                         text = presetNames[idx],
@@ -271,6 +417,10 @@ private fun EqCardContent(
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Accordion card shell
+// ---------------------------------------------------------------------------
 
 @Composable
 fun AudioAccordionCard(
@@ -284,7 +434,7 @@ fun AudioAccordionCard(
         modifier =
             Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(18.dp))
-                .background(FluxioTheme.colors.surface)
+                .background(FluxioTheme.colors.surface),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(16.dp),
@@ -304,7 +454,6 @@ fun AudioAccordionCard(
                 )
             }
         }
-
         AnimatedVisibility(visible = isExpanded) {
             Box(modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
                 content()
