@@ -47,8 +47,7 @@ import org.oxycblt.auxio.playback.speed.PlaybackSpeedSettings
 import org.oxycblt.auxio.playback.stereowidening.StereoWideningSettings
 import org.oxycblt.auxio.ui.theme.FluxioTheme
 
-private val FREQ_LABELS =
-    listOf("31", "63", "125", "250", "500", "1k", "2k", "4k", "8k", "16k")
+private val FREQ_LABELS = listOf("31", "63", "125", "250", "500", "1k", "2k", "4k", "8k", "16k")
 
 enum class AudioCard {
     NONE,
@@ -98,8 +97,7 @@ fun AudioTab(
             isExpanded = expandedCard == AudioCard.EQUALIZER,
             onClick = {
                 expandedCard =
-                    if (expandedCard == AudioCard.EQUALIZER) AudioCard.NONE
-                    else AudioCard.EQUALIZER
+                    if (expandedCard == AudioCard.EQUALIZER) AudioCard.NONE else AudioCard.EQUALIZER
             },
         ) {
             EqCardContent(
@@ -144,8 +142,7 @@ fun AudioTab(
             isExpanded = expandedCard == AudioCard.CROSSFADE,
             onClick = {
                 expandedCard =
-                    if (expandedCard == AudioCard.CROSSFADE) AudioCard.NONE
-                    else AudioCard.CROSSFADE
+                    if (expandedCard == AudioCard.CROSSFADE) AudioCard.NONE else AudioCard.CROSSFADE
             },
         ) {
             CrossfadeCardContent(
@@ -203,10 +200,7 @@ fun AudioTab(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun SpeedCardContent(
-    speedValue: Float,
-    onSpeedChange: (Float) -> Unit,
-) {
+private fun SpeedCardContent(speedValue: Float, onSpeedChange: (Float) -> Unit) {
     val pureColor = FluxioTheme.colors.text1
     val chips = listOf(0.5f, 0.75f, 1.0f, 1.5f, 2.0f)
 
@@ -226,16 +220,13 @@ private fun SpeedCardContent(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             chips.forEach { speed ->
                 val isActive = kotlin.math.abs(speedValue - speed) < 0.01f
-                val label =
-                    "${String.format("%.2f", speed).trimEnd('0').trimEnd('.')}\u00d7"
+                val label = "${String.format("%.2f", speed).trimEnd('0').trimEnd('.')}\u00d7"
                 Box(
                     modifier =
                         Modifier.clip(RoundedCornerShape(8.dp))
-                            .background(
-                                if (isActive) pureColor else FluxioTheme.colors.element
-                            )
+                            .background(if (isActive) pureColor else FluxioTheme.colors.element)
                             .clickable { onSpeedChange(speed) }
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
                     Text(
                         text = label,
@@ -253,10 +244,7 @@ private fun SpeedCardContent(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun CrossfadeCardContent(
-    durationSecs: Int,
-    onDurationChange: (Int) -> Unit,
-) {
+private fun CrossfadeCardContent(durationSecs: Int, onDurationChange: (Int) -> Unit) {
     val pureColor = FluxioTheme.colors.text1
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
@@ -285,10 +273,7 @@ private fun CrossfadeCardContent(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun StereoCardContent(
-    amount: Int,
-    onAmountChange: (Int) -> Unit,
-) {
+private fun StereoCardContent(amount: Int, onAmountChange: (Int) -> Unit) {
     val pureColor = FluxioTheme.colors.text1
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
@@ -405,7 +390,7 @@ private fun EqCardContent(
                         Modifier.clip(RoundedCornerShape(8.dp))
                             .background(if (isActive) pureColor else FluxioTheme.colors.element)
                             .clickable(enabled = enabled) { onPreset(idx) }
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Text(
                         text = presetNames[idx],
@@ -434,7 +419,7 @@ fun AudioAccordionCard(
         modifier =
             Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(18.dp))
-                .background(FluxioTheme.colors.surface),
+                .background(FluxioTheme.colors.surface)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(16.dp),

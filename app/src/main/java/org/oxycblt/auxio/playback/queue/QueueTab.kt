@@ -65,7 +65,7 @@ fun QueueTab(queueModel: QueueViewModel, playbackModel: PlaybackViewModel) {
             onMove = { from, to ->
                 queueModel.moveQueueDataItems(from.index, to.index)
                 Unit
-            },
+            }
         )
     val listState = reorderState.listState
 
@@ -189,8 +189,7 @@ fun QueueItem(
             if (isCurrent) {
                 Box(
                     modifier =
-                        Modifier.fillMaxSize()
-                            .background(FluxioTheme.colors.bg.copy(alpha = 0.6f)),
+                        Modifier.fillMaxSize().background(FluxioTheme.colors.bg.copy(alpha = 0.6f)),
                     contentAlignment = Alignment.Center,
                 ) {
                     EqualizerIndicator(isPlaying = isPlaying)

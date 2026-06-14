@@ -169,10 +169,7 @@ fun LyricLineView(
 
     val shadow =
         if (isSynced && isActiveLine) {
-            Shadow(
-                color = ambientColor.copy(alpha = 0.3f),
-                blurRadius = 8f,
-            )
+            Shadow(color = ambientColor.copy(alpha = 0.3f), blurRadius = 8f)
         } else null
 
     val annotatedText =
