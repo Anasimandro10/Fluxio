@@ -17,11 +17,13 @@
  */
 package org.oxycblt.auxio.playback
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -34,7 +36,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.lyrics.LyricsViewModel
@@ -43,6 +44,7 @@ import org.oxycblt.auxio.playback.audio.AudioTab
 import org.oxycblt.auxio.playback.crossfade.CrossfadeSettings
 import org.oxycblt.auxio.playback.equalizer.EqualizerViewModel
 import org.oxycblt.auxio.playback.lyrics.LyricsTab
+import org.oxycblt.auxio.playback.queue.QueueTab
 import org.oxycblt.auxio.playback.queue.QueueViewModel
 import org.oxycblt.auxio.playback.speed.PlaybackSpeedSettings
 import org.oxycblt.auxio.playback.stereowidening.StereoWideningSettings
@@ -61,96 +63,76 @@ fun PlaybackTabs(
     speedSettings: PlaybackSpeedSettings,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        // Tab Bar
+        // Tab bar — always visible
         Row(
-            modifier = Modifier.fillMaxWidth().height(48.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             TabItem(
-                text = stringResource(R.string.lbl_tab_queue),
+                label = "Cola",
                 isSelected = currentTab == PlayerTab.QUEUE,
                 onClick = {
                     onTabSelected(
-                        if (currentTab == PlayerTab.QUEUE) PlayerTab.NONE else PlayerTab.QUEUE
+                        if (currentTab == PlayerTab.QUEUE) PlayerTab.NONE else PlayerTab.QUEUE,
                     )
                 },
                 modifier = Modifier.weight(1f),
             )
             TabItem(
-                text = stringResource(R.string.lbl_tab_lyrics),
+                label = "Letras",
                 isSelected = currentTab == PlayerTab.LYRICS,
                 onClick = {
                     onTabSelected(
-                        if (currentTab == PlayerTab.LYRICS) PlayerTab.NONE else PlayerTab.LYRICS
+                        if (currentTab == PlayerTab.LYRICS) PlayerTab.NONE else PlayerTab.LYRICS,
                     )
                 },
                 modifier = Modifier.weight(1f),
             )
             TabItem(
-                text = stringResource(R.string.lbl_tab_audio),
+                label = "Audio",
                 isSelected = currentTab == PlayerTab.AUDIO,
                 onClick = {
                     onTabSelected(
-                        if (currentTab == PlayerTab.AUDIO) PlayerTab.NONE else PlayerTab.AUDIO
+                        if (currentTab == PlayerTab.AUDIO) PlayerTab.NONE else PlayerTab.AUDIO,
                     )
                 },
                 modifier = Modifier.weight(1f),
             )
         }
 
-        // Pager Content
+        // Tab content — only shown when a tab is active
         AnimatedVisibility(
             visible = currentTab != PlayerTab.NONE,
             enter = fadeIn() + slideInVertically(initialOffsetY = { it / 4 }),
             exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 4 }),
             modifier = Modifier.weight(1f),
         ) {
-            val tabs = listOf(PlayerTab.QUEUE, PlayerTab.LYRICS, PlayerTab.AUDIO)
-            val pagerState =
-                androidx.compose.foundation.pager.rememberPagerState(
-                    initialPage =
-                        if (currentTab != PlayerTab.NONE) tabs.indexOf(currentTab).coerceAtLeast(0)
-                        else 0,
-                    pageCount = { tabs.size },
-                )
-
-            androidx.compose.runtime.LaunchedEffect(currentTab) {
-                val targetPage = tabs.indexOf(currentTab)
-                if (targetPage != -1 && pagerState.currentPage != targetPage) {
-                    pagerState.animateScrollToPage(targetPage)
-                }
-            }
-
-            androidx.compose.runtime.LaunchedEffect(
-                pagerState.currentPage,
-                pagerState.isScrollInProgress,
-            ) {
-                if (!pagerState.isScrollInProgress) {
-                    val newTab = tabs[pagerState.currentPage]
-                    if (currentTab != PlayerTab.NONE && currentTab != newTab) {
-                        onTabSelected(newTab)
-                    }
-                }
-            }
-
-            androidx.compose.foundation.pager.HorizontalPager(
-                state = pagerState,
+            // AnimatedContent swaps between tabs with a crossfade.
+            // Using a simple when here avoids all pager state management bugs.
+            AnimatedContent(
+                targetState = currentTab,
+                transitionSpec = { fadeIn() togetherWith fadeOut() },
                 modifier = Modifier.fillMaxSize(),
-            ) { page ->
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    when (tabs[page]) {
-                        PlayerTab.QUEUE ->
-                            org.oxycblt.auxio.playback.queue.QueueTab(queueModel, playbackModel)
-                        PlayerTab.LYRICS -> LyricsTab(lyricsModel, playbackModel)
-                        PlayerTab.AUDIO ->
-                            AudioTab(
-                                equalizerModel = equalizerModel,
-                                crossfadeSettings = crossfadeSettings,
-                                stereoSettings = stereoSettings,
-                                speedSettings = speedSettings,
-                            )
-                        else -> {}
-                    }
+                label = "tab_content",
+            ) { tab ->
+                when (tab) {
+                    PlayerTab.QUEUE -> QueueTab(
+                        queueModel = queueModel,
+                        playbackModel = playbackModel,
+                    )
+                    PlayerTab.LYRICS -> LyricsTab(
+                        lyricsModel = lyricsModel,
+                        playbackModel = playbackModel,
+                    )
+                    PlayerTab.AUDIO -> AudioTab(
+                        equalizerModel = equalizerModel,
+                        crossfadeSettings = crossfadeSettings,
+                        stereoSettings = stereoSettings,
+                        speedSettings = speedSettings,
+                    )
+                    PlayerTab.NONE -> Box(modifier = Modifier.fillMaxSize())
                 }
             }
         }
@@ -159,26 +141,33 @@ fun PlaybackTabs(
 
 @Composable
 private fun TabItem(
-    text: String,
+    label: String,
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.clickable(onClick = onClick).fillMaxSize(),
+        modifier = modifier
+            .clickable(onClick = onClick)
+            .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center,
+        ) {
             Text(
-                text = text,
+                text = label,
                 style = FluxioTheme.typography.labelMedium,
                 color = if (isSelected) FluxioTheme.colors.text1 else FluxioTheme.colors.text2,
             )
         }
         if (isSelected) {
             Box(
-                modifier =
-                    Modifier.fillMaxWidth(0.3f).height(2.dp).background(FluxioTheme.colors.text1)
+                modifier = Modifier
+                    .fillMaxWidth(0.3f)
+                    .height(2.dp)
+                    .background(FluxioTheme.colors.text1),
             )
         }
     }

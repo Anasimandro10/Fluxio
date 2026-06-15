@@ -20,7 +20,18 @@ package org.oxycblt.auxio.playback.queue
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,7 +51,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
-import kotlinx.coroutines.flow.collectLatest
 import org.burnoutcrew.reorderable.ReorderableItem
 import org.burnoutcrew.reorderable.detectReorder
 import org.burnoutcrew.reorderable.rememberReorderableLazyListState
@@ -59,34 +69,38 @@ fun QueueTab(queueModel: QueueViewModel, playbackModel: PlaybackViewModel) {
     val currentIndex by queueModel.index.collectAsState()
     val isPlaying by playbackModel.isPlaying.collectAsState()
 
-    // FIX: onMove must return Unit — ignore the Boolean from moveQueueDataItems.
+    // Observe the scroll event via its StateFlow: non-null = scroll requested.
+    // We consume it immediately after scrolling so it fires only once.
+    val scrollTarget by queueModel.scrollTo.flow.collectAsState()
+
     val reorderState =
         rememberReorderableLazyListState(
             onMove = { from, to ->
                 queueModel.moveQueueDataItems(from.index, to.index)
                 Unit
-            }
+            },
         )
     val listState = reorderState.listState
 
-    LaunchedEffect(queueModel.scrollTo) {
-        queueModel.scrollTo.flow.collectLatest { targetIndex ->
-            if (targetIndex != null) {
-                queueModel.scrollTo.consume()
-                if (targetIndex in queue.indices) {
-                    val firstVisible = listState.firstVisibleItemIndex
-                    if (targetIndex < firstVisible || targetIndex > firstVisible + 10) {
-                        listState.scrollToItem(targetIndex)
-                    }
-                }
+    // Scroll to the requested position whenever a non-null target is published.
+    LaunchedEffect(scrollTarget) {
+        val target = scrollTarget ?: return@LaunchedEffect
+        queueModel.scrollTo.consume()
+        if (target in queue.indices) {
+            val firstVisible = listState.firstVisibleItemIndex
+            val lastVisible = firstVisible + (listState.layoutInfo.visibleItemsInfo.size)
+            if (target < firstVisible || target > lastVisible) {
+                listState.scrollToItem(target)
             }
         }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Top Bar
+        // Top bar
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -97,13 +111,11 @@ fun QueueTab(queueModel: QueueViewModel, playbackModel: PlaybackViewModel) {
             )
 
             Box(
-                modifier =
-                    Modifier.clip(RoundedCornerShape(percent = 50))
-                        .background(FluxioTheme.colors.element)
-                        .clickable {
-                            // TODO: clear queue
-                        }
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(FluxioTheme.colors.element)
+                    .clickable { /* TODO: clear queue */ }
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -114,14 +126,22 @@ fun QueueTab(queueModel: QueueViewModel, playbackModel: PlaybackViewModel) {
             }
         }
 
-        // List
+        // Queue list
         LazyColumn(
-            modifier = Modifier.fillMaxSize().reorderable(reorderState),
+            modifier = Modifier
+                .fillMaxSize()
+                .reorderable(reorderState),
             state = listState,
             contentPadding = PaddingValues(bottom = 80.dp),
         ) {
-            itemsIndexed(queue, key = { index, song -> "${song.uid}_$index" }) { index, song ->
-                ReorderableItem(reorderState, key = "${song.uid}_$index") { isDragging ->
+            itemsIndexed(
+                items = queue,
+                key = { index, song -> "${song.uid}_$index" },
+            ) { index, song ->
+                ReorderableItem(
+                    reorderableState = reorderState,
+                    key = "${song.uid}_$index",
+                ) { isDragging ->
                     val isCurrent = index == currentIndex
                     val isPast = index < currentIndex
 
@@ -155,31 +175,32 @@ fun QueueItem(
         if (isCurrent) FluxioTheme.colors.text1.copy(alpha = 0.08f) else FluxioTheme.colors.bg
 
     Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .height(72.dp)
-                .clickable(onClick = onClick)
-                .background(if (isDragging) FluxioTheme.colors.element else backgroundColor)
-                .padding(horizontal = 16.dp)
-                .alpha(if (isPast && !isDragging) 0.5f else 1f),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(72.dp)
+            .clickable(onClick = onClick)
+            .background(if (isDragging) FluxioTheme.colors.element else backgroundColor)
+            .padding(horizontal = 16.dp)
+            .alpha(if (isPast && !isDragging) 0.5f else 1f),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val artworkModifier = Modifier.size(48.dp)
-        val finalArtworkModifier =
+        val baseArtworkModifier = Modifier.size(48.dp)
+        val artworkModifier =
             if (isCurrent) {
-                artworkModifier.border(2.dp, FluxioTheme.colors.text1, RoundedCornerShape(6.dp))
+                baseArtworkModifier.border(
+                    2.dp,
+                    FluxioTheme.colors.text1,
+                    RoundedCornerShape(6.dp),
+                )
             } else {
-                artworkModifier
+                baseArtworkModifier
             }
 
-        Box(modifier = finalArtworkModifier.clip(RoundedCornerShape(6.dp))) {
-            // FIX: song.cover is Cover? (nullable). Never pass null to Coil — fall back to
-            // the placeholder drawable ID so Coil always receives a valid data object.
+        Box(modifier = artworkModifier.clip(RoundedCornerShape(6.dp))) {
             AsyncImage(
-                model =
-                    ImageRequest.Builder(context)
-                        .data(song.cover ?: R.drawable.ic_album_24)
-                        .build(),
+                model = ImageRequest.Builder(context)
+                    .data(song.cover ?: R.drawable.ic_album_24)
+                    .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
@@ -188,8 +209,9 @@ fun QueueItem(
 
             if (isCurrent) {
                 Box(
-                    modifier =
-                        Modifier.fillMaxSize().background(FluxioTheme.colors.bg.copy(alpha = 0.6f)),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(FluxioTheme.colors.bg.copy(alpha = 0.6f)),
                     contentAlignment = Alignment.Center,
                 ) {
                     EqualizerIndicator(isPlaying = isPlaying)
@@ -197,13 +219,13 @@ fun QueueItem(
             }
         }
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = song.name.resolve(context),
                 style = FluxioTheme.typography.titleMedium,
-                color = FluxioTheme.colors.text1,
+                color = if (isCurrent) FluxioTheme.colors.text1 else FluxioTheme.colors.text1,
                 maxLines = 1,
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -214,6 +236,8 @@ fun QueueItem(
                 maxLines = 1,
             )
         }
+
+        Spacer(modifier = Modifier.width(8.dp))
 
         Icon(
             painter = painterResource(id = R.drawable.ic_handle_24),
