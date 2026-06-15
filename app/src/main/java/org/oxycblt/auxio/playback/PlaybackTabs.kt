@@ -37,7 +37,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import org.oxycblt.auxio.R
 import org.oxycblt.auxio.lyrics.LyricsViewModel
 import org.oxycblt.auxio.playback.PlaybackPanelFragment.PlayerTab
 import org.oxycblt.auxio.playback.audio.AudioTab
@@ -65,9 +64,7 @@ fun PlaybackTabs(
     Column(modifier = Modifier.fillMaxSize()) {
         // Tab bar — always visible
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
+            modifier = Modifier.fillMaxWidth().height(48.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             TabItem(
@@ -75,7 +72,7 @@ fun PlaybackTabs(
                 isSelected = currentTab == PlayerTab.QUEUE,
                 onClick = {
                     onTabSelected(
-                        if (currentTab == PlayerTab.QUEUE) PlayerTab.NONE else PlayerTab.QUEUE,
+                        if (currentTab == PlayerTab.QUEUE) PlayerTab.NONE else PlayerTab.QUEUE
                     )
                 },
                 modifier = Modifier.weight(1f),
@@ -85,7 +82,7 @@ fun PlaybackTabs(
                 isSelected = currentTab == PlayerTab.LYRICS,
                 onClick = {
                     onTabSelected(
-                        if (currentTab == PlayerTab.LYRICS) PlayerTab.NONE else PlayerTab.LYRICS,
+                        if (currentTab == PlayerTab.LYRICS) PlayerTab.NONE else PlayerTab.LYRICS
                     )
                 },
                 modifier = Modifier.weight(1f),
@@ -95,7 +92,7 @@ fun PlaybackTabs(
                 isSelected = currentTab == PlayerTab.AUDIO,
                 onClick = {
                     onTabSelected(
-                        if (currentTab == PlayerTab.AUDIO) PlayerTab.NONE else PlayerTab.AUDIO,
+                        if (currentTab == PlayerTab.AUDIO) PlayerTab.NONE else PlayerTab.AUDIO
                     )
                 },
                 modifier = Modifier.weight(1f),
@@ -118,20 +115,17 @@ fun PlaybackTabs(
                 label = "tab_content",
             ) { tab ->
                 when (tab) {
-                    PlayerTab.QUEUE -> QueueTab(
-                        queueModel = queueModel,
-                        playbackModel = playbackModel,
-                    )
-                    PlayerTab.LYRICS -> LyricsTab(
-                        lyricsModel = lyricsModel,
-                        playbackModel = playbackModel,
-                    )
-                    PlayerTab.AUDIO -> AudioTab(
-                        equalizerModel = equalizerModel,
-                        crossfadeSettings = crossfadeSettings,
-                        stereoSettings = stereoSettings,
-                        speedSettings = speedSettings,
-                    )
+                    PlayerTab.QUEUE ->
+                        QueueTab(queueModel = queueModel, playbackModel = playbackModel)
+                    PlayerTab.LYRICS ->
+                        LyricsTab(lyricsModel = lyricsModel, playbackModel = playbackModel)
+                    PlayerTab.AUDIO ->
+                        AudioTab(
+                            equalizerModel = equalizerModel,
+                            crossfadeSettings = crossfadeSettings,
+                            stereoSettings = stereoSettings,
+                            speedSettings = speedSettings,
+                        )
                     PlayerTab.NONE -> Box(modifier = Modifier.fillMaxSize())
                 }
             }
@@ -147,15 +141,10 @@ private fun TabItem(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .clickable(onClick = onClick)
-            .fillMaxSize(),
+        modifier = modifier.clickable(onClick = onClick).fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(
-            modifier = Modifier.weight(1f),
-            contentAlignment = Alignment.Center,
-        ) {
+        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
             Text(
                 text = label,
                 style = FluxioTheme.typography.labelMedium,
@@ -164,10 +153,8 @@ private fun TabItem(
         }
         if (isSelected) {
             Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.3f)
-                    .height(2.dp)
-                    .background(FluxioTheme.colors.text1),
+                modifier =
+                    Modifier.fillMaxWidth(0.3f).height(2.dp).background(FluxioTheme.colors.text1)
             )
         }
     }

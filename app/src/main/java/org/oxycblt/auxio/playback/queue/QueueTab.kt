@@ -78,7 +78,7 @@ fun QueueTab(queueModel: QueueViewModel, playbackModel: PlaybackViewModel) {
             onMove = { from, to ->
                 queueModel.moveQueueDataItems(from.index, to.index)
                 Unit
-            },
+            }
         )
     val listState = reorderState.listState
 
@@ -98,9 +98,7 @@ fun QueueTab(queueModel: QueueViewModel, playbackModel: PlaybackViewModel) {
     Column(modifier = Modifier.fillMaxSize()) {
         // Top bar
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -111,11 +109,11 @@ fun QueueTab(queueModel: QueueViewModel, playbackModel: PlaybackViewModel) {
             )
 
             Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(FluxioTheme.colors.element)
-                    .clickable { /* TODO: clear queue */ }
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                modifier =
+                    Modifier.clip(RoundedCornerShape(percent = 50))
+                        .background(FluxioTheme.colors.element)
+                        .clickable { /* TODO: clear queue */ }
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -128,20 +126,14 @@ fun QueueTab(queueModel: QueueViewModel, playbackModel: PlaybackViewModel) {
 
         // Queue list
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .reorderable(reorderState),
+            modifier = Modifier.fillMaxSize().reorderable(reorderState),
             state = listState,
             contentPadding = PaddingValues(bottom = 80.dp),
         ) {
-            itemsIndexed(
-                items = queue,
-                key = { index, song -> "${song.uid}_$index" },
-            ) { index, song ->
-                ReorderableItem(
-                    reorderableState = reorderState,
-                    key = "${song.uid}_$index",
-                ) { isDragging ->
+            itemsIndexed(items = queue, key = { index, song -> "${song.uid}_$index" }) { index, song
+                ->
+                ReorderableItem(reorderableState = reorderState, key = "${song.uid}_$index") {
+                    isDragging ->
                     val isCurrent = index == currentIndex
                     val isPast = index < currentIndex
 
@@ -175,32 +167,29 @@ fun QueueItem(
         if (isCurrent) FluxioTheme.colors.text1.copy(alpha = 0.08f) else FluxioTheme.colors.bg
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(72.dp)
-            .clickable(onClick = onClick)
-            .background(if (isDragging) FluxioTheme.colors.element else backgroundColor)
-            .padding(horizontal = 16.dp)
-            .alpha(if (isPast && !isDragging) 0.5f else 1f),
+        modifier =
+            Modifier.fillMaxWidth()
+                .height(72.dp)
+                .clickable(onClick = onClick)
+                .background(if (isDragging) FluxioTheme.colors.element else backgroundColor)
+                .padding(horizontal = 16.dp)
+                .alpha(if (isPast && !isDragging) 0.5f else 1f),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val baseArtworkModifier = Modifier.size(48.dp)
         val artworkModifier =
             if (isCurrent) {
-                baseArtworkModifier.border(
-                    2.dp,
-                    FluxioTheme.colors.text1,
-                    RoundedCornerShape(6.dp),
-                )
+                baseArtworkModifier.border(2.dp, FluxioTheme.colors.text1, RoundedCornerShape(6.dp))
             } else {
                 baseArtworkModifier
             }
 
         Box(modifier = artworkModifier.clip(RoundedCornerShape(6.dp))) {
             AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(song.cover ?: R.drawable.ic_album_24)
-                    .build(),
+                model =
+                    ImageRequest.Builder(context)
+                        .data(song.cover ?: R.drawable.ic_album_24)
+                        .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
@@ -209,9 +198,8 @@ fun QueueItem(
 
             if (isCurrent) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(FluxioTheme.colors.bg.copy(alpha = 0.6f)),
+                    modifier =
+                        Modifier.fillMaxSize().background(FluxioTheme.colors.bg.copy(alpha = 0.6f)),
                     contentAlignment = Alignment.Center,
                 ) {
                     EqualizerIndicator(isPlaying = isPlaying)
