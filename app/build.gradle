@@ -160,7 +160,7 @@ dependencies {
     // Image loading
     implementation 'io.coil-kt.coil3:coil-core:3.3.0'
     implementation 'io.coil-kt.coil3:coil-compose:3.3.0'
-    implementation 'org.burnoutcrew.composereorderable:reorderable:0.9.6'
+
 
     // Material
     implementation "com.google.android.material:material:1.14.0-alpha09"

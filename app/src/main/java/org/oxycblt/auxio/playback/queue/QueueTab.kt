@@ -20,6 +20,8 @@ package org.oxycblt.auxio.playback.queue
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +36,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -41,20 +44,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
-import org.burnoutcrew.reorderable.ReorderableItem
-import org.burnoutcrew.reorderable.detectReorder
-import org.burnoutcrew.reorderable.rememberReorderableLazyListState
-import org.burnoutcrew.reorderable.reorderable
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.music.resolve
 import org.oxycblt.auxio.music.resolveNames
@@ -69,26 +78,22 @@ fun QueueTab(queueModel: QueueViewModel, playbackModel: PlaybackViewModel) {
     val currentIndex by queueModel.index.collectAsState()
     val isPlaying by playbackModel.isPlaying.collectAsState()
 
-    // Observe the scroll event via its StateFlow: non-null = scroll requested.
-    // We consume it immediately after scrolling so it fires only once.
     val scrollTarget by queueModel.scrollTo.flow.collectAsState()
 
-    val reorderState =
-        rememberReorderableLazyListState(
-            onMove = { from, to ->
-                queueModel.moveQueueDataItems(from.index, to.index)
-                Unit
-            }
-        )
-    val listState = reorderState.listState
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
 
-    // Scroll to the requested position whenever a non-null target is published.
+    // Drag state — tracks which item is being dragged and its visual offset.
+    var draggingIndex by remember { mutableIntStateOf(-1) }
+    var draggingOffset by remember { mutableFloatStateOf(0f) }
+    var autoScrollJob by remember { mutableStateOf<Job?>(null) }
+
     LaunchedEffect(scrollTarget) {
         val target = scrollTarget ?: return@LaunchedEffect
         queueModel.scrollTo.consume()
         if (target in queue.indices) {
             val firstVisible = listState.firstVisibleItemIndex
-            val lastVisible = firstVisible + (listState.layoutInfo.visibleItemsInfo.size)
+            val lastVisible = firstVisible + listState.layoutInfo.visibleItemsInfo.size
             if (target < firstVisible || target > lastVisible) {
                 listState.scrollToItem(target)
             }
@@ -98,7 +103,9 @@ fun QueueTab(queueModel: QueueViewModel, playbackModel: PlaybackViewModel) {
     Column(modifier = Modifier.fillMaxSize()) {
         // Top bar
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -107,13 +114,12 @@ fun QueueTab(queueModel: QueueViewModel, playbackModel: PlaybackViewModel) {
                 style = FluxioTheme.typography.labelMedium,
                 color = FluxioTheme.colors.text2,
             )
-
             Box(
-                modifier =
-                    Modifier.clip(RoundedCornerShape(percent = 50))
-                        .background(FluxioTheme.colors.element)
-                        .clickable { /* TODO: clear queue */ }
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(FluxioTheme.colors.element)
+                    .clickable { /* TODO: clear queue */ }
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -126,27 +132,104 @@ fun QueueTab(queueModel: QueueViewModel, playbackModel: PlaybackViewModel) {
 
         // Queue list
         LazyColumn(
-            modifier = Modifier.fillMaxSize().reorderable(reorderState),
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(queue) {
+                    detectDragGesturesAfterLongPress(
+                        onDragStart = { offset ->
+                            // Find which item the long-press hit.
+                            val layoutInfo = listState.layoutInfo
+                            val hit = layoutInfo.visibleItemsInfo.firstOrNull { itemInfo ->
+                                offset.y >= itemInfo.offset && offset.y <= itemInfo.offset + itemInfo.size
+                            }
+                            draggingIndex = hit?.index ?: -1
+                            draggingOffset = 0f
+                        },
+                        onDragEnd = {
+                            draggingIndex = -1
+                            draggingOffset = 0f
+                            autoScrollJob?.cancel()
+                            autoScrollJob = null
+                        },
+                        onDragCancel = {
+                            draggingIndex = -1
+                            draggingOffset = 0f
+                            autoScrollJob?.cancel()
+                            autoScrollJob = null
+                        },
+                        onDrag = { change, dragAmount ->
+                            change.consume()
+                            if (draggingIndex < 0) return@detectDragGesturesAfterLongPress
+                            draggingOffset += dragAmount.y
+
+                            // Auto-scroll at edges
+                            val viewportH = listState.layoutInfo.viewportSize.height
+                            val edgeZone = 80f
+                            when {
+                                change.position.y < edgeZone -> {
+                                    if (autoScrollJob?.isActive != true) {
+                                        autoScrollJob = coroutineScope.launch {
+                                            while (true) {
+                                                listState.scrollBy(-8f)
+                                                kotlinx.coroutines.delay(16)
+                                            }
+                                        }
+                                    }
+                                }
+                                change.position.y > viewportH - edgeZone -> {
+                                    if (autoScrollJob?.isActive != true) {
+                                        autoScrollJob = coroutineScope.launch {
+                                            while (true) {
+                                                listState.scrollBy(8f)
+                                                kotlinx.coroutines.delay(16)
+                                            }
+                                        }
+                                    }
+                                }
+                                else -> {
+                                    autoScrollJob?.cancel()
+                                    autoScrollJob = null
+                                }
+                            }
+
+                            // Compute target index from drag position
+                            val layoutInfo = listState.layoutInfo
+                            val draggingItem = layoutInfo.visibleItemsInfo
+                                .firstOrNull { it.index == draggingIndex }
+                                ?: return@detectDragGesturesAfterLongPress
+
+                            val draggingCenter =
+                                draggingItem.offset + draggingItem.size / 2 + draggingOffset.toInt()
+                            val targetItem = layoutInfo.visibleItemsInfo.minByOrNull {
+                                kotlin.math.abs(it.offset + it.size / 2 - draggingCenter)
+                            } ?: return@detectDragGesturesAfterLongPress
+
+                            if (targetItem.index != draggingIndex) {
+                                queueModel.moveQueueDataItems(draggingIndex, targetItem.index)
+                                draggingOffset +=
+                                    (draggingIndex - targetItem.index) * draggingItem.size.toFloat()
+                                draggingIndex = targetItem.index
+                            }
+                        },
+                    )
+                },
             state = listState,
             contentPadding = PaddingValues(bottom = 80.dp),
         ) {
-            itemsIndexed(items = queue, key = { index, song -> "${song.uid}_$index" }) { index, song
-                ->
-                ReorderableItem(reorderableState = reorderState, key = "${song.uid}_$index") {
-                    isDragging ->
-                    val isCurrent = index == currentIndex
-                    val isPast = index < currentIndex
+            itemsIndexed(items = queue, key = { _, song -> song.uid.toString() }) { index, song ->
+                val isCurrent = index == currentIndex
+                val isPast = index < currentIndex
+                val isDragging = index == draggingIndex
 
-                    QueueItem(
-                        song = song,
-                        isCurrent = isCurrent,
-                        isPlaying = isPlaying,
-                        isPast = isPast,
-                        isDragging = isDragging,
-                        dragModifier = Modifier.detectReorder(reorderState),
-                        onClick = { queueModel.goto(index) },
-                    )
-                }
+                QueueItem(
+                    song = song,
+                    isCurrent = isCurrent,
+                    isPlaying = isPlaying,
+                    isPast = isPast,
+                    isDragging = isDragging,
+                    dragOffsetY = if (isDragging) draggingOffset else 0f,
+                    onClick = { queueModel.goto(index) },
+                )
             }
         }
     }
@@ -159,47 +242,57 @@ fun QueueItem(
     isPlaying: Boolean,
     isPast: Boolean,
     isDragging: Boolean = false,
-    dragModifier: Modifier = Modifier,
+    dragOffsetY: Float = 0f,
     onClick: () -> Unit,
 ) {
     val context = LocalContext.current
     val backgroundColor =
-        if (isCurrent) FluxioTheme.colors.text1.copy(alpha = 0.08f) else FluxioTheme.colors.bg
+        if (isCurrent) FluxioTheme.colors.text1.copy(alpha = 0.08f)
+        else FluxioTheme.colors.bg
 
     Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .height(72.dp)
-                .clickable(onClick = onClick)
-                .background(if (isDragging) FluxioTheme.colors.element else backgroundColor)
-                .padding(horizontal = 16.dp)
-                .alpha(if (isPast && !isDragging) 0.5f else 1f),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(72.dp)
+            .graphicsLayer {
+                translationY = dragOffsetY
+                shadowElevation = if (isDragging) 8f else 0f
+                scaleX = if (isDragging) 1.02f else 1f
+                scaleY = if (isDragging) 1.02f else 1f
+            }
+            .clickable(onClick = onClick)
+            .background(if (isDragging) FluxioTheme.colors.element else backgroundColor)
+            .padding(horizontal = 16.dp)
+            .alpha(if (isPast && !isDragging) 0.5f else 1f),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val baseArtworkModifier = Modifier.size(48.dp)
         val artworkModifier =
             if (isCurrent) {
-                baseArtworkModifier.border(2.dp, FluxioTheme.colors.text1, RoundedCornerShape(6.dp))
+                baseArtworkModifier.border(
+                    2.dp,
+                    FluxioTheme.colors.text1,
+                    RoundedCornerShape(6.dp),
+                )
             } else {
                 baseArtworkModifier
             }
 
         Box(modifier = artworkModifier.clip(RoundedCornerShape(6.dp))) {
             AsyncImage(
-                model =
-                    ImageRequest.Builder(context)
-                        .data(song.cover ?: R.drawable.ic_album_24)
-                        .build(),
+                model = ImageRequest.Builder(context)
+                    .data(song.cover ?: R.drawable.ic_album_24)
+                    .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
                 error = painterResource(id = R.drawable.ic_album_24),
             )
-
             if (isCurrent) {
                 Box(
-                    modifier =
-                        Modifier.fillMaxSize().background(FluxioTheme.colors.bg.copy(alpha = 0.6f)),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(FluxioTheme.colors.bg.copy(alpha = 0.6f)),
                     contentAlignment = Alignment.Center,
                 ) {
                     EqualizerIndicator(isPlaying = isPlaying)
@@ -213,7 +306,7 @@ fun QueueItem(
             Text(
                 text = song.name.resolve(context),
                 style = FluxioTheme.typography.titleMedium,
-                color = if (isCurrent) FluxioTheme.colors.text1 else FluxioTheme.colors.text1,
+                color = FluxioTheme.colors.text1,
                 maxLines = 1,
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -227,11 +320,11 @@ fun QueueItem(
 
         Spacer(modifier = Modifier.width(8.dp))
 
+        // Drag handle — visual hint; drag is activated by long-press anywhere on the item
         Icon(
             painter = painterResource(id = R.drawable.ic_handle_24),
-            contentDescription = "Reordenar",
+            contentDescription = null,
             tint = FluxioTheme.colors.text3,
-            modifier = dragModifier,
         )
     }
 }
