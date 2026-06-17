@@ -33,11 +33,10 @@ import kotlin.math.sin
  * filters, processing fully in 32-bit float arithmetic internally.
  *
  * ## Supported encodings
- *
- * - [C.ENCODING_PCM_16BIT]        — signed 16-bit LE (Ffmpeg pipeline: OGG, some MP3/FLAC)
- * - [C.ENCODING_PCM_FLOAT]        — IEEE 754 32-bit LE (MediaCodec pipeline: MP3, AAC, M4A)
+ * - [C.ENCODING_PCM_16BIT] — signed 16-bit LE (Ffmpeg pipeline: OGG, some MP3/FLAC)
+ * - [C.ENCODING_PCM_FLOAT] — IEEE 754 32-bit LE (MediaCodec pipeline: MP3, AAC, M4A)
  * - [C.ENCODING_PCM_24BIT_PACKED] — signed 24-bit LE (hi-res FLAC, WAV 24-bit)
- * - [C.ENCODING_PCM_32BIT]        — signed 32-bit LE (WAV 32-bit integer)
+ * - [C.ENCODING_PCM_32BIT] — signed 32-bit LE (WAV 32-bit integer)
  *
  * All encodings are processed internally as 32-bit float. Output encoding always equals input
  * encoding — no downstream format change. Any other encoding returns NOT_SET (bypass).
@@ -46,8 +45,8 @@ import kotlin.math.sin
  *
  * [enabled], [gains], [coeffs], [encoding], [sampleRate], [channelCount] and [state] are all
  * [@Volatile]. [setBands] runs on the UI thread; [onConfigure], [onFlush], [onReset] and
- * [queueInput] run on the ExoPlayer audio thread. JVM guarantees atomic publication of new
- * array references assigned to @Volatile fields.
+ * [queueInput] run on the ExoPlayer audio thread. JVM guarantees atomic publication of new array
+ * references assigned to @Volatile fields.
  */
 @Singleton
 class EqualizerAudioProcessor @Inject constructor(equalizerSettings: EqualizerSettings) :
@@ -148,12 +147,7 @@ class EqualizerAudioProcessor @Inject constructor(equalizerSettings: EqualizerSe
                 for (band in 0 until BAND_COUNT) {
                     val c = localCoeffs[band]
                     val s = localState[band][chIdx]
-                    val y =
-                        c[0] * x +
-                            c[1] * s[0] +
-                            c[2] * s[1] -
-                            c[3] * s[2] -
-                            c[4] * s[3]
+                    val y = c[0] * x + c[1] * s[0] + c[2] * s[1] - c[3] * s[2] - c[4] * s[3]
                     s[1] = s[0]
                     s[0] = x
                     s[3] = s[2]
@@ -176,9 +170,8 @@ class EqualizerAudioProcessor @Inject constructor(equalizerSettings: EqualizerSe
 
     private fun recomputeCoefficients() {
         val fs = sampleRate.toFloat()
-        coeffs = Array(BAND_COUNT) { i ->
-            peakingEqCoeffs(BAND_FREQUENCIES[i], BAND_Q, gains[i], fs)
-        }
+        coeffs =
+            Array(BAND_COUNT) { i -> peakingEqCoeffs(BAND_FREQUENCIES[i], BAND_Q, gains[i], fs) }
     }
 
     private fun resetDelayLines() {
@@ -250,10 +243,11 @@ class EqualizerAudioProcessor @Inject constructor(equalizerSettings: EqualizerSe
     private fun writeSampleFromFloat(buf: ByteBuffer, value: Float, enc: Int) {
         when (enc) {
             C.ENCODING_PCM_16BIT -> {
-                val v = (value * 32767f)
-                    .toInt()
-                    .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
-                    .toShort()
+                val v =
+                    (value * 32767f)
+                        .toInt()
+                        .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
+                        .toShort()
                 buf.put(v.toByte())
                 buf.put((v.toInt() shr 8).toByte())
             }
@@ -271,10 +265,11 @@ class EqualizerAudioProcessor @Inject constructor(equalizerSettings: EqualizerSe
                 buf.put(((v shr 16) and 0xFF).toByte())
             }
             C.ENCODING_PCM_32BIT -> {
-                val v = (value * 2_147_483_647f)
-                    .toLong()
-                    .coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong())
-                    .toInt()
+                val v =
+                    (value * 2_147_483_647f)
+                        .toLong()
+                        .coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong())
+                        .toInt()
                 buf.put((v and 0xFF).toByte())
                 buf.put(((v shr 8) and 0xFF).toByte())
                 buf.put(((v shr 16) and 0xFF).toByte())

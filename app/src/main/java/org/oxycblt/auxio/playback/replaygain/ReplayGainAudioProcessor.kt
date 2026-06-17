@@ -43,17 +43,17 @@ import timber.log.Timber as L
  * [AudioProcessor.UnhandledAudioFormatException] for everything else. That caused ExoPlayer to
  * discard the entire AudioProcessor chain for MP3, AAC and M4A, because the MediaCodecAudioRenderer
  * pipeline converts audio to [C.ENCODING_PCM_FLOAT] before passing it through the chain. As the
- * first processor in the chain, this exception meant that EQ, StereoWidening and Crossfade were
- * all silently skipped for those formats.
+ * first processor in the chain, this exception meant that EQ, StereoWidening and Crossfade were all
+ * silently skipped for those formats.
  *
  * This implementation accepts all four PCM encodings that ExoPlayer can deliver:
- *   - [C.ENCODING_PCM_16BIT]        — signed 16-bit LE (Ffmpeg pipeline: OGG, some MP3)
- *   - [C.ENCODING_PCM_FLOAT]        — IEEE 754 32-bit LE (MediaCodec pipeline: MP3, AAC, M4A)
- *   - [C.ENCODING_PCM_24BIT_PACKED] — signed 24-bit LE (hi-res FLAC, WAV 24-bit)
- *   - [C.ENCODING_PCM_32BIT]        — signed 32-bit LE (WAV 32-bit integer)
+ * - [C.ENCODING_PCM_16BIT] — signed 16-bit LE (Ffmpeg pipeline: OGG, some MP3)
+ * - [C.ENCODING_PCM_FLOAT] — IEEE 754 32-bit LE (MediaCodec pipeline: MP3, AAC, M4A)
+ * - [C.ENCODING_PCM_24BIT_PACKED] — signed 24-bit LE (hi-res FLAC, WAV 24-bit)
+ * - [C.ENCODING_PCM_32BIT] — signed 32-bit LE (WAV 32-bit integer)
  *
- * Output encoding is always identical to input encoding — no downstream format change.
- * Truly unsupported encodings (AC3, DTS, PCM_8BIT) return NOT_SET to bypass silently.
+ * Output encoding is always identical to input encoding — no downstream format change. Truly
+ * unsupported encodings (AC3, DTS, PCM_8BIT) return NOT_SET to bypass silently.
  *
  * Note: This audio processor must be attached to a respective [Player] instance as a
  * [Player.Listener] to function properly.
@@ -226,10 +226,11 @@ constructor(
         var i = pos
         while (i < limit - 1) {
             val raw = (src.get(i).toInt() and 0xFF) or (src.get(i + 1).toInt() shl 8)
-            val scaled = (raw.toShort() * volume)
-                .toInt()
-                .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
-                .toShort()
+            val scaled =
+                (raw.toShort() * volume)
+                    .toInt()
+                    .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
+                    .toShort()
             dst.put(scaled.toByte())
             dst.put((scaled.toInt() shr 8).toByte())
             i += 2
@@ -279,10 +280,11 @@ constructor(
                     ((src.get(i + 2).toInt() and 0xFF) shl 16) or
                     (src.get(i + 3).toInt() shl 24)
             // Use Long arithmetic to avoid overflow before clamping.
-            val scaled = (v.toLong() * volume)
-                .toLong()
-                .coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong())
-                .toInt()
+            val scaled =
+                (v.toLong() * volume)
+                    .toLong()
+                    .coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong())
+                    .toInt()
             dst.put((scaled and 0xFF).toByte())
             dst.put(((scaled shr 8) and 0xFF).toByte())
             dst.put(((scaled shr 16) and 0xFF).toByte())

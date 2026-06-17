@@ -36,17 +36,16 @@ import javax.inject.Singleton
  * ## Supported encodings
  *
  * The original implementation returned NOT_SET for [C.ENCODING_PCM_FLOAT]. In the
- * MediaCodecAudioRenderer pipeline (MP3, AAC, M4A), DefaultAudioSink always delivers
- * PCM_FLOAT to the AudioProcessor chain — so NOT_SET caused ExoPlayer to silently skip
- * this processor (and downstream processors) for those formats. EQ was unaffected only
- * because it appears before StereoWidening in the chain and was already blocked earlier
- * by ReplayGain throwing an exception.
+ * MediaCodecAudioRenderer pipeline (MP3, AAC, M4A), DefaultAudioSink always delivers PCM_FLOAT to
+ * the AudioProcessor chain — so NOT_SET caused ExoPlayer to silently skip this processor (and
+ * downstream processors) for those formats. EQ was unaffected only because it appears before
+ * StereoWidening in the chain and was already blocked earlier by ReplayGain throwing an exception.
  *
- * This implementation handles both [C.ENCODING_PCM_16BIT] and [C.ENCODING_PCM_FLOAT].
- * Non-stereo channel counts and all other encodings still return NOT_SET (bypass cleanly).
+ * This implementation handles both [C.ENCODING_PCM_16BIT] and [C.ENCODING_PCM_FLOAT]. Non-stereo
+ * channel counts and all other encodings still return NOT_SET (bypass cleanly).
  *
  * @Volatile: [amount] and [spatializerBypass] written from UI thread, read from audio thread.
- * [encoding] and [channelCount] only written on the audio thread in [onConfigure].
+ *   [encoding] and [channelCount] only written on the audio thread in [onConfigure].
  */
 @Singleton
 class StereoWideningProcessor @Inject constructor() : BaseAudioProcessor() {
@@ -59,8 +58,8 @@ class StereoWideningProcessor @Inject constructor() : BaseAudioProcessor() {
     @Volatile var amount: Float = 0f
 
     /**
-     * When true the Android system Spatializer is active — widening is bypassed to avoid
-     * phase conflicts.
+     * When true the Android system Spatializer is active — widening is bypassed to avoid phase
+     * conflicts.
      */
     @Volatile var spatializerBypass: Boolean = false
 
@@ -152,12 +151,11 @@ class StereoWideningProcessor @Inject constructor() : BaseAudioProcessor() {
             val newLeft = (mid + widenedSide) * compensation
             val newRight = (mid - widenedSide) * compensation
             dst.putLeShort(
-                newLeft.toInt()
-                    .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
-                    .toShort()
+                newLeft.toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
             )
             dst.putLeShort(
-                newRight.toInt()
+                newRight
+                    .toInt()
                     .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
                     .toShort()
             )
