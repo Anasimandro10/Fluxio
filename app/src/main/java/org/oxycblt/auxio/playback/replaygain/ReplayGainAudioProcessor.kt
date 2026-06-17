@@ -49,7 +49,7 @@ import timber.log.Timber as L
  * This implementation accepts all four PCM encodings that ExoPlayer can deliver:
  * - [C.ENCODING_PCM_16BIT] — signed 16-bit LE (Ffmpeg pipeline: OGG, some MP3)
  * - [C.ENCODING_PCM_FLOAT] — IEEE 754 32-bit LE (MediaCodec pipeline: MP3, AAC, M4A)
- * - [C.ENCODING_PCM_24BIT_PACKED] — signed 24-bit LE (hi-res FLAC, WAV 24-bit)
+ * - [C.ENCODING_PCM_24BIT] — signed 24-bit LE (hi-res FLAC, WAV 24-bit)
  * - [C.ENCODING_PCM_32BIT] — signed 32-bit LE (WAV 32-bit integer)
  *
  * Output encoding is always identical to input encoding — no downstream format change. Truly
@@ -178,7 +178,7 @@ constructor(
         return when (inputAudioFormat.encoding) {
             C.ENCODING_PCM_16BIT,
             C.ENCODING_PCM_FLOAT,
-            C.ENCODING_PCM_24BIT_PACKED,
+            C.ENCODING_PCM_24BIT,
             C.ENCODING_PCM_32BIT -> {
                 encoding = inputAudioFormat.encoding
                 inputAudioFormat
@@ -209,7 +209,7 @@ constructor(
         when (encoding) {
             C.ENCODING_PCM_16BIT -> processInt16(inputBuffer, buffer, pos, limit)
             C.ENCODING_PCM_FLOAT -> processFloat32(inputBuffer, buffer, pos, limit)
-            C.ENCODING_PCM_24BIT_PACKED -> processInt24(inputBuffer, buffer, pos, limit)
+            C.ENCODING_PCM_24BIT -> processInt24(inputBuffer, buffer, pos, limit)
             C.ENCODING_PCM_32BIT -> processInt32(inputBuffer, buffer, pos, limit)
             else -> buffer.put(inputBuffer.slice())
         }

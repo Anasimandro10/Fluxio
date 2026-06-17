@@ -35,7 +35,7 @@ import kotlin.math.sin
  * ## Supported encodings
  * - [C.ENCODING_PCM_16BIT] — signed 16-bit LE (Ffmpeg pipeline: OGG, some MP3/FLAC)
  * - [C.ENCODING_PCM_FLOAT] — IEEE 754 32-bit LE (MediaCodec pipeline: MP3, AAC, M4A)
- * - [C.ENCODING_PCM_24BIT_PACKED] — signed 24-bit LE (hi-res FLAC, WAV 24-bit)
+ * - [C.ENCODING_PCM_24BIT] — signed 24-bit LE (hi-res FLAC, WAV 24-bit)
  * - [C.ENCODING_PCM_32BIT] — signed 32-bit LE (WAV 32-bit integer)
  *
  * All encodings are processed internally as 32-bit float. Output encoding always equals input
@@ -88,7 +88,7 @@ class EqualizerAudioProcessor @Inject constructor(equalizerSettings: EqualizerSe
         return when (inputAudioFormat.encoding) {
             C.ENCODING_PCM_16BIT,
             C.ENCODING_PCM_FLOAT,
-            C.ENCODING_PCM_24BIT_PACKED,
+            C.ENCODING_PCM_24BIT,
             C.ENCODING_PCM_32BIT -> {
                 encoding = inputAudioFormat.encoding
                 sampleRate = inputAudioFormat.sampleRate
@@ -203,7 +203,7 @@ class EqualizerAudioProcessor @Inject constructor(equalizerSettings: EqualizerSe
         when (enc) {
             C.ENCODING_PCM_16BIT -> 2
             C.ENCODING_PCM_FLOAT -> 4
-            C.ENCODING_PCM_24BIT_PACKED -> 3
+            C.ENCODING_PCM_24BIT -> 3
             C.ENCODING_PCM_32BIT -> 4
             else -> 2
         }
@@ -222,7 +222,7 @@ class EqualizerAudioProcessor @Inject constructor(equalizerSettings: EqualizerSe
                         (buf.get(at + 3).toInt() shl 24)
                 java.lang.Float.intBitsToFloat(bits)
             }
-            C.ENCODING_PCM_24BIT_PACKED -> {
+            C.ENCODING_PCM_24BIT -> {
                 val v =
                     (buf.get(at).toInt() and 0xFF) or
                         ((buf.get(at + 1).toInt() and 0xFF) shl 8) or
@@ -258,7 +258,7 @@ class EqualizerAudioProcessor @Inject constructor(equalizerSettings: EqualizerSe
                 buf.put(((bits shr 16) and 0xFF).toByte())
                 buf.put((bits shr 24).toByte())
             }
-            C.ENCODING_PCM_24BIT_PACKED -> {
+            C.ENCODING_PCM_24BIT -> {
                 val v = (value * 8_388_607f).toInt().coerceIn(-8_388_608, 8_388_607)
                 buf.put((v and 0xFF).toByte())
                 buf.put(((v shr 8) and 0xFF).toByte())
