@@ -18,7 +18,6 @@
 package org.oxycblt.auxio.playback.replaygain
 
 import androidx.media3.common.C
-import androidx.media3.common.Format
 import androidx.media3.common.Player
 import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.audio.BaseAudioProcessor
@@ -38,6 +37,24 @@ import timber.log.Timber as L
  * Instead of leveraging the volume attribute like other implementations, this system manipulates
  * the bitstream itself to modify the volume, which allows the use of positive ReplayGain values.
  *
+ * ## Supported encodings
+ *
+ * The original implementation only accepted [C.ENCODING_PCM_16BIT] and threw
+ * [AudioProcessor.UnhandledAudioFormatException] for everything else. That caused ExoPlayer to
+ * discard the entire AudioProcessor chain for MP3, AAC and M4A, because the MediaCodecAudioRenderer
+ * pipeline converts audio to [C.ENCODING_PCM_FLOAT] before passing it through the chain. As the
+ * first processor in the chain, this exception meant that EQ, StereoWidening and Crossfade were
+ * all silently skipped for those formats.
+ *
+ * This implementation accepts all four PCM encodings that ExoPlayer can deliver:
+ *   - [C.ENCODING_PCM_16BIT]        — signed 16-bit LE (Ffmpeg pipeline: OGG, some MP3)
+ *   - [C.ENCODING_PCM_FLOAT]        — IEEE 754 32-bit LE (MediaCodec pipeline: MP3, AAC, M4A)
+ *   - [C.ENCODING_PCM_24BIT_PACKED] — signed 24-bit LE (hi-res FLAC, WAV 24-bit)
+ *   - [C.ENCODING_PCM_32BIT]        — signed 32-bit LE (WAV 32-bit integer)
+ *
+ * Output encoding is always identical to input encoding — no downstream format change.
+ * Truly unsupported encodings (AC3, DTS, PCM_8BIT) return NOT_SET to bypass silently.
+ *
  * Note: This audio processor must be attached to a respective [Player] instance as a
  * [Player.Listener] to function properly.
  *
@@ -49,25 +66,30 @@ constructor(
     private val playbackManager: PlaybackStateManager,
     private val playbackSettings: PlaybackSettings,
 ) : BaseAudioProcessor(), PlaybackStateManager.Listener, PlaybackSettings.Listener {
+
     private var volume = 1f
         set(value) {
             field = value
-            // Processed bytes are no longer valid, flush the stream
+            // Processed bytes are no longer valid, flush the stream.
             flush()
         }
+
+    /** Active encoding, updated in [onConfigure] on the audio thread. */
+    private var encoding = C.ENCODING_INVALID
 
     fun attach() {
         playbackManager.addListener(this)
         playbackSettings.registerListener(this)
     }
 
-    /** Remove this instance from the components required for it to function correctly. */
     fun release() {
         playbackManager.removeListener(this)
         playbackSettings.unregisterListener(this)
     }
 
-    // --- OVERRIDES ---
+    // -------------------------------------------------------------------------
+    // PlaybackStateManager.Listener + PlaybackSettings.Listener
+    // -------------------------------------------------------------------------
 
     override fun onIndexMoved(index: Int) {
         L.d("Index moved, updating current song")
@@ -75,7 +97,6 @@ constructor(
     }
 
     override fun onQueueChanged(queue: List<Song>, index: Int, change: QueueChange) {
-        // Other types of queue changes preserve the current song.
         if (change.type == QueueChange.Type.SONG) {
             applyReplayGain(playbackManager.currentSong)
         }
@@ -92,17 +113,13 @@ constructor(
     }
 
     override fun onReplayGainSettingsChanged() {
-        // ReplayGain config changed, we need to set it up again.
         applyReplayGain(playbackManager.currentSong)
     }
 
-    // --- REPLAYGAIN PARSING ---
+    // -------------------------------------------------------------------------
+    // ReplayGain resolution
+    // -------------------------------------------------------------------------
 
-    /**
-     * Updates the volume adjustment based on the given [Format].
-     *
-     * @param song The [Format] of the currently playing track, or null if nothing is playing.
-     */
     private fun applyReplayGain(song: Song?) {
         if (song == null) {
             L.d("Nothing playing, disabling adjustment")
@@ -115,27 +132,20 @@ constructor(
         val gain = song.replayGainAdjustment
         val preAmp = playbackSettings.replayGainPreAmp
 
-        // ReplayGain is configurable, so determine what to do based off of the mode.
         val resolvedAdjustment =
             when (playbackSettings.replayGainMode) {
-                // User wants no adjustment.
                 ReplayGainMode.OFF -> {
                     L.d("ReplayGain is off")
                     null
                 }
-                // User wants track gain to be preferred. Default to album gain only if
-                // there is no track gain.
                 ReplayGainMode.TRACK -> {
                     L.d("Using track strategy")
                     gain.track ?: gain.album
                 }
-                // User wants album gain to be preferred. Default to track gain only if
-                // here is no album gain.
                 ReplayGainMode.ALBUM -> {
                     L.d("Using album strategy")
                     gain.album ?: gain.track
                 }
-                // User wants album gain to be used when in an album, track gain otherwise.
                 ReplayGainMode.DYNAMIC -> {
                     L.d("Using dynamic strategy")
                     gain.album?.takeIf {
@@ -147,35 +157,40 @@ constructor(
 
         val amplifiedAdjustment =
             if (resolvedAdjustment != null) {
-                // Successfully resolved an adjustment, apply the corresponding pre-amp
                 L.d("Applying with pre-amp")
                 resolvedAdjustment + preAmp.with
             } else {
-                // No adjustment found, use the corresponding user-defined pre-amp
                 L.d("Applying without pre-amp")
                 preAmp.without
             }
 
         L.d("Applying ReplayGain adjustment ${amplifiedAdjustment}db")
-
-        // Final adjustment along the volume curve.
         volume = 10f.pow(amplifiedAdjustment / 20f)
     }
 
-    // --- AUDIO PROCESSOR IMPLEMENTATION ---
+    // -------------------------------------------------------------------------
+    // BaseAudioProcessor
+    // -------------------------------------------------------------------------
 
     override fun onConfigure(
         inputAudioFormat: AudioProcessor.AudioFormat
     ): AudioProcessor.AudioFormat {
-        if (inputAudioFormat.encoding == C.ENCODING_PCM_16BIT) {
-            // AudioProcessor is only provided 16-bit PCM audio data, so that's the only
-            // encoding we need to check for.
-            // TODO: Convert to a low-level audio processor capable of handling any kind of
-            //  PCM data, once ExoPlayer can support it.
-            return inputAudioFormat
+        return when (inputAudioFormat.encoding) {
+            C.ENCODING_PCM_16BIT,
+            C.ENCODING_PCM_FLOAT,
+            C.ENCODING_PCM_24BIT_PACKED,
+            C.ENCODING_PCM_32BIT -> {
+                encoding = inputAudioFormat.encoding
+                inputAudioFormat
+            }
+            // Return NOT_SET instead of throwing — a throw here causes ExoPlayer to discard
+            // the entire AudioProcessor chain for the current renderer.
+            else -> AudioProcessor.AudioFormat.NOT_SET
         }
+    }
 
-        throw AudioProcessor.UnhandledAudioFormatException(inputAudioFormat)
+    override fun onReset() {
+        encoding = C.ENCODING_INVALID
     }
 
     override fun queueInput(inputBuffer: ByteBuffer) {
@@ -184,47 +199,95 @@ constructor(
         val buffer = replaceOutputBuffer(limit - pos)
 
         if (volume == 1f) {
-            // Nothing to adjust, just copy the audio data.
-            // isActive is technically a much better way of doing a no-op like this, but since
-            // the adjustment can change during playback I'm largely forced to do this.
+            // Unity gain — copy raw bytes unchanged.
             buffer.put(inputBuffer.slice())
-        } else {
-            for (i in pos until limit step 2) {
-                // 16-bit PCM audio, deserialize a little-endian short.
-                var sample = inputBuffer.getLeShort(i)
-                // Ensure we clamp the values to the minimum and maximum values possible
-                // for the encoding. This prevents issues where samples amplified beyond
-                // 1 << 16 will end up becoming truncated during the conversion to a short,
-                // resulting in popping.
-                sample =
-                    (sample * volume)
-                        .toInt()
-                        .coerceAtLeast(Short.MIN_VALUE.toInt())
-                        .coerceAtMost(Short.MAX_VALUE.toInt())
-                        .toShort()
-                buffer.putLeShort(sample)
-            }
+            inputBuffer.position(limit)
+            buffer.flip()
+            return
+        }
+
+        when (encoding) {
+            C.ENCODING_PCM_16BIT -> processInt16(inputBuffer, buffer, pos, limit)
+            C.ENCODING_PCM_FLOAT -> processFloat32(inputBuffer, buffer, pos, limit)
+            C.ENCODING_PCM_24BIT_PACKED -> processInt24(inputBuffer, buffer, pos, limit)
+            C.ENCODING_PCM_32BIT -> processInt32(inputBuffer, buffer, pos, limit)
+            else -> buffer.put(inputBuffer.slice())
         }
 
         inputBuffer.position(limit)
         buffer.flip()
     }
 
-    /**
-     * Always read a little-endian [Short] from the [ByteBuffer] at the given index.
-     *
-     * @param at The index to read the [Short] from.
-     */
-    private fun ByteBuffer.getLeShort(at: Int) =
-        get(at + 1).toInt().shl(8).or(get(at).toInt().and(0xFF)).toShort()
+    // -------------------------------------------------------------------------
+    // Per-encoding processing paths
+    // -------------------------------------------------------------------------
 
-    /**
-     * Always write a little-endian [Short] at the end of the [ByteBuffer].
-     *
-     * @param short The [Short] to write.
-     */
-    private fun ByteBuffer.putLeShort(short: Short) {
-        put(short.toByte())
-        put(short.toInt().shr(8).toByte())
+    private fun processInt16(src: ByteBuffer, dst: ByteBuffer, pos: Int, limit: Int) {
+        var i = pos
+        while (i < limit - 1) {
+            val raw = (src.get(i).toInt() and 0xFF) or (src.get(i + 1).toInt() shl 8)
+            val scaled = (raw.toShort() * volume)
+                .toInt()
+                .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
+                .toShort()
+            dst.put(scaled.toByte())
+            dst.put((scaled.toInt() shr 8).toByte())
+            i += 2
+        }
+    }
+
+    private fun processFloat32(src: ByteBuffer, dst: ByteBuffer, pos: Int, limit: Int) {
+        var i = pos
+        while (i < limit - 3) {
+            val bits =
+                (src.get(i).toInt() and 0xFF) or
+                    ((src.get(i + 1).toInt() and 0xFF) shl 8) or
+                    ((src.get(i + 2).toInt() and 0xFF) shl 16) or
+                    (src.get(i + 3).toInt() shl 24)
+            val scaled = (java.lang.Float.intBitsToFloat(bits) * volume).coerceIn(-1f, 1f)
+            val outBits = java.lang.Float.floatToRawIntBits(scaled)
+            dst.put((outBits and 0xFF).toByte())
+            dst.put(((outBits shr 8) and 0xFF).toByte())
+            dst.put(((outBits shr 16) and 0xFF).toByte())
+            dst.put((outBits shr 24).toByte())
+            i += 4
+        }
+    }
+
+    private fun processInt24(src: ByteBuffer, dst: ByteBuffer, pos: Int, limit: Int) {
+        var i = pos
+        while (i < limit - 2) {
+            // Sign-extend 24-bit to 32-bit via left-shift + right arithmetic shift.
+            val v =
+                ((src.get(i).toInt() and 0xFF) or
+                    ((src.get(i + 1).toInt() and 0xFF) shl 8) or
+                    (src.get(i + 2).toInt() shl 16))
+            val scaled = (v * volume).toInt().coerceIn(-8_388_608, 8_388_607)
+            dst.put((scaled and 0xFF).toByte())
+            dst.put(((scaled shr 8) and 0xFF).toByte())
+            dst.put(((scaled shr 16) and 0xFF).toByte())
+            i += 3
+        }
+    }
+
+    private fun processInt32(src: ByteBuffer, dst: ByteBuffer, pos: Int, limit: Int) {
+        var i = pos
+        while (i < limit - 3) {
+            val v =
+                (src.get(i).toInt() and 0xFF) or
+                    ((src.get(i + 1).toInt() and 0xFF) shl 8) or
+                    ((src.get(i + 2).toInt() and 0xFF) shl 16) or
+                    (src.get(i + 3).toInt() shl 24)
+            // Use Long arithmetic to avoid overflow before clamping.
+            val scaled = (v.toLong() * volume)
+                .toLong()
+                .coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong())
+                .toInt()
+            dst.put((scaled and 0xFF).toByte())
+            dst.put(((scaled shr 8) and 0xFF).toByte())
+            dst.put(((scaled shr 16) and 0xFF).toByte())
+            dst.put((scaled shr 24).toByte())
+            i += 4
+        }
     }
 }
