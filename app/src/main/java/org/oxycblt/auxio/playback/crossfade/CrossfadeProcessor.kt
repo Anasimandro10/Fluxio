@@ -61,8 +61,8 @@ class CrossfadeProcessor @Inject constructor() : BaseAudioProcessor() {
         }
 
     /**
-     * Called on the main thread whenever crossfade transitions between enabled and disabled.
-     * Wired by [ExoPlaybackStateHolder] to trigger Audio Offload re-evaluation.
+     * Called on the main thread whenever crossfade transitions between enabled and disabled. Wired
+     * by [ExoPlaybackStateHolder] to trigger Audio Offload re-evaluation.
      */
     var onActiveStateChanged: (() -> Unit)? = null
 

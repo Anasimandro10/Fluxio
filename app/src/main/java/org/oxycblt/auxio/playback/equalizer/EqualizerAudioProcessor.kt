@@ -56,11 +56,12 @@ class EqualizerAudioProcessor @Inject constructor(equalizerSettings: EqualizerSe
     @Volatile private var gains = equalizerSettings.getBands()
 
     /** Whether the equalizer is currently active. Readable from any thread. */
-    val isEnabled: Boolean get() = enabled
+    val isEnabled: Boolean
+        get() = enabled
 
     /**
-     * Called on the main thread whenever the EQ transitions between enabled and disabled.
-     * Wired by [ExoPlaybackStateHolder] to trigger Audio Offload re-evaluation.
+     * Called on the main thread whenever the EQ transitions between enabled and disabled. Wired by
+     * [ExoPlaybackStateHolder] to trigger Audio Offload re-evaluation.
      */
     var onActiveStateChanged: (() -> Unit)? = null
 

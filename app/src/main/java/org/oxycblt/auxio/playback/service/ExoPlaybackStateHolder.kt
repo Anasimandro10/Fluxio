@@ -585,14 +585,14 @@ class ExoPlaybackStateHolder(
     }
 
     /**
-     * Dynamically enables or disables Audio Offload based on the active state of all software
-     * audio processors (EQ, crossfade, stereo widening).
+     * Dynamically enables or disables Audio Offload based on the active state of all software audio
+     * processors (EQ, crossfade, stereo widening).
      *
-     * Audio Offload routes compressed audio (MP3, AAC) directly to the device DSP chip,
-     * bypassing the entire [AudioProcessor] chain. When any software processor is active, offload
-     * must be disabled so that ExoPlayer decodes audio to PCM first, allowing the processors to
-     * intercept the signal. When all processors are inactive, offload is re-enabled to restore
-     * the battery savings it provides.
+     * Audio Offload routes compressed audio (MP3, AAC) directly to the device DSP chip, bypassing
+     * the entire [AudioProcessor] chain. When any software processor is active, offload must be
+     * disabled so that ExoPlayer decodes audio to PCM first, allowing the processors to intercept
+     * the signal. When all processors are inactive, offload is re-enabled to restore the battery
+     * savings it provides.
      *
      * Must be called on the main thread.
      */
@@ -617,9 +617,14 @@ class ExoPlaybackStateHolder(
                 .build()
 
         player.trackSelectionParameters =
-            player.trackSelectionParameters.buildUpon().setAudioOffloadPreferences(offloadPrefs).build()
+            player.trackSelectionParameters
+                .buildUpon()
+                .setAudioOffloadPreferences(offloadPrefs)
+                .build()
 
-        L.d("Audio Offload ${if (anyProcessorActive) "DISABLED" else "ENABLED"} (eq=${equalizerProcessor.isEnabled}, crossfade=${crossfadeProcessor.enabled}, widening=${stereoWideningProcessor.amount > 0f}, replayGain=${replayGainProcessor.isEffectActive})")
+        L.d(
+            "Audio Offload ${if (anyProcessorActive) "DISABLED" else "ENABLED"} (eq=${equalizerProcessor.isEnabled}, crossfade=${crossfadeProcessor.enabled}, widening=${stereoWideningProcessor.amount > 0f}, replayGain=${replayGainProcessor.isEffectActive})"
+        )
     }
 
     // --- CROSSFADE ---
