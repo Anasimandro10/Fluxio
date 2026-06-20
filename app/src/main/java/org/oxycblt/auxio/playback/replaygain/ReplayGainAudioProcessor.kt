@@ -67,11 +67,23 @@ constructor(
     private val playbackSettings: PlaybackSettings,
 ) : BaseAudioProcessor(), PlaybackStateManager.Listener, PlaybackSettings.Listener {
 
+    /** Indicates whether the processor is actively changing the volume. */
+    val isEffectActive: Boolean
+        get() = volume != 1f
+
+    /** Fired when the processor transitions between unity gain (1f) and active gain (!= 1f). */
+    var onActiveStateChanged: (() -> Unit)? = null
+
     private var volume = 1f
         set(value) {
+            val wasActive = field != 1f
             field = value
+            val isActive = value != 1f
             // Processed bytes are no longer valid, flush the stream.
             flush()
+            if (wasActive != isActive) {
+                onActiveStateChanged?.invoke()
+            }
         }
 
     /** Active encoding, updated in [onConfigure] on the audio thread. */

@@ -54,8 +54,27 @@ class StereoWideningProcessor @Inject constructor() : BaseAudioProcessor() {
      * Widening intensity in `[0.0 .. 1.0]`.
      * - `0.0` = original stereo (fast-path bypass).
      * - `1.0` = maximum widening (Side component doubled).
+     *
+     * The callback fires only when the processor transitions between active (> 0) and inactive
+     * (== 0) to avoid redundant Audio Offload re-evaluations on every slider movement.
      */
-    @Volatile var amount: Float = 0f
+    @Volatile private var _amount: Float = 0f
+    var amount: Float
+        get() = _amount
+        set(value) {
+            val wasActive = _amount > 0f
+            _amount = value
+            val isActive = value > 0f
+            if (wasActive != isActive) {
+                onActiveStateChanged?.invoke()
+            }
+        }
+
+    /**
+     * Called on the main thread whenever stereo widening transitions between active and inactive.
+     * Wired by [ExoPlaybackStateHolder] to trigger Audio Offload re-evaluation.
+     */
+    var onActiveStateChanged: (() -> Unit)? = null
 
     /**
      * When true the Android system Spatializer is active — widening is bypassed to avoid phase

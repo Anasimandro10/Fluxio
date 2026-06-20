@@ -113,6 +113,14 @@ class ExoPlaybackStateHolder(
         playbackSettings.registerListener(this)
         imageSettings.registerListener(this)
         audioDeviceListener.attach()
+        // Wire processor callbacks so that enabling/disabling EQ, crossfade, or stereo widening
+        // immediately updates the Audio Offload preference on the player.
+        equalizerProcessor.onActiveStateChanged = ::syncAudioOffload
+        crossfadeProcessor.onActiveStateChanged = ::syncAudioOffload
+        stereoWideningProcessor.onActiveStateChanged = ::syncAudioOffload
+        replayGainProcessor.onActiveStateChanged = ::syncAudioOffload
+        // Sync once immediately so the initial EQ/crossfade/widening state is applied.
+        syncAudioOffload()
     }
 
     fun release() {
@@ -125,6 +133,11 @@ class ExoPlaybackStateHolder(
         imageSettings.unregisterListener(this)
         playbackSettings.unregisterListener(this)
         audioDeviceListener.release()
+        // Clear callbacks to avoid leaking this holder after release.
+        equalizerProcessor.onActiveStateChanged = null
+        crossfadeProcessor.onActiveStateChanged = null
+        stereoWideningProcessor.onActiveStateChanged = null
+        replayGainProcessor.onActiveStateChanged = null
         player.release()
     }
 
@@ -571,6 +584,44 @@ class ExoPlaybackStateHolder(
         )
     }
 
+    /**
+     * Dynamically enables or disables Audio Offload based on the active state of all software
+     * audio processors (EQ, crossfade, stereo widening).
+     *
+     * Audio Offload routes compressed audio (MP3, AAC) directly to the device DSP chip,
+     * bypassing the entire [AudioProcessor] chain. When any software processor is active, offload
+     * must be disabled so that ExoPlayer decodes audio to PCM first, allowing the processors to
+     * intercept the signal. When all processors are inactive, offload is re-enabled to restore
+     * the battery savings it provides.
+     *
+     * Must be called on the main thread.
+     */
+    private fun syncAudioOffload() {
+        val anyProcessorActive =
+            equalizerProcessor.isEnabled ||
+                crossfadeProcessor.enabled ||
+                stereoWideningProcessor.amount > 0f ||
+                replayGainProcessor.isEffectActive
+
+        val mode =
+            if (anyProcessorActive) {
+                TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_DISABLED
+            } else {
+                TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_ENABLED
+            }
+
+        val offloadPrefs =
+            TrackSelectionParameters.AudioOffloadPreferences.Builder()
+                .setAudioOffloadMode(mode)
+                .apply { if (!anyProcessorActive) setIsGaplessSupportRequired(true) }
+                .build()
+
+        player.trackSelectionParameters =
+            player.trackSelectionParameters.buildUpon().setAudioOffloadPreferences(offloadPrefs).build()
+
+        L.d("Audio Offload ${if (anyProcessorActive) "DISABLED" else "ENABLED"} (eq=${equalizerProcessor.isEnabled}, crossfade=${crossfadeProcessor.enabled}, widening=${stereoWideningProcessor.amount > 0f}, replayGain=${replayGainProcessor.isEffectActive})")
+    }
+
     // --- CROSSFADE ---
 
     /**
@@ -800,21 +851,10 @@ class ExoPlaybackStateHolder(
                     )
                     .build()
 
-            // Enable Audio Offload for massive battery savings (Paso 28)
-            // ExoPlayer will automatically disable this if AudioProcessors (like EQ) are active.
-            val audioOffloadPreferences =
-                TrackSelectionParameters.AudioOffloadPreferences.Builder()
-                    .setAudioOffloadMode(
-                        TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_ENABLED
-                    )
-                    .setIsGaplessSupportRequired(true)
-                    .build()
-
-            exoPlayer.trackSelectionParameters =
-                exoPlayer.trackSelectionParameters
-                    .buildUpon()
-                    .setAudioOffloadPreferences(audioOffloadPreferences)
-                    .build()
+            // Audio Offload is managed dynamically by syncAudioOffload() in ExoPlaybackStateHolder.
+            // It is enabled when all software processors (EQ, crossfade, stereo widening) are
+            // inactive, and disabled whenever any of them is active so that ExoPlayer decodes
+            // MP3/AAC to PCM before passing audio through the processor chain.
 
             return ExoPlaybackStateHolder(
                 context,

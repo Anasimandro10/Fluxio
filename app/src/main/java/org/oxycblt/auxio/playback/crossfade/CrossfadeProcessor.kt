@@ -50,7 +50,21 @@ import kotlin.math.sin
 class CrossfadeProcessor @Inject constructor() : BaseAudioProcessor() {
 
     /** Whether crossfade is active. Written by CrossfadeSettings. */
-    @Volatile var enabled = false
+    @Volatile private var _enabled = false
+    var enabled: Boolean
+        get() = _enabled
+        set(value) {
+            if (_enabled != value) {
+                _enabled = value
+                onActiveStateChanged?.invoke()
+            }
+        }
+
+    /**
+     * Called on the main thread whenever crossfade transitions between enabled and disabled.
+     * Wired by [ExoPlaybackStateHolder] to trigger Audio Offload re-evaluation.
+     */
+    var onActiveStateChanged: (() -> Unit)? = null
 
     /** Crossfade duration in milliseconds. Written by CrossfadeSettings. */
     @Volatile var crossfadeDurationMs = 0L
