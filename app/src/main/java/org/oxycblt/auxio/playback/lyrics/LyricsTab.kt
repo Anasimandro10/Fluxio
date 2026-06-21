@@ -19,7 +19,6 @@ package org.oxycblt.auxio.playback.lyrics
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -68,6 +67,7 @@ import org.oxycblt.auxio.ui.theme.FluxioTheme
 /** Represents either a real lyric line or an instrumental silence section. */
 private sealed class LyricsItem {
     data class Line(val line: LrcLine, val origIndex: Int) : LyricsItem()
+
     data class Gap(val startMs: Long, val durationMs: Long) : LyricsItem()
 }
 
@@ -75,8 +75,8 @@ private sealed class LyricsItem {
 private const val MIN_VOCAL_GAP_MS = 5_000L
 
 /**
- * How many list positions apart target and current can be before we pre-jump close first.
- * Avoids an uncomfortably long kinetic scroll after a seek across the whole song.
+ * How many list positions apart target and current can be before we pre-jump close first. Avoids an
+ * uncomfortably long kinetic scroll after a seek across the whole song.
  */
 private const val LARGE_SCROLL_CATCH_UP_DELTA = 8
 
@@ -87,20 +87,20 @@ private const val LARGE_SCROLL_CATCH_UP_DELTA = 8
  */
 private fun buildLyricsItems(lines: List<LrcLine>): List<LyricsItem> {
     // Only real vocal lines (non-silence) participate in gap detection
-    val vocal = lines.mapIndexedNotNull { i, line ->
-        if (!line.isSilence) i to line else null
-    }
+    val vocal = lines.mapIndexedNotNull { i, line -> if (!line.isSilence) i to line else null }
     if (vocal.isEmpty()) return emptyList()
 
     // Estimate median interval to set an adaptive gap threshold
-    val intervals = vocal.zipWithNext { (_, a), (_, b) ->
-        (b.startMs - a.startMs).coerceAtLeast(0L)
-    }.filter { it > 0L }
+    val intervals =
+        vocal
+            .zipWithNext { (_, a), (_, b) -> (b.startMs - a.startMs).coerceAtLeast(0L) }
+            .filter { it > 0L }
 
-    val medianInterval = if (intervals.isNotEmpty()) {
-        val sorted = intervals.sorted()
-        sorted[sorted.size / 2]
-    } else 2_000L
+    val medianInterval =
+        if (intervals.isNotEmpty()) {
+            val sorted = intervals.sorted()
+            sorted[sorted.size / 2]
+        } else 2_000L
 
     val longGapThreshold = maxOf(MIN_VOCAL_GAP_MS, (medianInterval * 2.4f).toLong())
     // Estimate how long the last word takes before silence begins
@@ -129,8 +129,8 @@ private fun buildLyricsItems(lines: List<LrcLine>): List<LyricsItem> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Scrolls to [targetIndex] smoothly.  If the jump is very large we first snap close to avoid
- * a multi-second kinetic scroll, then finish with a smooth animated scroll.
+ * Scrolls to [targetIndex] smoothly. If the jump is very large we first snap close to avoid a
+ * multi-second kinetic scroll, then finish with a smooth animated scroll.
  */
 private suspend fun LazyListState.animateToItemWithCatchUp(
     targetIndex: Int,
@@ -144,11 +144,12 @@ private suspend fun LazyListState.animateToItemWithCatchUp(
     val currentIndex = firstVisibleItemIndex
     val delta = abs(currentIndex - targetIndex)
     if (delta >= LARGE_SCROLL_CATCH_UP_DELTA) {
-        val preIndex = if (targetIndex > currentIndex) {
-            (targetIndex - 1).coerceAtLeast(0)
-        } else {
-            (targetIndex + 1).coerceAtMost(layoutInfo.totalItemsCount - 1)
-        }
+        val preIndex =
+            if (targetIndex > currentIndex) {
+                (targetIndex - 1).coerceAtLeast(0)
+            } else {
+                (targetIndex + 1).coerceAtMost(layoutInfo.totalItemsCount - 1)
+            }
         if (preIndex != targetIndex) scrollToItem(preIndex, scrollOffset)
     }
     animateScrollToItem(targetIndex, scrollOffset)
@@ -161,27 +162,28 @@ private suspend fun LazyListState.animateToItemWithCatchUp(
 @Composable
 fun LyricsTab(lyricsModel: LyricsViewModel, playbackModel: PlaybackViewModel) {
     val context = LocalContext.current
-    val song        by lyricsModel.lines.collectAsState()       // reuse song via playback
-    val songState   by playbackModel.song.collectAsState()
-    val lines       by lyricsModel.lines.collectAsState()
-    val isSynced    by lyricsModel.isSynced.collectAsState()
+    val song by lyricsModel.lines.collectAsState() // reuse song via playback
+    val songState by playbackModel.song.collectAsState()
+    val lines by lyricsModel.lines.collectAsState()
+    val isSynced by lyricsModel.isSynced.collectAsState()
     val currentLineIndex by lyricsModel.currentLineIndex.collectAsState()
-    val activeWordIndex  by lyricsModel.activeWordIndex.collectAsState()
+    val activeWordIndex by lyricsModel.activeWordIndex.collectAsState()
 
     // Build the mixed list (lines + gap markers) once whenever lines change
     val lyricsItems = remember(lines) { buildLyricsItems(lines) }
 
     // Map from original line index → position inside lyricsItems (for scrolling)
-    val lineToItemIndex = remember(lyricsItems) {
-        buildMap {
-            lyricsItems.forEachIndexed { itemIdx, item ->
-                if (item is LyricsItem.Line) put(item.origIndex, itemIdx)
+    val lineToItemIndex =
+        remember(lyricsItems) {
+            buildMap {
+                lyricsItems.forEachIndexed { itemIdx, item ->
+                    if (item is LyricsItem.Line) put(item.origIndex, itemIdx)
+                }
             }
         }
-    }
 
     val listState = rememberLazyListState()
-    val scope     = rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
 
     // Intelligent scroll: runs every time the active line changes
     LaunchedEffect(currentLineIndex) {
@@ -190,29 +192,24 @@ fun LyricsTab(lyricsModel: LyricsViewModel, playbackModel: PlaybackViewModel) {
             val viewportH = listState.layoutInfo.viewportSize.height
             // Centre the active line vertically
             val offset = -(viewportH / 3)
-            scope.launch {
-                listState.animateToItemWithCatchUp(targetItemIdx, offset)
-            }
+            scope.launch { listState.animateToItemWithCatchUp(targetItemIdx, offset) }
         }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
         // ── Header: small artwork + song/artist ──────────────────────────────
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(songState?.cover ?: R.drawable.ic_album_48)
-                    .build(),
+                model =
+                    ImageRequest.Builder(context)
+                        .data(songState?.cover ?: R.drawable.ic_album_48)
+                        .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(RoundedCornerShape(8.dp)),
+                modifier = Modifier.size(64.dp).clip(RoundedCornerShape(8.dp)),
                 error = painterResource(R.drawable.ic_album_48),
             )
             Spacer(Modifier.width(12.dp))
@@ -235,10 +232,7 @@ fun LyricsTab(lyricsModel: LyricsViewModel, playbackModel: PlaybackViewModel) {
 
         // ── Body: lyrics or empty state ───────────────────────────────────────
         if (lines.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     text = stringResource(R.string.lbl_no_lyrics),
                     style = FluxioTheme.typography.titleMedium,
@@ -257,7 +251,7 @@ fun LyricsTab(lyricsModel: LyricsViewModel, playbackModel: PlaybackViewModel) {
                     key = { _, item ->
                         when (item) {
                             is LyricsItem.Line -> "line_${item.origIndex}"
-                            is LyricsItem.Gap  -> "gap_${item.startMs}"
+                            is LyricsItem.Gap -> "gap_${item.startMs}"
                         }
                     },
                 ) { _, item ->
@@ -266,11 +260,11 @@ fun LyricsTab(lyricsModel: LyricsViewModel, playbackModel: PlaybackViewModel) {
                             val isActive = isSynced && item.origIndex == currentLineIndex
                             val currentWordIdx = if (isActive) activeWordIndex else -1
                             FluxioLyricLine(
-                                line         = item.line,
+                                line = item.line,
                                 isActiveLine = isActive,
-                                isSynced     = isSynced,
+                                isSynced = isSynced,
                                 currentWordIdx = currentWordIdx,
-                                onClick      = {
+                                onClick = {
                                     if (isSynced && item.line.startMs >= 0) {
                                         playbackModel.seekTo(item.line.startMs / 100L)
                                     }
@@ -307,92 +301,105 @@ fun FluxioLyricLine(
     onClick: () -> Unit,
 ) {
     // ── Animation targets per Fluxio spec ──────────────────────────────────
-    val targetAlpha = when {
-        !isSynced   -> 1f
-        isActiveLine -> 1f
-        else         -> 0.35f          // Spec: "Resto del texto: #FFFFFF al 35%"
-    }
-    val targetScale = when {
-        !isSynced    -> 1f
-        isActiveLine -> 1.05f          // Subtle grow — keeps it below Rhythm's heavier 1.10
-        else         -> 1f
-    }
+    val targetAlpha =
+        when {
+            !isSynced -> 1f
+            isActiveLine -> 1f
+            else -> 0.35f // Spec: "Resto del texto: #FFFFFF al 35%"
+        }
+    val targetScale =
+        when {
+            !isSynced -> 1f
+            isActiveLine -> 1.05f // Subtle grow — keeps it below Rhythm's heavier 1.10
+            else -> 1f
+        }
 
-    val alpha by animateFloatAsState(
-        targetValue  = targetAlpha,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness    = Spring.StiffnessMediumLow,
-        ),
-        label = "lyricAlpha",
-    )
-    val scale by animateFloatAsState(
-        targetValue  = targetScale,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness    = Spring.StiffnessMediumLow,
-        ),
-        label = "lyricScale",
-    )
+    val alpha by
+        animateFloatAsState(
+            targetValue = targetAlpha,
+            animationSpec =
+                spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMediumLow,
+                ),
+            label = "lyricAlpha",
+        )
+    val scale by
+        animateFloatAsState(
+            targetValue = targetScale,
+            animationSpec =
+                spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMediumLow,
+                ),
+            label = "lyricScale",
+        )
 
     // ── Typography — Fluxio spec ──────────────────────────────────────────
-    val fontSize   = if (!isSynced || isActiveLine) 22.sp else 20.sp  // "22sp Medium activa, 20sp demás"
+    val fontSize =
+        if (!isSynced || isActiveLine) 22.sp else 20.sp // "22sp Medium activa, 20sp demás"
     val fontWeight = if (isSynced && isActiveLine) FontWeight.Medium else FontWeight.Normal
 
     // Glow shadow on the active line: colour puro de carátula al 30%, blur 8dp
     // We use white here because the ambient colour system lives one layer above (in the player bg).
-    val shadow = if (isSynced && isActiveLine) {
-        Shadow(color = Color.White.copy(alpha = 0.30f), blurRadius = 8f)
-    } else null
+    val shadow =
+        if (isSynced && isActiveLine) {
+            Shadow(color = Color.White.copy(alpha = 0.30f), blurRadius = 8f)
+        } else null
 
     // ── Build annotated string for word-by-word sync ──────────────────────
-    val annotatedText = remember(line.text, line.words, currentWordIdx, isSynced, isActiveLine) {
-        if (line.words.isEmpty() || currentWordIdx < 0 || !isActiveLine) {
-            AnnotatedString(line.text)
-        } else {
-            buildAnnotatedString {
-                var lastEnd = 0
-                for (i in line.words.indices) {
-                    val w = line.words[i]
-                    // Guard against malformed word ranges
-                    if (w.startChar < 0 || w.endChar > line.text.length || w.startChar >= w.endChar)
-                        continue
-                    // Text between words (spaces, punctuation)
-                    if (w.startChar > lastEnd) append(line.text.substring(lastEnd, w.startChar))
+    val annotatedText =
+        remember(line.text, line.words, currentWordIdx, isSynced, isActiveLine) {
+            if (line.words.isEmpty() || currentWordIdx < 0 || !isActiveLine) {
+                AnnotatedString(line.text)
+            } else {
+                buildAnnotatedString {
+                    var lastEnd = 0
+                    for (i in line.words.indices) {
+                        val w = line.words[i]
+                        // Guard against malformed word ranges
+                        if (
+                            w.startChar < 0 ||
+                                w.endChar > line.text.length ||
+                                w.startChar >= w.endChar
+                        )
+                            continue
+                        // Text between words (spaces, punctuation)
+                        if (w.startChar > lastEnd) append(line.text.substring(lastEnd, w.startChar))
 
-                    if (i <= currentWordIdx) {
-                        // Already sung — full white
-                        withStyle(SpanStyle(color = Color.White)) {
-                            append(line.text.substring(w.startChar, w.endChar))
+                        if (i <= currentWordIdx) {
+                            // Already sung — full white
+                            withStyle(SpanStyle(color = Color.White)) {
+                                append(line.text.substring(w.startChar, w.endChar))
+                            }
+                        } else {
+                            // Upcoming words — dimmed to 35% like inactive lines
+                            withStyle(SpanStyle(color = Color.White.copy(alpha = 0.35f))) {
+                                append(line.text.substring(w.startChar, w.endChar))
+                            }
                         }
-                    } else {
-                        // Upcoming words — dimmed to 35% like inactive lines
-                        withStyle(SpanStyle(color = Color.White.copy(alpha = 0.35f))) {
-                            append(line.text.substring(w.startChar, w.endChar))
-                        }
+                        lastEnd = w.endChar
                     }
-                    lastEnd = w.endChar
+                    if (lastEnd < line.text.length) append(line.text.substring(lastEnd))
                 }
-                if (lastEnd < line.text.length) append(line.text.substring(lastEnd))
             }
         }
-    }
 
     Text(
-        text       = annotatedText,
-        fontSize   = fontSize,
+        text = annotatedText,
+        fontSize = fontSize,
         fontWeight = fontWeight,
-        color      = Color.White,
-        modifier   = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .alpha(alpha)
-            .clickable(enabled = isSynced) { onClick() },
-        style      = FluxioTheme.typography.bodyMedium.copy(shadow = shadow),
+        color = Color.White,
+        modifier =
+            Modifier.fillMaxWidth()
+                .padding(vertical = 12.dp)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                }
+                .alpha(alpha)
+                .clickable(enabled = isSynced) { onClick() },
+        style = FluxioTheme.typography.bodyMedium.copy(shadow = shadow),
     )
 }
 
@@ -401,34 +408,31 @@ fun FluxioLyricLine(
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Shows a musical note indicator during instrumental sections.
- * Height is proportional to the gap duration so it feels like breathing room.
- * Spring animation pulses the icon when the gap is active.
+ * Shows a musical note indicator during instrumental sections. Height is proportional to the gap
+ * duration so it feels like breathing room. Spring animation pulses the icon when the gap is
+ * active.
  */
 @Composable
 private fun FluxioInstrumentalGap(gap: LyricsItem.Gap) {
     // Height proportional to duration, clamped so it never dominates the screen
     val gapHeightDp = (gap.durationMs / 1_000f).coerceIn(20f, 72f)
 
-    val iconAlpha by animateFloatAsState(
-        targetValue   = 0.40f,   // Always slightly visible; it's a visual spacer not a focal point
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioNoBouncy,
-            stiffness    = Spring.StiffnessLow,
-        ),
-        label = "gapAlpha",
-    )
+    val iconAlpha by
+        animateFloatAsState(
+            targetValue = 0.40f, // Always slightly visible; it's a visual spacer not a focal point
+            animationSpec =
+                spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessLow),
+            label = "gapAlpha",
+        )
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = (gapHeightDp / 2).dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = (gapHeightDp / 2).dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text     = "♪",
+            text = "♪",
             fontSize = 24.sp,
-            color    = Color.White.copy(alpha = iconAlpha),
+            color = Color.White.copy(alpha = iconAlpha),
             // Fluxio text3 (#4A4A4A) would be invisible on dark bg; use white-dimmed instead
         )
     }
