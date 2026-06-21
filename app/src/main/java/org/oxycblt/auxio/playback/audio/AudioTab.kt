@@ -317,7 +317,7 @@ private fun EqCardContent(
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = stringResource(R.string.lbl_equalizer),
-                style = FluxioTheme.typography.bodyMedium,
+                fontSize = 17.sp,
                 color = FluxioTheme.colors.text1,
                 modifier = Modifier.weight(1f),
             )
@@ -427,15 +427,26 @@ fun AudioAccordionCard(
         ) {
             Text(
                 text = title,
-                style = FluxioTheme.typography.titleMedium,
+                fontSize = 17.sp,
                 color = FluxioTheme.colors.text1,
                 modifier = Modifier.weight(1f),
             )
-            if (stateLabel.isNotEmpty()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (stateLabel.isNotEmpty()) {
+                    Text(
+                        text = stateLabel,
+                        fontSize = 15.sp,
+                        color = FluxioTheme.colors.text2,
+                    )
+                }
                 Text(
-                    text = stateLabel,
-                    style = FluxioTheme.typography.bodyMedium,
+                    text = "›",
+                    fontSize = 17.sp,
                     color = FluxioTheme.colors.text2,
+                    modifier = Modifier.padding(bottom = 2.dp)
                 )
             }
         }

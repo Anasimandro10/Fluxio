@@ -22,6 +22,9 @@ import android.content.Intent
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 import org.oxycblt.auxio.home.HomeSettings
@@ -36,7 +39,8 @@ import timber.log.Timber
  * @author Alexander Capehart (OxygenCobalt)
  */
 @HiltAndroidApp
-class Auxio : Application() {
+class Auxio : Application(), SingletonImageLoader.Factory {
+    @Inject lateinit var imageLoader: ImageLoader
     @Inject lateinit var imageSettings: ImageSettings
     @Inject lateinit var playbackSettings: PlaybackSettings
     @Inject lateinit var uiSettings: UISettings
@@ -81,5 +85,9 @@ class Auxio : Application() {
         const val INTENT_KEY_SHORTCUT_SHUFFLE = BuildConfig.APPLICATION_ID + ".action.SHUFFLE_ALL"
         /** The ID of the "Shuffle All" shortcut. */
         private const val SHORTCUT_SHUFFLE_ID = "shortcut_shuffle"
+    }
+
+    override fun newImageLoader(context: PlatformContext): ImageLoader {
+        return imageLoader
     }
 }
