@@ -57,7 +57,8 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import kotlin.math.abs
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.lyrics.LrcLine
 import org.oxycblt.auxio.lyrics.LyricsViewModel
@@ -193,19 +194,25 @@ fun LyricsTab(lyricsModel: LyricsViewModel, playbackModel: PlaybackViewModel) {
         }
 
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
 
     // Intelligent scroll: reacts to currentLineIndex without recomposing LyricsTab
     LaunchedEffect(Unit) {
-        snapshotFlow { currentLineIndexState.value }
-            .collect { currentLineIndex ->
-                if (currentLineIndex >= 0) {
-                    val targetItemIdx = lineToItemIndex[currentLineIndex] ?: return@collect
-                    val viewportH = listState.layoutInfo.viewportSize.height
-                    // Centre the active line vertically
-                    val offset = -(viewportH / 3)
-                    listState.animateToItemWithCatchUp(targetItemIdx, offset)
+        snapshotFlow { currentLineIndexState.value }.collectLatest { currentLineIndex ->
+            if (currentLineIndex >= 0) {
+                val targetItemIdx = lineToItemIndex[currentLineIndex] ?: return@collectLatest
+                val viewportH = listState.layoutInfo.viewportSize.height
+                // Centre the active line vertically
+                val offset = -(viewportH / 3)
+                scope.launch {
+                    try {
+                        listState.animateToItemWithCatchUp(targetItemIdx, offset)
+                    } catch (e: Exception) {
+                        // Ignore scroll cancellations by user
+                    }
                 }
             }
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -416,6 +423,7 @@ fun FluxioLyricLine(
         fontSize = fontSize,
         fontWeight = fontWeight,
         color = Color.White,
+        textAlign = TextAlign.Center,
         modifier =
             Modifier.fillMaxWidth()
                 .padding(vertical = 12.dp)
