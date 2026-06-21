@@ -17,9 +17,16 @@
  */
 package org.oxycblt.auxio.playback.lyrics
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -51,6 +58,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import kotlin.math.abs
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import org.oxycblt.auxio.R
 import org.oxycblt.auxio.lyrics.LrcLine
@@ -162,12 +170,16 @@ private suspend fun LazyListState.animateToItemWithCatchUp(
 @Composable
 fun LyricsTab(lyricsModel: LyricsViewModel, playbackModel: PlaybackViewModel) {
     val context = LocalContext.current
-    val song by lyricsModel.lines.collectAsState() // reuse song via playback
-    val songState by playbackModel.song.collectAsState()
-    val lines by lyricsModel.lines.collectAsState()
-    val isSynced by lyricsModel.isSynced.collectAsState()
-    val currentLineIndex by lyricsModel.currentLineIndex.collectAsState()
-    val activeWordIndex by lyricsModel.activeWordIndex.collectAsState()
+    val songState   by playbackModel.song.collectAsState()
+    val lines       by lyricsModel.lines.collectAsState()
+    val isSynced    by lyricsModel.isSynced.collectAsState()
+
+    // OPTIMISATION: We collect these as State but DO NOT use 'by'.
+    // Reading their .value directly in this scope would cause the entire
+    // LazyColumn to recompose multiple times a second for word-by-word sync.
+    // Instead, we pass the State down to individual lines.
+    val currentLineIndexState = lyricsModel.currentLineIndex.collectAsState()
+    val activeWordIndexState  = lyricsModel.activeWordIndex.collectAsState()
 
     // Build the mixed list (lines + gap markers) once whenever lines change
     val lyricsItems = remember(lines) { buildLyricsItems(lines) }
@@ -183,16 +195,17 @@ fun LyricsTab(lyricsModel: LyricsViewModel, playbackModel: PlaybackViewModel) {
         }
 
     val listState = rememberLazyListState()
-    val scope = rememberCoroutineScope()
 
-    // Intelligent scroll: runs every time the active line changes
-    LaunchedEffect(currentLineIndex) {
-        if (currentLineIndex >= 0) {
-            val targetItemIdx = lineToItemIndex[currentLineIndex] ?: return@LaunchedEffect
-            val viewportH = listState.layoutInfo.viewportSize.height
-            // Centre the active line vertically
-            val offset = -(viewportH / 3)
-            scope.launch { listState.animateToItemWithCatchUp(targetItemIdx, offset) }
+    // Intelligent scroll: reacts to currentLineIndex without recomposing LyricsTab
+    LaunchedEffect(Unit) {
+        snapshotFlow { currentLineIndexState.value }.collect { currentLineIndex ->
+            if (currentLineIndex >= 0) {
+                val targetItemIdx = lineToItemIndex[currentLineIndex] ?: return@collect
+                val viewportH = listState.layoutInfo.viewportSize.height
+                // Centre the active line vertically
+                val offset = -(viewportH / 3)
+                listState.animateToItemWithCatchUp(targetItemIdx, offset)
+            }
         }
     }
 
@@ -257,14 +270,13 @@ fun LyricsTab(lyricsModel: LyricsViewModel, playbackModel: PlaybackViewModel) {
                 ) { _, item ->
                     when (item) {
                         is LyricsItem.Line -> {
-                            val isActive = isSynced && item.origIndex == currentLineIndex
-                            val currentWordIdx = if (isActive) activeWordIndex else -1
                             FluxioLyricLine(
-                                line = item.line,
-                                isActiveLine = isActive,
-                                isSynced = isSynced,
-                                currentWordIdx = currentWordIdx,
-                                onClick = {
+                                line                  = item.line,
+                                origIndex             = item.origIndex,
+                                isSynced              = isSynced,
+                                currentLineIndexState = currentLineIndexState,
+                                activeWordIndexState  = activeWordIndexState,
+                                onClick               = {
                                     if (isSynced && item.line.startMs >= 0) {
                                         playbackModel.seekTo(item.line.startMs / 100L)
                                     }
@@ -291,15 +303,28 @@ fun LyricsTab(lyricsModel: LyricsViewModel, playbackModel: PlaybackViewModel) {
  * - Inactive lines: 20sp Normal, white at 35% — NEVER in artwork colour
  * - Spring physics for scale/alpha so the animation feels physical, not mechanical
  * - Word-by-word highlighting when word timing data is present
+ * 
+ * Performance: Derives its own active state from [currentLineIndexState] and
+ * [activeWordIndexState] to prevent the parent list from recomposing constantly.
  */
 @Composable
 fun FluxioLyricLine(
     line: LrcLine,
-    isActiveLine: Boolean,
+    origIndex: Int,
     isSynced: Boolean,
-    currentWordIdx: Int,
+    currentLineIndexState: State<Int>,
+    activeWordIndexState: State<Int>,
     onClick: () -> Unit,
 ) {
+    // Determine activity states locally to shield parent from recomposition
+    val isActiveLine by remember(isSynced, origIndex) {
+        derivedStateOf { isSynced && currentLineIndexState.value == origIndex }
+    }
+    
+    val currentWordIdx by remember(isActiveLine) {
+        derivedStateOf { if (isActiveLine) activeWordIndexState.value else -1 }
+    }
+
     // ── Animation targets per Fluxio spec ──────────────────────────────────
     val targetAlpha =
         when {
@@ -408,22 +433,25 @@ fun FluxioLyricLine(
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Shows a musical note indicator during instrumental sections. Height is proportional to the gap
- * duration so it feels like breathing room. Spring animation pulses the icon when the gap is
- * active.
+ * Shows a musical note indicator during instrumental sections.
+ * Height is proportional to the gap duration so it feels like breathing room.
+ * Infinite breathing animation provides life without requiring 60fps time-sync updates.
  */
 @Composable
 private fun FluxioInstrumentalGap(gap: LyricsItem.Gap) {
     // Height proportional to duration, clamped so it never dominates the screen
     val gapHeightDp = (gap.durationMs / 1_000f).coerceIn(20f, 72f)
 
-    val iconAlpha by
-        animateFloatAsState(
-            targetValue = 0.40f, // Always slightly visible; it's a visual spacer not a focal point
-            animationSpec =
-                spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessLow),
-            label = "gapAlpha",
-        )
+    val infiniteTransition = rememberInfiniteTransition(label = "gapPulse")
+    val iconAlpha by infiniteTransition.animateFloat(
+        initialValue  = 0.20f,
+        targetValue   = 0.50f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "gapAlpha",
+    )
 
     Column(
         modifier = Modifier.fillMaxWidth().padding(vertical = (gapHeightDp / 2).dp),

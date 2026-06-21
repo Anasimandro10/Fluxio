@@ -17,7 +17,10 @@
  */
 package org.oxycblt.auxio.lyrics
 
+import androidx.compose.runtime.Immutable
+
 /** Represents a single word/syllable and its timing. */
+@Immutable
 data class WordTiming(
     val text: String,
     val startMs: Long,
@@ -34,6 +37,7 @@ data class WordTiming(
  * @param text The lyric text to display. An empty string means an instrumental silence marker.
  * @param words The list of words with individual timings, if available (for word-by-word sync).
  */
+@Immutable
 data class LrcLine(
     val startMs: Long,
     val endMs: Long = 0L,
