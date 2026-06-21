@@ -433,20 +433,16 @@ fun AudioAccordionCard(
             )
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 if (stateLabel.isNotEmpty()) {
-                    Text(
-                        text = stateLabel,
-                        fontSize = 15.sp,
-                        color = FluxioTheme.colors.text2,
-                    )
+                    Text(text = stateLabel, fontSize = 15.sp, color = FluxioTheme.colors.text2)
                 }
                 Text(
                     text = "›",
                     fontSize = 17.sp,
                     color = FluxioTheme.colors.text2,
-                    modifier = Modifier.padding(bottom = 2.dp)
+                    modifier = Modifier.padding(bottom = 2.dp),
                 )
             }
         }
