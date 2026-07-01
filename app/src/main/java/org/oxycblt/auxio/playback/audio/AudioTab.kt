@@ -64,8 +64,7 @@ import org.oxycblt.auxio.playback.speed.PlaybackSpeedSettings
 import org.oxycblt.auxio.playback.stereowidening.StereoWideningSettings
 import org.oxycblt.auxio.ui.theme.FluxioTheme
 
-private val FREQ_LABELS =
-    listOf("31", "63", "125", "250", "500", "1k", "2k", "4k", "8k", "16k")
+private val FREQ_LABELS = listOf("31", "63", "125", "250", "500", "1k", "2k", "4k", "8k", "16k")
 
 enum class AudioCard {
     NONE,
@@ -119,8 +118,7 @@ fun AudioTab(
             isExpanded = expandedCard == AudioCard.EQUALIZER,
             onClick = {
                 expandedCard =
-                    if (expandedCard == AudioCard.EQUALIZER) AudioCard.NONE
-                    else AudioCard.EQUALIZER
+                    if (expandedCard == AudioCard.EQUALIZER) AudioCard.NONE else AudioCard.EQUALIZER
             },
         ) {
             EqCardContent(
@@ -165,8 +163,7 @@ fun AudioTab(
             isExpanded = expandedCard == AudioCard.CROSSFADE,
             onClick = {
                 expandedCard =
-                    if (expandedCard == AudioCard.CROSSFADE) AudioCard.NONE
-                    else AudioCard.CROSSFADE
+                    if (expandedCard == AudioCard.CROSSFADE) AudioCard.NONE else AudioCard.CROSSFADE
             },
         ) {
             CrossfadeCardContent(
@@ -244,17 +241,18 @@ fun AudioAccordionCard(
     content: @Composable () -> Unit,
 ) {
     // Chevron rotates 90° when the card is open — smooth 250ms easing
-    val chevronRotation by animateFloatAsState(
-        targetValue = if (isExpanded) 90f else 0f,
-        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
-        label = "chevron",
-    )
+    val chevronRotation by
+        animateFloatAsState(
+            targetValue = if (isExpanded) 90f else 0f,
+            animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
+            label = "chevron",
+        )
 
     Column(
         modifier =
             Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(18.dp))
-                .background(FluxioTheme.colors.surface),
+                .background(FluxioTheme.colors.surface)
     ) {
         // Header row — always visible, tappable
         Row(
@@ -275,11 +273,7 @@ fun AudioAccordionCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 if (stateLabel.isNotEmpty()) {
-                    Text(
-                        text = stateLabel,
-                        fontSize = 15.sp,
-                        color = FluxioTheme.colors.text2,
-                    )
+                    Text(text = stateLabel, fontSize = 15.sp, color = FluxioTheme.colors.text2)
                 }
                 // Animated chevron
                 Text(
@@ -295,18 +289,10 @@ fun AudioAccordionCard(
         // Expandable content — separator line then padding
         AnimatedVisibility(visible = isExpanded) {
             Column {
-                HorizontalDivider(
-                    color = FluxioTheme.colors.separator,
-                    thickness = 1.dp,
-                )
+                HorizontalDivider(color = FluxioTheme.colors.separator, thickness = 1.dp)
                 Box(
                     modifier =
-                        Modifier.padding(
-                            start = 16.dp,
-                            end = 16.dp,
-                            top = 16.dp,
-                            bottom = 20.dp,
-                        )
+                        Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 20.dp)
                 ) {
                     content()
                 }
@@ -337,10 +323,7 @@ private fun EqCardContent(
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
         // ── Enable / disable toggle ──────────────────────────────────────────
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = stringResource(R.string.lbl_equalizer),
                 fontSize = 17.sp,
@@ -380,25 +363,21 @@ private fun EqCardContent(
 
         // ── Preset chips — pill shape, scrollable ────────────────────────────
         androidx.compose.foundation.lazy.LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(presetNames.size) { idx ->
                 val isActive = activePreset == idx
                 Box(
                     modifier =
                         Modifier.clip(RoundedCornerShape(20.dp))
-                            .background(
-                                if (isActive) accentColor else FluxioTheme.colors.element
-                            )
+                            .background(if (isActive) accentColor else FluxioTheme.colors.element)
                             .clickable(enabled = enabled) { onPreset(idx) }
-                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                            .padding(horizontal = 14.dp, vertical = 8.dp)
                 ) {
                     Text(
                         text = presetNames[idx],
                         style = FluxioTheme.typography.labelMedium,
-                        color =
-                            if (isActive) FluxioTheme.colors.bg
-                            else FluxioTheme.colors.text2,
+                        color = if (isActive) FluxioTheme.colors.bg else FluxioTheme.colors.text2,
                     )
                 }
             }
@@ -434,10 +413,7 @@ private fun EqBandSlider(
             else -> "\u00b7" // · middle dot — neutral
         }
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier,
-    ) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
         // Gain value label — accent + SemiBold when band is boosted/cut
         Text(
             text = gainText,
@@ -453,32 +429,27 @@ private fun EqBandSlider(
         // Canvas — draws track, active fill, 0 dB line, thumb
         Canvas(
             modifier =
-                Modifier.weight(1f)
-                    .fillMaxWidth()
-                    .pointerInput(enabled) {
-                        if (!enabled) return@pointerInput
-                        awaitEachGesture {
-                            // Tap: jump thumb to finger position
-                            val down = awaitFirstDown(requireUnconsumed = false)
-                            down.consume()
-                            val h = size.height.toFloat()
-                            onGainChange(
-                                (12f - (down.position.y / h) * 24f).coerceIn(-12f, 12f)
-                            )
-                            // Drag: sweep continuously
-                            do {
-                                val event = awaitPointerEvent()
-                                val drag = event.changes.firstOrNull() ?: break
-                                if (drag.pressed) {
-                                    drag.consume()
-                                    onGainChange(
-                                        (12f - (drag.position.y / h) * 24f)
-                                            .coerceIn(-12f, 12f)
-                                    )
-                                }
-                            } while (event.changes.any { it.pressed })
-                        }
-                    },
+                Modifier.weight(1f).fillMaxWidth().pointerInput(enabled) {
+                    if (!enabled) return@pointerInput
+                    awaitEachGesture {
+                        // Tap: jump thumb to finger position
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        down.consume()
+                        val h = size.height.toFloat()
+                        onGainChange((12f - (down.position.y / h) * 24f).coerceIn(-12f, 12f))
+                        // Drag: sweep continuously
+                        do {
+                            val event = awaitPointerEvent()
+                            val drag = event.changes.firstOrNull() ?: break
+                            if (drag.pressed) {
+                                drag.consume()
+                                onGainChange(
+                                    (12f - (drag.position.y / h) * 24f).coerceIn(-12f, 12f)
+                                )
+                            }
+                        } while (event.changes.any { it.pressed })
+                    }
+                }
         ) {
             val trackW = trackWidthDp.toPx()
             val thumbR = thumbRadiusDp.toPx()
@@ -564,22 +535,18 @@ private fun SpeedCardContent(speedValue: Float, onSpeedChange: (Float) -> Unit) 
         ) {
             chips.forEach { speed ->
                 val isActive = kotlin.math.abs(speedValue - speed) < 0.01f
-                val label =
-                    "${String.format("%.2f", speed).trimEnd('0').trimEnd('.')}\u00d7"
+                val label = "${String.format("%.2f", speed).trimEnd('0').trimEnd('.')}\u00d7"
                 Box(
                     modifier =
                         Modifier.clip(RoundedCornerShape(20.dp))
-                            .background(
-                                if (isActive) accentColor else FluxioTheme.colors.element
-                            )
+                            .background(if (isActive) accentColor else FluxioTheme.colors.element)
                             .clickable { onSpeedChange(speed) }
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
                 ) {
                     Text(
                         text = label,
                         style = FluxioTheme.typography.labelMedium,
-                        color =
-                            if (isActive) FluxioTheme.colors.bg else FluxioTheme.colors.text2,
+                        color = if (isActive) FluxioTheme.colors.bg else FluxioTheme.colors.text2,
                     )
                 }
             }
@@ -691,12 +658,9 @@ private fun TimerCardContent(
                 Box(
                     modifier =
                         Modifier.clip(RoundedCornerShape(20.dp))
-                            .background(
-                                if (isActive) accentColor else FluxioTheme.colors.element
-                            )
+                            .background(if (isActive) accentColor else FluxioTheme.colors.element)
                             .clickable {
-                                if (isActive) onCancelTimer()
-                                else onStartTimer(preset.minutes)
+                                if (isActive) onCancelTimer() else onStartTimer(preset.minutes)
                             }
                             .padding(horizontal = 12.dp, vertical = 8.dp),
                     contentAlignment = Alignment.Center,
@@ -704,8 +668,7 @@ private fun TimerCardContent(
                     Text(
                         text = preset.label,
                         style = FluxioTheme.typography.labelMedium,
-                        color =
-                            if (isActive) FluxioTheme.colors.bg else FluxioTheme.colors.text2,
+                        color = if (isActive) FluxioTheme.colors.bg else FluxioTheme.colors.text2,
                     )
                 }
             }
@@ -728,17 +691,13 @@ private fun TimerCardContent(
                     text = stringResource(R.string.lbl_timer_custom),
                     style = FluxioTheme.typography.labelMedium,
                     color =
-                        if (customChipActive) FluxioTheme.colors.bg
-                        else FluxioTheme.colors.text2,
+                        if (customChipActive) FluxioTheme.colors.bg else FluxioTheme.colors.text2,
                 )
             }
         }
 
         // Stop at end of song toggle
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = stringResource(R.string.lbl_timer_stop_at_end),
                 style = FluxioTheme.typography.bodyMedium,
@@ -758,10 +717,7 @@ private fun TimerCardContent(
     }
 }
 
-private fun showCustomTimerDialog(
-    ctx: android.content.Context,
-    onStartTimer: (Int) -> Unit,
-) {
+private fun showCustomTimerDialog(ctx: android.content.Context, onStartTimer: (Int) -> Unit) {
     val paddingPx = (16 * ctx.resources.displayMetrics.density).toInt()
     val editText =
         EditText(ctx).apply {
