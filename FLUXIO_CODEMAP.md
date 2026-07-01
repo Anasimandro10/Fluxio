@@ -1,5 +1,5 @@
 # FLUXIO_CODEMAP.md
-> Commit: 8faf25d8920c  |  Generado: 2026-07-01 04:24  |  Roadmap: 30/93 completados  |  Archivos: 697
+> Commit: 8dc3ec1386b2  |  Generado: 2026-07-01 04:24  |  Roadmap: 30/93 completados  |  Archivos: 697
 > **INDICE** — fetchea la parte que necesites.
 
 ---
@@ -108,10 +108,10 @@
 
 | Parte | Contenido | Archivos | Link |
 |---|---|---|---|
-| **CI/Playback/DSP/Lyrics/Stats** | CI & Config | Material Components | Playback & Audio DSP | Lyrics | Statistics | 88 | [part1](https://raw.githubusercontent.com/Anasimandro10/fluxio/8faf25d8920c45310ecba387a6bec095b9ff04e0/FLUXIO_CODEMAP_part1.md) |
-| **UI/Fragments/ViewModels/Tags/Backup** | UI Details/Library/Search/Settings | Tags | Backup | Image | Music/Data | Lists | Widgets | App Root | Otros | 209 | [part2](https://raw.githubusercontent.com/Anasimandro10/fluxio/8faf25d8920c45310ecba387a6bec095b9ff04e0/FLUXIO_CODEMAP_part2.md) |
-| **Drawables/Layouts/Values/Menus/Nav** | Drawables XML | Layouts | Values | Preferences XML | Menus | Navigation | Other | 243 | [part3](https://raw.githubusercontent.com/Anasimandro10/fluxio/8faf25d8920c45310ecba387a6bec095b9ff04e0/FLUXIO_CODEMAP_part3.md) |
-| **Fastlane/Metadata** | Descripciones Play Store / F-Droid | 157 | [part4](https://raw.githubusercontent.com/Anasimandro10/fluxio/8faf25d8920c45310ecba387a6bec095b9ff04e0/FLUXIO_CODEMAP_part4.md) |
+| **CI/Playback/DSP/Lyrics/Stats** | CI & Config | Material Components | Playback & Audio DSP | Lyrics | Statistics | 88 | [part1](https://raw.githubusercontent.com/Anasimandro10/fluxio/8dc3ec1386b23606e1e5a05d7e49d45eed51ff4e/FLUXIO_CODEMAP_part1.md) |
+| **UI/Fragments/ViewModels/Tags/Backup** | UI Details/Library/Search/Settings | Tags | Backup | Image | Music/Data | Lists | Widgets | App Root | Otros | 209 | [part2](https://raw.githubusercontent.com/Anasimandro10/fluxio/8dc3ec1386b23606e1e5a05d7e49d45eed51ff4e/FLUXIO_CODEMAP_part2.md) |
+| **Drawables/Layouts/Values/Menus/Nav** | Drawables XML | Layouts | Values | Preferences XML | Menus | Navigation | Other | 243 | [part3](https://raw.githubusercontent.com/Anasimandro10/fluxio/8dc3ec1386b23606e1e5a05d7e49d45eed51ff4e/FLUXIO_CODEMAP_part3.md) |
+| **Fastlane/Metadata** | Descripciones Play Store / F-Droid | 157 | [part4](https://raw.githubusercontent.com/Anasimandro10/fluxio/8dc3ec1386b23606e1e5a05d7e49d45eed51ff4e/FLUXIO_CODEMAP_part4.md) |
 
 ---
 
