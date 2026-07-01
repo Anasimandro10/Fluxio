@@ -17,6 +17,9 @@
  */
 package org.oxycblt.auxio.playback.audio
 
+import android.text.InputType
+import android.widget.EditText
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -35,11 +38,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.oxycblt.auxio.R
+import org.oxycblt.auxio.playback.PlaybackViewModel
 import org.oxycblt.auxio.playback.crossfade.CrossfadeSettings
 import org.oxycblt.auxio.playback.equalizer.EqualizerSettings
 import org.oxycblt.auxio.playback.equalizer.EqualizerViewModel
@@ -61,6 +67,7 @@ enum class AudioCard {
 @Composable
 fun AudioTab(
     equalizerModel: EqualizerViewModel,
+    playbackModel: PlaybackViewModel,
     crossfadeSettings: CrossfadeSettings,
     stereoSettings: StereoWideningSettings,
     speedSettings: PlaybackSpeedSettings,
@@ -77,6 +84,9 @@ fun AudioTab(
     var crossfadeSecs by remember { mutableIntStateOf(crossfadeSettings.durationSeconds) }
     var crossfadeEnabled by remember { mutableStateOf(crossfadeSettings.enabled) }
     var stereoAmount by remember { mutableIntStateOf(stereoSettings.amountPercent) }
+
+    val timerRemainingMs by playbackModel.timerRemainingMs.collectAsState()
+    val stopAtEndOfSong by playbackModel.stopAtEndOfSong.collectAsState()
 
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(scrollState).padding(16.dp),
@@ -176,20 +186,32 @@ fun AudioTab(
             )
         }
 
-        // Timer card (30-C-8d)
+        // Timer card
+        val timerStateLabel = run {
+            val rem = timerRemainingMs
+            if (rem == null) {
+                stringResource(R.string.lbl_audio_off)
+            } else {
+                val mins = (rem / 60_000L).toInt()
+                val secs = ((rem % 60_000L) / 1_000L).toInt()
+                if (mins > 0) "${mins}m ${secs.toString().padStart(2,'0')}s" else "${secs}s"
+            }
+        }
         AudioAccordionCard(
             title = stringResource(R.string.lbl_sleep_timer),
-            stateLabel = "",
+            stateLabel = timerStateLabel,
             isExpanded = expandedCard == AudioCard.TIMER,
             onClick = {
                 expandedCard =
                     if (expandedCard == AudioCard.TIMER) AudioCard.NONE else AudioCard.TIMER
             },
         ) {
-            Text(
-                text = "— (30-C-8d) —",
-                color = FluxioTheme.colors.text3,
-                style = FluxioTheme.typography.bodyMedium,
+            TimerCardContent(
+                timerRemainingMs = timerRemainingMs,
+                stopAtEndOfSong = stopAtEndOfSong,
+                onStartTimer = { playbackModel.startSleepTimer(it) },
+                onCancelTimer = { playbackModel.cancelSleepTimer() },
+                onStopAtEndOfSongChanged = { playbackModel.setStopAtEndOfSong(it) },
             )
         }
     }
@@ -294,6 +316,147 @@ private fun StereoCardContent(amount: Int, onAmountChange: (Int) -> Unit) {
             modifier = Modifier.fillMaxWidth(),
         )
     }
+}
+
+// ---------------------------------------------------------------------------
+// Timer
+// ---------------------------------------------------------------------------
+
+private data class TimerPreset(val label: String, val minutes: Int)
+
+private val TIMER_PRESETS =
+    listOf(
+        TimerPreset("15m", 15),
+        TimerPreset("30m", 30),
+        TimerPreset("45m", 45),
+        TimerPreset("1h", 60),
+        TimerPreset("2h", 120),
+    )
+
+@Composable
+private fun TimerCardContent(
+    timerRemainingMs: Long?,
+    stopAtEndOfSong: Boolean,
+    onStartTimer: (Int) -> Unit,
+    onCancelTimer: () -> Unit,
+    onStopAtEndOfSongChanged: (Boolean) -> Unit,
+) {
+    val pureColor = FluxioTheme.colors.text1
+    val ctx = LocalContext.current
+    val timerActive = timerRemainingMs != null
+
+    // Determine which preset chip (if any) matches the active timer.
+    val activePresetMinutes: Int? =
+        timerRemainingMs?.let { ms ->
+            val remainingMins = ((ms + 30_000L) / 60_000L).toInt()
+            TIMER_PRESETS.firstOrNull { it.minutes == remainingMins }?.minutes
+        }
+    val customChipActive = timerActive && activePresetMinutes == null
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Preset chips row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            TIMER_PRESETS.forEach { preset ->
+                val isActive = activePresetMinutes == preset.minutes
+                Box(
+                    modifier =
+                        Modifier.clip(RoundedCornerShape(8.dp))
+                            .background(
+                                if (isActive) pureColor else FluxioTheme.colors.element
+                            )
+                            .clickable {
+                                if (isActive) onCancelTimer() else onStartTimer(preset.minutes)
+                            }
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = preset.label,
+                        style = FluxioTheme.typography.labelMedium,
+                        color =
+                            if (isActive) FluxioTheme.colors.bg else FluxioTheme.colors.text2,
+                    )
+                }
+            }
+
+            // Custom chip
+            Box(
+                modifier =
+                    Modifier.clip(RoundedCornerShape(8.dp))
+                        .background(
+                            if (customChipActive) pureColor else FluxioTheme.colors.element
+                        )
+                        .clickable {
+                            if (customChipActive) {
+                                onCancelTimer()
+                            } else {
+                                showCustomTimerDialog(ctx, onStartTimer)
+                            }
+                        }
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = stringResource(R.string.lbl_timer_custom),
+                    style = FluxioTheme.typography.labelMedium,
+                    color =
+                        if (customChipActive) FluxioTheme.colors.bg
+                        else FluxioTheme.colors.text2,
+                )
+            }
+        }
+
+        // Stop at end of song toggle
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.lbl_timer_stop_at_end),
+                style = FluxioTheme.typography.bodyMedium,
+                color = FluxioTheme.colors.text1,
+                modifier = Modifier.weight(1f),
+            )
+            Switch(
+                checked = stopAtEndOfSong,
+                onCheckedChange = onStopAtEndOfSongChanged,
+                colors =
+                    SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = pureColor,
+                    ),
+            )
+        }
+    }
+}
+
+private fun showCustomTimerDialog(
+    ctx: android.content.Context,
+    onStartTimer: (Int) -> Unit,
+) {
+    val paddingPx = (16 * ctx.resources.displayMetrics.density).toInt()
+    val editText =
+        EditText(ctx).apply {
+            hint = ctx.getString(R.string.hint_sleep_custom_minutes)
+            inputType = InputType.TYPE_CLASS_NUMBER
+            setPadding(paddingPx, paddingPx / 2, paddingPx, paddingPx / 2)
+        }
+    MaterialAlertDialogBuilder(ctx)
+        .setTitle(R.string.lbl_sleep_timer)
+        .setView(editText)
+        .setPositiveButton(R.string.lbl_sleep_start_timer) { _, _ ->
+            val minutes = editText.text?.toString()?.trim()?.toIntOrNull()
+            if (minutes != null && minutes > 0) {
+                onStartTimer(minutes)
+            } else {
+                Toast.makeText(ctx, R.string.err_sleep_timer_invalid, Toast.LENGTH_SHORT).show()
+            }
+        }
+        .setNegativeButton(R.string.lbl_cancel, null)
+        .show()
 }
 
 // ---------------------------------------------------------------------------

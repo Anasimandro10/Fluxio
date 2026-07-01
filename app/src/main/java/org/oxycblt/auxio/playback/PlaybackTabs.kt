@@ -122,6 +122,7 @@ fun PlaybackTabs(
                     PlayerTab.AUDIO ->
                         AudioTab(
                             equalizerModel = equalizerModel,
+                            playbackModel = playbackModel,
                             crossfadeSettings = crossfadeSettings,
                             stereoSettings = stereoSettings,
                             speedSettings = speedSettings,
