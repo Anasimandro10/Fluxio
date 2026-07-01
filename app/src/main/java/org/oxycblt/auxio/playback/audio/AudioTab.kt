@@ -364,9 +364,7 @@ private fun TimerCardContent(
                 Box(
                     modifier =
                         Modifier.clip(RoundedCornerShape(8.dp))
-                            .background(
-                                if (isActive) pureColor else FluxioTheme.colors.element
-                            )
+                            .background(if (isActive) pureColor else FluxioTheme.colors.element)
                             .clickable {
                                 if (isActive) onCancelTimer() else onStartTimer(preset.minutes)
                             }
@@ -376,8 +374,7 @@ private fun TimerCardContent(
                     Text(
                         text = preset.label,
                         style = FluxioTheme.typography.labelMedium,
-                        color =
-                            if (isActive) FluxioTheme.colors.bg else FluxioTheme.colors.text2,
+                        color = if (isActive) FluxioTheme.colors.bg else FluxioTheme.colors.text2,
                     )
                 }
             }
@@ -386,9 +383,7 @@ private fun TimerCardContent(
             Box(
                 modifier =
                     Modifier.clip(RoundedCornerShape(8.dp))
-                        .background(
-                            if (customChipActive) pureColor else FluxioTheme.colors.element
-                        )
+                        .background(if (customChipActive) pureColor else FluxioTheme.colors.element)
                         .clickable {
                             if (customChipActive) {
                                 onCancelTimer()
@@ -403,17 +398,13 @@ private fun TimerCardContent(
                     text = stringResource(R.string.lbl_timer_custom),
                     style = FluxioTheme.typography.labelMedium,
                     color =
-                        if (customChipActive) FluxioTheme.colors.bg
-                        else FluxioTheme.colors.text2,
+                        if (customChipActive) FluxioTheme.colors.bg else FluxioTheme.colors.text2,
                 )
             }
         }
 
         // Stop at end of song toggle
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = stringResource(R.string.lbl_timer_stop_at_end),
                 style = FluxioTheme.typography.bodyMedium,
@@ -433,10 +424,7 @@ private fun TimerCardContent(
     }
 }
 
-private fun showCustomTimerDialog(
-    ctx: android.content.Context,
-    onStartTimer: (Int) -> Unit,
-) {
+private fun showCustomTimerDialog(ctx: android.content.Context, onStartTimer: (Int) -> Unit) {
     val paddingPx = (16 * ctx.resources.displayMetrics.density).toInt()
     val editText =
         EditText(ctx).apply {
